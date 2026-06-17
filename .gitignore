@@ -1,7 +1,32 @@
+# Python
 __pycache__/
 *.pyc
-.env
+*.pyo
 *.egg-info/
 dist/
+build/
+*.egg
 .venv/
 venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+*.err
+
+# Data
+data/
+
+# Env
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -622,3 +622,15 @@ else:
 st.markdown("---")
 st.caption("⚡ Tool #1 of 52 — Built with Streamlit + yfinance + VADER | Data from Yahoo Finance + DuckDuckGo News")
 st.caption("📌 Not financial advice. Always do your own research.")
+st.markdown(
+    '<div style="display:flex;justify-content:center;margin-top:12px">'
+    '<a href="https://chai4.me/darkcharon3301" target="_blank" title="Support darkcharon3301 on Chai4Me" '
+    'style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;'
+    'background:#ffffff;padding:8px 32px;border-radius:16px;text-decoration:none;'
+    'border:1px solid #e5e7eb;'
+    'box-shadow:0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);'
+    'transition:transform 0.2s;">'
+    '<img src="https://chai4.me/icons/wordmark.png" alt="Chai4Me" style="height:32px;object-fit:contain;"/>'
+    '</a></div>',
+    unsafe_allow_html=True,
+)
