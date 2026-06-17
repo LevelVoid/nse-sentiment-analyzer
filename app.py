@@ -797,7 +797,7 @@ else:
 
 # ─── FOOTER ───
 st.markdown("---")
-st.caption("⚡ Tool #1 of 52 — Built with Streamlit + yfinance + VADER | Data from Yahoo Finance + DuckDuckGo News")
+st.caption("⚡ Tool #1 of 52 — Built with Streamlit + yfinance + FinBERT + VADER | Data from Yahoo Finance + RSS News")
 st.caption("📌 Not financial advice. Always do your own research.")
 st.markdown(
     '<div style="display:flex;justify-content:center;margin-top:12px">'

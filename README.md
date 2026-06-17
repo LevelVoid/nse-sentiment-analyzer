@@ -2,7 +2,7 @@
 
 # 📊 NSE Stock Sentiment Analyzer
 
-**AI Tool #1 of 52** — Enter any NSE ticker & get live price + news sentiment analysis in one dashboard.
+**AI Tool #1 of 52** — Enter any NSE ticker & get live price + news sentiment + technical indicators in one dashboard.
 
 [![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
@@ -11,7 +11,7 @@
 [![Open Source](https://img.shields.io/badge/Open%20Source-❤️-red)](https://github.com/AshayK003/nse-sentiment-analyzer)
 
 <p align="center">
-  <b>🇮🇳 India-focused</b> &nbsp;·&nbsp; <b>🆓 Zero API costs</b> &nbsp;·&nbsp; <b>🔌 No API keys needed</b> &nbsp;·&nbsp; <b>📡 Live data</b>
+  <b>🇮🇳 India-focused</b> &nbsp;·&nbsp; <b>🆓 No API costs</b> &nbsp;·&nbsp; <b>🔌 No API keys</b> &nbsp;·&nbsp; <b>📡 Live data</b>
 </p>
 
 </div>
@@ -20,12 +20,14 @@
 
 ## ✨ Features
 
-- **Live price data** — Current price, day change %, day range, volume for any NSE stock or ETF
-- **News sentiment analysis** — Scrapes latest news via DuckDuckGo, scores every headline
-- **VADER + Financial Lexicon** — Tuned for Indian market terms (bullish, circuit, demerger, FII, etc.)
+- **Live price data** — Current price, day change %, day range, volume, PE ratio for any NSE stock or ETF
+- **News via RSS** — Fetches from Yahoo Finance RSS + Google News RSS (works reliably from cloud IPs)
+- **FinBERT sentiment** — Domain-adapted transformer (87% accuracy on financial text) with VADER fallback
 - **BUY / HOLD / CAUTION signal** — Aggregated from headline sentiment distribution
+- **Technical indicators** — RSI(14), SMA 50/200 trend, MACD histogram
 - **Headline breakdown** — See exactly which news is driving sentiment positive or negative
-- **~3 second scan** — Enter a ticker, get results instantly
+- **Portfolio mode** — Add stocks to a watchlist and scan all at once
+- **Track record** — Rate signals as accurate/wrong and track your accuracy over time
 - **No API keys** — Works out of the box, zero configuration
 - **Free & open-source** — MIT license, self-host or use the hosted version
 
@@ -46,16 +48,18 @@ One click, zero setup. ₹199 one-time on [Gumroad](https://gumroad.com). No sub
 ```
 You type "RELIANCE"
         ↓
- yfinance → Live price, PE, volume, 52W range
+ yfinance → Live price, PE, volume, 52W range, 1yr history
         ↓
- DuckDuckGo → Last 7 days of news articles
+ RSS Feeds → Yahoo Finance + Google News (DuckDuckGo fallback)
         ↓
- VADER + Financial Lexicon → Per-headline sentiment scores
+ FinBERT (primary) / VADER (fallback) → Per-headline sentiment scores
         ↓
- Dashboard → Overall signal + sentiment distribution
+ yfinance 1yr history → RSI, SMA 50/200, MACD
+        ↓
+ Dashboard → Overall signal + sentiment distribution + technicals
 ```
 
-Each headline is scored using VADER (Valence Aware Dictionary and sEntiment Reasoner), augmented with a custom financial lexicon tuned for Indian equity markets. The individual scores are aggregated into a single **BUY / HOLD / CAUTION** signal.
+Sentiment is scored using **FinBERT** (`ProsusAI/finbert`), a BERT model fine-tuned on financial text, achieving ~87% accuracy. Falls back to VADER with a custom financial lexicon when the model isn't available. RSI, SMA trends, and MACD are computed from 1 year of daily price data.
 
 ---
 
@@ -83,25 +87,43 @@ Open **http://localhost:8501** in your browser and start analyzing.
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| **UI** | [Streamlit](https://streamlit.io) | Fastest way to build data dashboards in Python |
+| **UI** | [Streamlit](https://streamlit.io) | Fastest data dashboards in Python |
 | **Market Data** | [yfinance](https://github.com/ranaroussi/yfinance) | Free Yahoo Finance API (`.NS` suffix for NSE) |
-| **News** | [DuckDuckGo Search](https://github.com/deedy5/duckduckgo_search) | Free, no API key, privacy-respecting |
-| **Sentiment** | [VADER](https://github.com/cjhutto/vaderSentiment) + custom financial lexicon | ~3ms per headline, no GPU, no API calls |
+| **News (RSS)** | [feedparser](https://github.com/kurtmckee/feedparser) | Yahoo Finance + Google News RSS, works from any IP |
+| **News (fallback)** | [duckduckgo_search](https://github.com/deedy5/duckduckgo_search) | Used when RSS returns < 3 articles |
+| **Sentiment** | [FinBERT](https://huggingface.co/ProsusAI/finbert) (primary) + [VADER](https://github.com/cjhutto/vaderSentiment) (fallback) | 87% accuracy on financial text via domain-adapted transformer |
+| **Indicators** | [pandas](https://pandas.pydata.org) rolling/EWM | RSI(14), SMA 50/200, MACD(12,26,9) computed from 1yr history |
 | **Hosting** | [Streamlit Community Cloud](https://streamlit.io/cloud) | Free deploy from GitHub |
 
-**Zero external API costs.** Everything runs on free tiers or local.
+**Zero API key costs.** Everything uses free/public data sources.
 
 ---
 
 ## 📋 Supported Tickers
 
-All NSE-listed equities and ETFs. Common ones built into the selector:
+100+ NSE-listed equities and ETFs built into the selector. Any other NSE ticker can be typed in the custom input.
 
-**Nifty 50:** RELIANCE, HDFCBANK, TCS, INFY, ICICIBANK, SBIN, BHARTIARTL, ITC, LT, AXISBANK, BAJFINANCE, WIPRO, TITAN, MARUTI, HINDUNILIVER, TATAMOTORS, TATASTEEL, ADANIENT, and more.
+**Nifty 50:** RELIANCE, HDFCBANK, TCS, INFY, ICICIBANK, SBIN, BHARTIARTL, ITC, LT, AXISBANK, BAJFINANCE, WIPRO, TITAN, MARUTI, HINDUNILVR, TATAMOTORS, TATASTEEL, ADANIENT, M&M, TATAPOWER, HINDALCO, BEL, and more.
+
+**Banks & Finance:** KOTAKBANK, INDUSINDBK, BANKBARODA, PNB, YESBANK, IDFCFIRSTB, PFC, RECLTD, BAJAJFINSV, SBILIFE, HDFCLIFE
+
+**Pharma:** SUNPHARMA, DIVISLAB, CIPLA, DRREDDY, TORNTPHARM, APOLLOHOSP, LUPIN, BIOCON
+
+**Tech:** INFY, WIPRO, HCLTECH, TECHM, LTIM, DIXON
+
+**Consumption:** ITC, NESTLEIND, DMART, BRITANNIA, DABUR, MARICO, GODREJCP, VBL, JUBLFOOD, TATACONSUM
+
+**Auto:** MARUTI, TATAMOTORS, BAJAJ-AUTO, EICHERMOT, HEROMOTOCO, TVSMOTOR
+
+**Infra & Industrials:** LT, ULTRACEMCO, GRASIM, ABB, SIEMENS, POLYCAB, PIDILITIND, HAVELLS, ASTRAL
+
+**Energy:** ONGC, COALINDIA, IOC, BPCL, ADANIPOWER, ADANIGREEN, ADANITRANS, NHPC
+
+**Special Situations:** IRFC, RVNL, IRCTC, IEX, DLF, INDIGO, HAL
 
 **ETFs:** NIFTYBEES, GOLDBEES, NEXT50IETF, MIDCAPETF, MODEFENCE, MAKEINDIA, ENERGY, METALETF
 
-**Custom:** Type any NSE ticker (e.g., NYKAA, ZOMATO, PWL, GROWW)
+**Custom:** Type any NSE ticker not in the list (e.g., NYKAA, ZOMATO, PWL, GROWW)
 
 ---
 
