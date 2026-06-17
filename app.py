@@ -390,6 +390,47 @@ def get_sentiment_emoji(compound):
     return "⚪"
 
 
+# ─── Technical Indicators ───
+@st.cache_data(ttl=3600)
+def get_technical_indicators(ticker):
+    """Compute RSI, SMA, MACD from 1yr daily data."""
+    try:
+        hist = yf.Ticker(f"{ticker}.NS").history(period="1y")
+        if hist.empty or len(hist) < 50:
+            return None
+        close = hist["Close"]
+
+        # RSI (14)
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+
+        # SMA 50 & 200
+        sma_50 = close.rolling(50).mean()
+        sma_200 = close.rolling(200).mean()
+
+        # MACD (12, 26, 9)
+        ema_12 = close.ewm(span=12).mean()
+        ema_26 = close.ewm(span=26).mean()
+        macd_line = ema_12 - ema_26
+        signal_line = macd_line.ewm(span=9).mean()
+        macd_hist = macd_line - signal_line
+
+        return {
+            "rsi": float(rsi.iloc[-1]),
+            "sma_50": float(sma_50.iloc[-1]),
+            "sma_200": float(sma_200.iloc[-1]),
+            "close": float(close.iloc[-1]),
+            "macd_line": float(macd_line.iloc[-1]),
+            "macd_signal": float(signal_line.iloc[-1]),
+            "macd_hist": float(macd_hist.iloc[-1]),
+        }
+    except Exception:
+        return None
+
+
 # ─── Persistence ───
 def load_json(path, default=None):
     try:
@@ -678,6 +719,31 @@ if final_ticker and final_ticker != "":
                 st.markdown(f"**52W Low:** ₹{stock_data['52w_low']:.2f}" if isinstance(stock_data['52w_low'], (int, float)) else "N/A")
                 st.markdown(f"**P/E Ratio:** {stock_data['pe_ratio']:.2f}" if isinstance(stock_data['pe_ratio'], (int, float)) else "N/A")
 
+        # ─── TECHNICAL INDICATORS ───
+        st.markdown("---")
+        with st.expander("📈 Technical Indicators"):
+            ti = get_technical_indicators(final_ticker)
+            if ti:
+                col_t1, col_t2, col_t3, col_t4 = st.columns(4)
+                with col_t1:
+                    rsi = ti["rsi"]
+                    rsi_color = "🔴" if rsi > 70 else "🟢" if rsi < 30 else "⚪"
+                    rsi_label = "Overbought" if rsi > 70 else "Oversold" if rsi < 30 else "Neutral"
+                    st.metric("RSI (14)", f"{rsi:.1f}", rsi_label, delta_color="inverse")
+                with col_t2:
+                    price = ti["close"]
+                    above_50 = price > ti["sma_50"]
+                    above_200 = price > ti["sma_200"]
+                    trend = f"{'🟢' if above_50 else '🔴'} SMA50" if not pd.isna(ti["sma_50"]) else "N/A"
+                    st.metric("vs SMA 50", f"₹{ti['sma_50']:.0f}" if not pd.isna(ti["sma_50"]) else "N/A", trend)
+                with col_t3:
+                    trend200 = f"{'🟢' if above_200 else '🔴'} SMA200" if not pd.isna(ti["sma_200"]) else "N/A"
+                    st.metric("vs SMA 200", f"₹{ti['sma_200']:.0f}" if not pd.isna(ti["sma_200"]) else "N/A", trend200)
+                with col_t4:
+                    macd_status = "🟢 Bullish" if ti["macd_hist"] > 0 else "🔴 Bearish"
+                    st.metric("MACD Hist", f"{ti['macd_hist']:.2f}", macd_status)
+            else:
+                st.caption("Not enough data to compute technical indicators (need 1yr+).")
     else:
         st.error(f"Could not find data for **{final_ticker}**. Try a different ticker (e.g., RELIANCE, HDFCBANK, TCS).")
 
