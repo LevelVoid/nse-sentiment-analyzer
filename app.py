@@ -263,6 +263,13 @@ def _parse_date(d):
         return ""
 
 
+def _relevant(ticker, company_name, title, body):
+    """Check if a headline is relevant to the given ticker/company."""
+    text = (title + " " + (body or "")).lower()
+    words = set(ticker.lower().split()) | set(company_name.lower().split())
+    return any(w in text for w in words if len(w) > 2)
+
+
 def search_news(ticker, company_name, max_results=10):
     """Fetch news from RSS feeds (primary), fallback to DuckDuckGo."""
     cached = cache_get(f"news_{ticker}")
@@ -272,17 +279,26 @@ def search_news(ticker, company_name, max_results=10):
     seen_urls = set()
     all_results = []
 
-    # RSS feed sources (no API keys needed)
-    rss_urls = [
+    # Ticker-specific RSS feeds (filtered by source)
+    rss_ticker_feeds = [
         f"https://finance.yahoo.com/rss/headline?s={ticker}.NS",
         f"https://news.google.com/rss/search?q={ticker}+NSE+stock&hl=en-IN&gl=IN&ceid=IN:en",
     ]
     if company_name != ticker:
-        rss_urls.append(
+        rss_ticker_feeds.append(
             f"https://news.google.com/rss/search?q={company_name}+NSE&hl=en-IN&gl=IN&ceid=IN:en"
         )
 
-    for url in rss_urls:
+    # Indian market RSS feeds (filtered by relevance)
+    rss_india_feeds = [
+        "https://www.moneycontrol.com/rss/buzzingstocks.xml",
+        "https://www.moneycontrol.com/rss/latestnews.xml",
+        "https://www.moneycontrol.com/rss/marketreports.xml",
+        "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
+        "https://economictimes.indiatimes.com/news/company/rssfeeds/2143429.cms",
+    ]
+
+    for url in rss_ticker_feeds:
         try:
             feed = feedparser.parse(url)
             for entry in feed.entries[:5]:
@@ -292,6 +308,24 @@ def search_news(ticker, company_name, max_results=10):
                     all_results.append({
                         "title": entry.get("title", ""),
                         "body": entry.get("summary", ""),
+                        "date": _parse_date(entry.get("published_parsed")),
+                        "url": link,
+                    })
+        except Exception:
+            continue
+
+    for url in rss_india_feeds:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:7]:
+                link = entry.get("link", "")
+                title = entry.get("title", "")
+                body = entry.get("summary", "")
+                if link and link not in seen_urls and _relevant(ticker, company_name, title, body):
+                    seen_urls.add(link)
+                    all_results.append({
+                        "title": title,
+                        "body": body,
                         "date": _parse_date(entry.get("published_parsed")),
                         "url": link,
                     })

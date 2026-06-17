@@ -50,7 +50,7 @@ You type "RELIANCE"
         ↓
  yfinance → Live price, PE, volume, 52W range, 1yr history
         ↓
- RSS Feeds → Yahoo Finance + Google News (DuckDuckGo fallback)
+ RSS Feeds → Yahoo Finance + Google News + Moneycontrol + Economic Times (DuckDuckGo fallback)
         ↓
  FinBERT (primary) / VADER (fallback) → Per-headline sentiment scores
         ↓
