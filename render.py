@@ -219,28 +219,26 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
     body {{
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: #0a0b0f; color: #e4e6eb;
+        background: #0a0b0f; color: #f0f2f5;
         padding: 0; line-height: 1.5;
     }}
     .dashboard {{ max-width: 820px; margin: 0 auto; padding: 0; }}
     ::-webkit-scrollbar {{ width: 6px; }}
     ::-webkit-scrollbar-track {{ background: #0a0b0f; }}
-    ::-webkit-scrollbar-thumb {{ background: #1e2028; border-radius: 3px; }}
+    ::-webkit-scrollbar-thumb {{ background: #2a2e3a; border-radius: 3px; }}
 
     /* Cards */
     .card {{
-        background: rgba(19,21,26,0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(30,32,40,0.8);
+        background: #15181f;
+        border: 1px solid #2a2e3a;
         border-radius: 12px;
         padding: 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }}
     .card-title {{
         font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-        letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.75rem;
+        letter-spacing: 0.08em; color: #8891a0; margin-bottom: 0.75rem;
     }}
 
     /* Company header */
@@ -249,18 +247,17 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
         margin-bottom: 1rem;
     }}
     .company-name {{ font-size: 1.1rem; font-weight: 700; }}
-    .company-ticker {{ color: #6b7280; font-size: 0.85rem; }}
+    .company-ticker {{ color: #8891a0; font-size: 0.85rem; }}
 
     /* Price grid */
     .price-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }}
     .price-cell {{
-        background: rgba(19,21,26,0.6);
-        backdrop-filter: blur(10px);
-        border: 1px solid #1e2028;
+        background: #1a1d26;
+        border: 1px solid #2a2e3a;
         border-radius: 10px;
         padding: 0.75rem 1rem;
     }}
-    .price-cell .label {{ font-size: 0.72rem; color: #6b7280; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }}
+    .price-cell .label {{ font-size: 0.72rem; color: #8891a0; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }}
     .price-cell .value {{ font-size: 1.1rem; font-weight: 700; }}
     .price-cell .delta {{ font-size: 0.85rem; font-weight: 600; }}
     .price-cell .delta.up {{ color: #22b573; }}
@@ -271,11 +268,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
     .sentiment-hero {{ font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }}
     .sentiment-hero.bullish {{ background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
     .sentiment-hero.bearish {{ background: linear-gradient(135deg,#f85149,#da3633); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
-    .sentiment-hero.neutral {{ background: linear-gradient(135deg,#868e96,#6b7280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
-    .sentiment-caption {{ font-size: 0.8rem; color: #6b7280; }}
+    .sentiment-hero.neutral {{ background: linear-gradient(135deg,#8891a0,#6b7280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
+    .sentiment-caption {{ font-size: 0.8rem; color: #8891a0; }}
     .confidence-box {{ text-align: center; }}
     .confidence-num {{ font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
-    .confidence-label {{ font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }}
+    .confidence-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.05em; }}
 
     /* Recommendation callout */
     .rec-callout {{
@@ -283,9 +280,9 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
         padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
         margin-top: 0.5rem;
     }}
-    .rec-callout.bullish {{ background: rgba(34,181,115,0.1); color: #22b573; border: 1px solid rgba(34,181,115,0.2); }}
-    .rec-callout.bearish {{ background: rgba(248,81,73,0.1); color: #f85149; border: 1px solid rgba(248,81,73,0.2); }}
-    .rec-callout.neutral {{ background: rgba(107,114,128,0.1); color: #868e96; border: 1px solid rgba(107,114,128,0.2); }}
+    .rec-callout.bullish {{ background: rgba(34,181,115,0.12); color: #2ecc71; border: 1px solid rgba(34,181,115,0.25); }}
+    .rec-callout.bearish {{ background: rgba(248,81,73,0.12); color: #ff6b6b; border: 1px solid rgba(248,81,73,0.25); }}
+    .rec-callout.neutral {{ background: rgba(136,145,160,0.1); color: #8891a0; border: 1px solid rgba(136,145,160,0.2); }}
 
     /* Source badges */
     .badge-wrap {{ margin-top: 0.75rem; }}
@@ -293,15 +290,15 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
         display: inline-flex; align-items: center; gap: 0.35rem;
         padding: 0.3rem 0.75rem; border-radius: 100px;
         font-size: 0.75rem; font-weight: 500;
-        border: 1px solid #1e2028;
-        background: rgba(255,255,255,0.03);
+        border: 1px solid #2a2e3a;
+        background: rgba(255,255,255,0.06);
         margin: 0.15rem; white-space: nowrap;
     }}
-    .source-badge.bullish {{ border-color: rgba(34,181,115,0.3); color: #22b573; }}
-    .source-badge.bearish {{ border-color: rgba(248,81,73,0.3); color: #f85149; }}
-    .source-badge.neutral {{ border-color: rgba(255,255,255,0.1); color: #6b7280; }}
-    .badge-meta {{ opacity: 0.6; }}
-    .source-health {{ font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem; }}
+    .source-badge.bullish {{ border-color: rgba(34,181,115,0.35); color: #2ecc71; }}
+    .source-badge.bearish {{ border-color: rgba(248,81,73,0.35); color: #ff6b6b; }}
+    .source-badge.neutral {{ border-color: rgba(136,145,160,0.15); color: #8891a0; }}
+    .badge-meta {{ opacity: 0.7; color: #8891a0; }}
+    .source-health {{ font-size: 0.75rem; color: #8891a0; margin-top: 0.5rem; }}
 
     /* Distribution bar */
     .dist-bar {{
@@ -312,23 +309,23 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
     .dist-bar .neu {{ background: #4b5563; }}
     .dist-labels {{ display: flex; justify-content: space-around; font-size: 0.8rem; }}
     .dist-labels span {{ display: flex; align-items: center; gap: 0.35rem; }}
-    .dist-labels .pos {{ color: #22b573; }}
-    .dist-labels .neg {{ color: #f85149; }}
-    .dist-labels .neu {{ color: #6b7280; }}
+    .dist-labels .pos {{ color: #2ecc71; }}
+    .dist-labels .neg {{ color: #ff6b6b; }}
+    .dist-labels .neu {{ color: #8891a0; }}
 
     /* News items */
     .news-item {{
         display: flex; gap: 0.75rem; padding: 0.75rem 0;
-        border-bottom: 1px solid rgba(30,32,40,0.5);
+        border-bottom: 1px solid rgba(42,46,58,0.4);
     }}
     .news-item:last-child {{ border-bottom: none; }}
     .news-emoji {{ font-size: 1.2rem; flex-shrink: 0; margin-top: 0.15rem; }}
     .news-content {{ flex: 1; min-width: 0; }}
     .news-title {{ font-size: 0.9rem; font-weight: 600; line-height: 1.4; }}
-    .news-title a {{ color: #e4e6eb; text-decoration: none; }}
+    .news-title a {{ color: #f0f2f5; text-decoration: none; }}
     .news-title a:hover {{ color: #22b573; text-decoration: underline; }}
-    .news-meta {{ font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }}
-    .news-body {{ font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem; line-height: 1.4; }}
+    .news-meta {{ font-size: 0.75rem; color: #8891a0; margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }}
+    .news-body {{ font-size: 0.8rem; color: #8891a0; margin-top: 0.25rem; line-height: 1.4; }}
     .sentiment-tag {{
         display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px;
         font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
@@ -336,21 +333,21 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None):
     }}
     .sentiment-tag.bullish {{ background: rgba(34,181,115,0.15); color: #22b573; }}
     .sentiment-tag.bearish {{ background: rgba(248,81,73,0.15); color: #f85149; }}
-    .sentiment-tag.neutral {{ background: rgba(107,114,128,0.15); color: #868e96; }}
+    .sentiment-tag.neutral {{ background: rgba(136,145,160,0.15); color: #8891a0; }}
 
     /* Stats grid */
     .stats-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }}
     .stat-item {{ padding: 0.5rem 0; }}
-    .stat-label {{ font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }}
+    .stat-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; }}
     .stat-value {{ font-size: 0.9rem; font-weight: 500; display: block; margin-top: 0.15rem; }}
 
     /* Technical indicators */
-    .ti-preview {{ font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem; }}
+    .ti-preview {{ font-size: 0.85rem; color: #8891a0; margin-bottom: 0.75rem; }}
     .ti-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }}
     .ti-item {{ padding: 0.5rem; text-align: center; }}
-    .ti-label {{ font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; display: block; }}
+    .ti-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; display: block; }}
     .ti-value {{ font-size: 1rem; font-weight: 700; display: block; margin-top: 0.15rem; }}
-    .ti-sub {{ font-size: 0.75rem; color: #6b7280; display: block; margin-top: 0.1rem; }}
+    .ti-sub {{ font-size: 0.75rem; color: #8891a0; display: block; margin-top: 0.1rem; }}
 
     /* Responsive */
     @media (max-width: 640px) {{
