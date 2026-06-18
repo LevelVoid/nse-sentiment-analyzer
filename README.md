@@ -9,6 +9,7 @@ Enter any NSE ticker & get live price + multi-source weighted sentiment + techni
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
 [![Open Source](https://img.shields.io/badge/Open%20Source-❤️-red)](https://github.com/AshayK003/nse-sentiment-analyzer)
+[![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://github.com/AshayK003/nse-sentiment-analyzer)
 
 <p align="center">
   <b>🇮🇳 India-focused</b> &nbsp;·&nbsp; <b>🆓 No API costs</b> &nbsp;·&nbsp; <b>🔌 No API keys</b> &nbsp;·&nbsp; <b>📡 Live data</b>
@@ -32,6 +33,8 @@ Enter any NSE ticker & get live price + multi-source weighted sentiment + techni
 - **Headline breakdown** — See exactly which news is driving sentiment positive or negative
 - **Portfolio mode** — Add stocks to a watchlist and scan all at once
 - **Track record** — Rate signals as accurate/wrong and track your accuracy over time
+- **Dark-themed UI** — Premium dark theme with card-based layout, sentiment badges, and responsive design
+- **Loading states** — Visual feedback during data fetches so you're never staring at a blank screen
 - **No API keys** — Works out of the box, zero configuration
 - **Free & open-source** — MIT license, self-host or use the hosted version
 
@@ -125,7 +128,7 @@ These sources show a ⚡ badge in the UI when active on your local setup.
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| **UI** | [Streamlit](https://streamlit.io) | Fastest data dashboards in Python |
+| **UI** | [Streamlit](https://streamlit.io) + custom CSS dark theme | Card-based layout, skeleton loading, source badges, responsive breakpoints |
 | **Market Data** | [yfinance](https://github.com/ranaroussi/yfinance) | Free Yahoo Finance API (`.NS` suffix for NSE) |
 | **News (RSS)** | [feedparser](https://github.com/kurtmckee/feedparser) | Google News + Moneycontrol + ET + LiveMint + NDTV Profit |
 | **News (fallback)** | [duckduckgo_search](https://github.com/deedy5/duckduckgo_search) | Used when RSS returns < 3 articles |
