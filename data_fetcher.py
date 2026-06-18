@@ -367,6 +367,8 @@ def _fetch_reddit_oauth(ticker, company_name, max_results=5):
                     "body": item.get("selftext", ""),
                     "date": datetime.fromtimestamp(item.get("created_utc", 0)).strftime("%Y-%m-%d"),
                     "url": url,
+                    "author": item.get("author", ""),
+                    "subreddit": item.get("subreddit", ""),
                     "source": "Reddit",
                 })
                 if len(posts) >= max_results:

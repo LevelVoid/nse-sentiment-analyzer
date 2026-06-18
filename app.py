@@ -311,7 +311,11 @@ if final_ticker and final_ticker != "":
                         st.markdown(f"**[{item['title']}]({item['url']})**")
                     else:
                         st.markdown(f"**{item['title']}**")
-                    if item.get("body"):
+                    # Attribution for Reddit posts (required by Reddit Developer Terms)
+                    if item.get("source") == "Reddit" and item.get("author"):
+                        sub = f"r/{item['subreddit']}/" if item.get("subreddit") else ""
+                        st.caption(f"by u/{item['author']} on {sub}Reddit")
+                    elif item.get("body"):
                         st.caption(item["body"][:200])
                 with cols[2]:
                     st.markdown(f"*{sentiment_label}*")
@@ -411,6 +415,27 @@ else:
     - **Swing traders** — scan your watchlist for news-driven moves
     - **Portfolio holders** — keep a pulse on your holdings
     """)
+
+# ─── PRIVACY POLICY ───
+with st.expander("🔒 Privacy & Data Policy"):
+    st.markdown("""
+    **What we collect:**
+    - Ticker symbols you search (stored locally in your browser for track record)
+    - No login, email, or personal information is collected
+
+    **Third-party data sources:**
+    - **Yahoo Finance** — live stock prices (public API)
+    - **Reddit** — public posts via Reddit's official API. Each Reddit post shown includes attribution (username, subreddit, link). [Reddit Privacy Policy](https://www.redditinc.com/policies/privacy-policy)
+    - **RSS News feeds** — publicly available headlines from Google News, Moneycontrol, Economic Times, LiveMint, NDTV Profit
+
+    **Data retention:**
+    - Your search history ("Track Record") is stored in your browser's local storage only. You can clear it at any time.
+    - No data is sent to external servers beyond the API calls listed above.
+    - We do not sell, share, or monetize your data.
+
+    **Contact:** [@sentinelcipher on X/Twitter](https://x.com/sentinelcipher)
+    """)
+    st.caption("Last updated: June 2026")
 
 # ─── FOOTER ───
 st.markdown("---")
