@@ -2,7 +2,7 @@
 
 # 📊 NSE Stock Sentiment Analyzer
 
-Enter any NSE ticker & get live price + news sentiment + technical indicators in one dashboard.
+Enter any NSE ticker & get live price + multi-source weighted sentiment + technical indicators in one dashboard.
 
 [![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
@@ -21,11 +21,13 @@ Enter any NSE ticker & get live price + news sentiment + technical indicators in
 ## ✨ Features
 
 - **Live price data** — Current price, day change %, day range, volume, PE ratio for any NSE stock or ETF
-- **News via RSS** — Fetches from Google News + Moneycontrol + Economic Times + LiveMint RSS
-- **VADER + Financial Lexicon** — 35+ domain-specific financial terms tuned for Indian markets
-- **BUY / HOLD / CAUTION signal** — Aggregated from headline sentiment distribution
+- **Multi-source news** — Fetches from Google News + Moneycontrol + Economic Times + LiveMint + NDTV Profit RSS feeds (DuckDuckGo fallback)
+- **Reddit community chatter** — Local-only source via `rdt-cli`, brings retail conversation into the signal
+- **Source-weighted scoring** — Each source has a confidence weight (1.0 ET → 0.4 Reddit). Blended score = weighted average across sources
+- **VADER + Financial Lexicon** — 38 domain-specific financial terms tuned for Indian markets
+- **BUY / HOLD / CAUTION signal** — Weighted across sources, with per-source breakdown in the UI
 - **Technical indicators** — RSI(14), SMA 50/200 trend, MACD histogram
-- **News source health** — See which RSS sources returned results
+- **News source health** — See which sources returned results at a glance
 - **Clickable news links** — Every headline opens the original article
 - **Headline breakdown** — See exactly which news is driving sentiment positive or negative
 - **Portfolio mode** — Add stocks to a watchlist and scan all at once
@@ -43,6 +45,8 @@ Enter any NSE ticker & get live price + news sentiment + technical indicators in
 
 One click, zero setup. ₹199 one-time on [Gumroad](https://gumroad.com). No subscription, no API keys, no terminal.
 
+> **Note:** The hosted version runs RSS-based sources only. Reddit is a local-only source (requires `rdt-cli` auth).
+
 ---
 
 ## 🛠️ How It Works
@@ -52,16 +56,41 @@ You type "RELIANCE"
         ↓
  yfinance → Live price, PE, volume, 52W range, 1yr history
         ↓
- RSS Feeds → Google News + Moneycontrol + Economic Times + LiveMint (DuckDuckGo fallback)
+ RSS Feeds → Google News + Moneycontrol + ET + LiveMint + NDTV Profit
         ↓
- VADER + Financial Lexicon → Per-headline sentiment scores (35+ finance terms)
+ DuckDuckGo → Fallback when RSS returns < 3 articles
+        ↓
+ Reddit (local) → rdt-cli search for community chatter (⚡ badge in UI)
+        ↓
+ VADER + Financial Lexicon → Per-headline sentiment scores (38 finance terms)
+        ↓
+ Source-Weighted Blending → ET(1.0) + MC(0.9) + LM(0.8) + NDTV(0.7) + Google(0.6) + DDG(0.5) + Reddit(0.4)
         ↓
  yfinance 1yr history → RSI, SMA 50/200, MACD
         ↓
- Dashboard → Overall signal + sentiment distribution + technicals
+ Dashboard → Weighted signal + source breakdown + sentiment distribution + technicals
 ```
 
-Sentiment is scored using **VADER** with a custom **financial lexicon** of 35+ domain-specific terms (bullish, bearish, breakout, downgrade, etc.) tuned for Indian equity markets. For local self-hosting, optional FinBERT (`ProsusAI/finbert`) can be enabled via environment variable.
+### Source Weighting Logic
+
+Each news source has a **confidence weight** based on editorial reliability:
+
+| Source | Weight | Type | Available on Cloud |
+|--------|--------|------|--------------------|
+| Economic Times | 1.0 | RSS | ✅ |
+| Moneycontrol | 0.9 | RSS | ✅ |
+| LiveMint | 0.8 | RSS | ✅ |
+| NDTV Profit | 0.7 | RSS | ✅ |
+| Google News | 0.6 | RSS | ✅ |
+| DuckDuckGo | 0.5 | Web search (fallback) | ✅ |
+| Reddit | 0.4 | CLI (`rdt-cli`) | ❌ Local only |
+
+The **blended score** is a weighted average:
+```
+Blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
+```
+
+The final signal (BULLISH/NEUTRAL/BEARISH) is determined from the blended score, with per-source breakdown shown in the UI.
 
 ---
 
@@ -81,17 +110,14 @@ streamlit run app.py
 
 Open **http://localhost:8501** in your browser and start analyzing.
 
-### Optional: Enable FinBERT (local only)
+### Local-Only Features
 
-For enhanced transformer-based sentiment, install the extra deps and set the env var:
+The following features require CLI tools on your machine and are **not available** on the hosted Streamlit Cloud version:
 
-```bash
-pip install transformers torch
-export ENABLE_FINBERT=true
-streamlit run app.py
-```
+- **Reddit** — Requires `rdt-cli` with Reddit auth cookies. Install: `uv tool install rdt-cli && rdt login`
+- **Twitter/X** — Architecture-ready. Install `twitter-cli` and set `TWITTER_AUTH_TOKEN` + `TWITTER_CT0` env vars.
 
-> **Note:** FinBERT is ~1.1GB and won't load on Streamlit Cloud (500MB memory limit). The hosted version uses VADER + Financial Lexicon, which is faster and more than adequate for retail trading signals.
+These sources show a ⚡ badge in the UI when active on your local setup.
 
 ---
 
@@ -101,9 +127,11 @@ streamlit run app.py
 |-------|-----------|-----|
 | **UI** | [Streamlit](https://streamlit.io) | Fastest data dashboards in Python |
 | **Market Data** | [yfinance](https://github.com/ranaroussi/yfinance) | Free Yahoo Finance API (`.NS` suffix for NSE) |
-| **News (RSS)** | [feedparser](https://github.com/kurtmckee/feedparser) | Google News + Moneycontrol + Economic Times + LiveMint |
+| **News (RSS)** | [feedparser](https://github.com/kurtmckee/feedparser) | Google News + Moneycontrol + ET + LiveMint + NDTV Profit |
 | **News (fallback)** | [duckduckgo_search](https://github.com/deedy5/duckduckgo_search) | Used when RSS returns < 3 articles |
-| **Sentiment** | [VADER](https://github.com/cjhutto/vaderSentiment) + custom financial lexicon (35+ terms) | Domain-tuned for Indian market terminology |
+| **Reddit** | [rdt-cli](https://github.com/rdt-cli/rdt-cli) | Local-only, community sentiment via CLI |
+| **Sentiment** | [VADER](https://github.com/cjhutto/vaderSentiment) + custom financial lexicon (38 terms) | Domain-tuned for Indian market terminology |
+| **Scoring** | Source-weighted average | Per-source confidence blending |
 | **Indicators** | [pandas](https://pandas.pydata.org) rolling/EWM | RSI(14), SMA 50/200, MACD(12,26,9) from 1yr history |
 | **Hosting** | [Streamlit Community Cloud](https://streamlit.io/cloud) | Free deploy from GitHub |
 
@@ -141,7 +169,7 @@ streamlit run app.py
 
 ## ❤️ Support the Project
 
-Building 52 AI tools in 52 weeks takes time and coffee. If you find this useful:
+If you find this useful:
 
 <div align="center">
   <a href="https://chai4.me/darkcharon3301">
@@ -155,11 +183,10 @@ Building 52 AI tools in 52 weeks takes time and coffee. If you find this useful:
 
 ## 🤝 Contributing
 
-The goal is to ship fast and iterate.
-
 - **Issues:** Found a bug? Open an issue.
 - **PRs:** Feature ideas, better lexicon, UI improvements — all welcome.
 - **Tickers:** Know a missing NSE stock? Send a PR to update `NSE_TICKERS` in `data_fetcher.py`.
+- **New sources:** Add a fetcher function in `data_fetcher.py`, register its weight in `sentiment.py:SOURCE_WEIGHTS`, and it slots into the pipeline automatically.
 
 ---
 
