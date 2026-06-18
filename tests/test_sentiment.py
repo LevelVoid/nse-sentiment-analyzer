@@ -139,8 +139,11 @@ class TestWeightedSignal:
         assert weights == sorted(weights, reverse=True), "Breakdown not sorted by weight"
 
     def test_local_only_sources_defined(self):
-        assert "Reddit" in LOCAL_ONLY_SOURCES
-        assert len(LOCAL_ONLY_SOURCES) > 0
+        # Reddit is local-only unless OAuth env vars are set
+        import os
+        reddit_local = not (os.environ.get("REDDIT_CLIENT_ID") and os.environ.get("REDDIT_CLIENT_SECRET"))
+        assert ("Reddit" in LOCAL_ONLY_SOURCES) == reddit_local
+        assert isinstance(LOCAL_ONLY_SOURCES, set)
 
     def test_source_weights_defined(self):
         for src in ["Economic Times", "Moneycontrol", "LiveMint", "DuckDuckGo", "Reddit"]:

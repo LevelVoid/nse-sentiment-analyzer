@@ -64,7 +64,12 @@ SOURCE_WEIGHTS = {
 }
 
 # Local-only sources (require CLI tools, only available when running locally)
-LOCAL_ONLY_SOURCES = {"Reddit"}
+# Reddit has an OAuth API path when REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET are set.
+import os as _os
+LOCAL_ONLY_SOURCES = set()
+if not (_os.environ.get("REDDIT_CLIENT_ID", "") and _os.environ.get("REDDIT_CLIENT_SECRET", "")):
+    LOCAL_ONLY_SOURCES.add("Reddit")
+
 
 
 

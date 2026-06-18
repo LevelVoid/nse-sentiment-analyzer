@@ -10,6 +10,7 @@ import time
 import streamlit as st
 import subprocess
 import re
+import os
 from datetime import datetime
 from duckduckgo_search import DDGS
 from persistence import cache_get, cache_set
@@ -288,8 +289,114 @@ SOURCE_LABELS = {
 }
 
 
+# ─── Reddit: OAuth API (cloud-compatible) + rdt-cli (local fallback) ───
+
+_REDDIT_TOKEN = None
+_REDDIT_TOKEN_EXPIRY = 0
+
+
+def _reddit_oauth_token(client_id, client_secret):
+    """Get a Reddit OAuth token with lazy refresh (tokens expire after 1 hour)."""
+    global _REDDIT_TOKEN, _REDDIT_TOKEN_EXPIRY
+    if _REDDIT_TOKEN and time.time() < _REDDIT_TOKEN_EXPIRY:
+        return _REDDIT_TOKEN
+    try:
+        auth = requests.auth.HTTPBasicAuth(client_id, client_secret)
+        headers = {"User-Agent": "NSE-Sentiment-Analyzer/1.0 (by /u/AshayK003)"}
+        data = {"grant_type": "client_credentials", "scope": "read"}
+        resp = requests.post(
+            "https://www.reddit.com/api/v1/access_token",
+            auth=auth, headers=headers, data=data, timeout=10,
+        )
+        if resp.status_code != 200:
+            return None
+        token = resp.json().get("access_token")
+        if token:
+            _REDDIT_TOKEN = token
+            _REDDIT_TOKEN_EXPIRY = time.time() + 3300  # 55 min (tokens last 1 hr)
+        return token
+    except Exception:
+        return None
+
+
+def _fetch_reddit_oauth(ticker, company_name, max_results=5):
+    """Fetch Reddit posts via OAuth API (works on cloud)."""
+    client_id = os.environ.get("REDDIT_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("REDDIT_CLIENT_SECRET", "").strip()
+    if not client_id or not client_secret:
+        return []
+
+    token = _reddit_oauth_token(client_id, client_secret)
+    if not token:
+        return []
+
+    headers = {
+        "Authorization": f"bearer {token}",
+        "User-Agent": "NSE-Sentiment-Analyzer/1.0 (by /u/AshayK003)",
+    }
+    queries = [
+        f"{ticker} NSE stock",
+        f"{company_name} stock",
+    ]
+
+    posts = []
+    seen_urls = set()
+    for query in queries:
+        try:
+            resp = requests.get(
+                "https://oauth.reddit.com/search",
+                params={"q": query, "limit": max_results, "sort": "new", "t": "week"},
+                headers=headers, timeout=10,
+            )
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            for child in data.get("data", {}).get("children", []):
+                item = child.get("data", {})
+                title = item.get("title", "")
+                if not title or len(title) < 5:
+                    continue
+                url = "https://www.reddit.com" + item.get("permalink", "")
+                if url in seen_urls:
+                    continue
+                if not _relevant(ticker, company_name, title, ""):
+                    continue
+                seen_urls.add(url)
+                posts.append({
+                    "title": title,
+                    "body": item.get("selftext", ""),
+                    "date": datetime.fromtimestamp(item.get("created_utc", 0)).strftime("%Y-%m-%d"),
+                    "url": url,
+                    "source": "Reddit",
+                })
+                if len(posts) >= max_results:
+                    break
+        except Exception:
+            continue
+        time.sleep(0.5)
+        if len(posts) >= max_results:
+            break
+
+    return posts
+
+
 def fetch_reddit_news(ticker, company_name, max_results=5):
-    """Fetch stock-related Reddit posts via rdt-cli (local-only, silently skipped if unavailable)."""
+    """Fetch Reddit posts for a stock ticker.
+    
+    Uses OAuth API (cloud-compatible) when REDDIT_CLIENT_ID and 
+    REDDIT_CLIENT_SECRET env vars are set. Falls back to local rdt-cli.
+    """
+    # Try OAuth API path (works on cloud and locally)
+    oauth_posts = _fetch_reddit_oauth(ticker, company_name, max_results)
+    if oauth_posts:
+        return oauth_posts
+
+    # Fall back to rdt-cli (local only)
+    return _fetch_reddit_rdtcli(ticker, company_name, max_results)
+
+
+def _fetch_reddit_rdtcli(ticker, company_name, max_results=5):
+    """Fetch Reddit posts via rdt-cli (local-only fallback)."""
     try:
         query = f"{ticker} NSE stock"
         result = subprocess.run(
@@ -300,7 +407,6 @@ def fetch_reddit_news(ticker, company_name, max_results=5):
             return []
         posts = []
         for line in result.stdout.split("\n"):
-            # rdt-cli outputs lines like: "Title | Score | URL"
             if "|" not in line:
                 continue
             parts = line.split("|")
