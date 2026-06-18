@@ -4,8 +4,6 @@ Pytest configuration and fixtures for NSE Sentiment Analyzer.
 
 import os
 import sys
-import json
-from datetime import datetime, timedelta
 
 import pytest
 

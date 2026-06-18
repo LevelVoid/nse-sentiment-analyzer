@@ -3,13 +3,11 @@ Tests for technical indicators computation.
 Mocks yfinance to return controlled OHLCV data.
 """
 
-import pytest
 import pandas as pd
 import numpy as np
 
-# We patch st.cache_data before importing indicators so the
+# Patch st.cache_data before importing indicators so the
 # decorator is a no-op in test context
-import streamlit as st
 from unittest.mock import MagicMock
 
 

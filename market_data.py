@@ -3,7 +3,6 @@ FII/DII institutional flow fetched via nsepython.
 """
 
 import streamlit as st
-import pandas as pd
 
 
 @st.cache_data(ttl=3600)

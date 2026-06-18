@@ -10,7 +10,6 @@ from sentiment import (
     get_sia,
     analyze_headline_sentiment,
     get_overall_signal,
-    get_sentiment_emoji,
     FINANCIAL_BOOSTERS,
 )
 from data_fetcher import (
@@ -49,12 +48,6 @@ class TestSentiment:
         # Neutral text should have compound near 0
         assert -0.3 < result["compound"] < 0.3
 
-    def test_get_sentiment_emoji(self):
-        assert get_sentiment_emoji(0.5) == "🟢"
-        assert get_sentiment_emoji(-0.5) == "🔴"
-        assert get_sentiment_emoji(0) == "⚪"
-        assert get_sentiment_emoji(0.2) == "⚪"
-
     def test_get_overall_signal_bullish(self):
         scores = [{"compound": 0.8}, {"compound": 0.5}, {"compound": 0.1}]
         signal, compound, emoji = get_overall_signal(scores)
@@ -86,7 +79,7 @@ class TestSentiment:
 # ─── Weighted Signal Tests ───
 
 
-from sentiment import get_weighted_signal, SOURCE_WEIGHTS, LOCAL_ONLY_SOURCES
+from sentiment import get_weighted_signal, SOURCE_WEIGHTS
 
 
 class TestWeightedSignal:
@@ -137,15 +130,8 @@ class TestWeightedSignal:
         weights = [s["weight"] for s in breakdown]
         assert weights == sorted(weights, reverse=True), "Breakdown not sorted by weight"
 
-    def test_local_only_sources_defined(self):
-        # Reddit is local-only unless OAuth env vars are set
-        import os
-        reddit_local = not (os.environ.get("REDDIT_CLIENT_ID") and os.environ.get("REDDIT_CLIENT_SECRET"))
-        assert ("Reddit" in LOCAL_ONLY_SOURCES) == reddit_local
-        assert isinstance(LOCAL_ONLY_SOURCES, set)
-
     def test_source_weights_defined(self):
-        for src in ["Economic Times", "Moneycontrol", "LiveMint", "DuckDuckGo", "Reddit"]:
+        for src in ["Economic Times", "Moneycontrol", "LiveMint", "DuckDuckGo"]:
             assert src in SOURCE_WEIGHTS, f"Missing weight for {src}"
 
 

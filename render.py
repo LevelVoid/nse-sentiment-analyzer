@@ -5,9 +5,7 @@ rendered via st.components.v1.html().
 """
 
 import html
-import json
 import secrets
-from datetime import datetime
 
 
 def h(s):

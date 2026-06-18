@@ -3,11 +3,7 @@ Tests for data persistence (portfolio, track record, cache).
 All file I/O is isolated to tmp_path via the tmp_data_dir fixture.
 """
 
-import json
-import time
 from datetime import datetime, timedelta
-
-import pytest
 
 
 class TestPersistenceIO:

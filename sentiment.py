@@ -60,17 +60,7 @@ SOURCE_WEIGHTS = {
     "NDTV Profit": 0.7,
     "Google News": 0.6,
     "DuckDuckGo": 0.5,
-    "Reddit": 0.4,
 }
-
-# Local-only sources (require CLI tools, only available when running locally)
-# Reddit has an OAuth API path when REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET are set.
-import os as _os
-LOCAL_ONLY_SOURCES = set()
-if not (_os.environ.get("REDDIT_CLIENT_ID", "") and _os.environ.get("REDDIT_CLIENT_SECRET", "")):
-    LOCAL_ONLY_SOURCES.add("Reddit")
-
-
 
 
 @st.cache_resource
@@ -106,14 +96,6 @@ def get_overall_signal(headline_scores):
         return "BEARISH 🔴", avg_compound, "🔴"
     else:
         return "NEUTRAL ⚪", avg_compound, "⚪"
-
-
-def get_sentiment_emoji(compound):
-    if compound >= 0.3:
-        return "🟢"
-    elif compound <= -0.3:
-        return "🔴"
-    return "⚪"
 
 
 def get_weighted_signal(headline_scores):

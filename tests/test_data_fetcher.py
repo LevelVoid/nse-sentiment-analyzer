@@ -3,9 +3,6 @@ Tests for data fetching -- stock info, news, and Reddit.
 All external APIs (yfinance, feedparser, DuckDuckGo, requests) are mocked.
 """
 
-import pytest
-import json
-
 
 def _mock_yfinance_ticker(mocker, info=None, hist_df=None):
     """Build a fake yfinance Ticker with controllable info/history."""

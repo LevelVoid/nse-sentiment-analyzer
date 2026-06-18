@@ -4,7 +4,6 @@ Verifies render_dashboard handles full data, partial data, and edge cases
 without crashing.
 """
 
-import pytest
 
 
 def _make_result(stock_data, news_items, headline_scores, signal="NEUTRAL",
