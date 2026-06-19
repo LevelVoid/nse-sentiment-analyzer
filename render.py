@@ -224,17 +224,17 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     <div class="fii-grid">
         <div class="fii-item {'bearish' if fi['fii_net'] < 0 else ''}">
             <div class="fii-label">FII / FPI</div>
-            <div class="fii-value">{fmt_large(fi['fii_net'])}</div>
+            <div class="fii-value">₹{fi['fii_net']:,.0f} Cr</div>
             <div class="fii-sub">{fi['fii_action']}</div>
         </div>
         <div class="fii-item {'bearish' if fi['dii_net'] < 0 else ''}">
             <div class="fii-label">DII</div>
-            <div class="fii-value">{fmt_large(fi['dii_net'])}</div>
+            <div class="fii-value">₹{fi['dii_net']:,.0f} Cr</div>
             <div class="fii-sub">{fi['dii_action']}</div>
         </div>
         <div class="fii-item {'bearish' if comb < 0 else ''}">
             <div class="fii-label">Combined Net</div>
-            <div class="fii-value">{fmt_large(comb)}</div>
+            <div class="fii-value">₹{comb:,.0f} Cr</div>
             <div class="fii-sub">{'🟢 Institutions net buying' if comb >= 0 else '🔴 Institutions net selling'}</div>
         </div>
     </div>
