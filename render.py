@@ -33,6 +33,10 @@ _ICON["arrow_up"] = _svg('<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>')
 _ICON["arrow_down"] = _svg('<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>')
 _ICON["wifi"] = _svg('<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>')
 _ICON["layout"] = _svg('<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>')
+# Signal indicator icons (colored filled circles with symbol — larger than dots)
+_ICON["bullish"] = _svg('<circle cx="12" cy="12" r="10" fill="#22b573" stroke="none"/><path d="M12 7 8 15h8z" fill="#f0f0f0" stroke="none"/>')
+_ICON["bearish"] = _svg('<circle cx="12" cy="12" r="10" fill="#f85149" stroke="none"/><path d="M8 9h8l-4 8z" fill="#f0f0f0" stroke="none"/>')
+_ICON["neutral"] = _svg('<circle cx="12" cy="12" r="10" fill="#8891a0" stroke="none"/><path d="M7 12h10" stroke="#f0f0f0" stroke-width="2.5" stroke-linecap="round" fill="none"/>')
 
 # ponytail: counter for unique sparkline gradient IDs (avoids id() which can collide across renders)
 _sparkline_counter = itertools.count()
@@ -135,8 +139,13 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     signal = result["signal"]
     avg_compound = result["avg_compound"]
     primary_signal = result.get("weighted_signal", signal)
+    # Strip trailing emoji from signal text since we now use SVG icons
+    if isinstance(primary_signal, str):
+        primary_signal = primary_signal.rstrip(" 🟢🔴⚪")
     primary_compound = result.get("blended_compound", avg_compound)
     primary_emoji = result.get("weighted_emoji", result["signal_emoji"])
+    _emoji_to_icon = {"🟢": _ICON["bullish"], "🔴": _ICON["bearish"], "⚪": _ICON["neutral"]}
+    primary_emoji_svg = _emoji_to_icon.get(primary_emoji, _ICON["neutral"])
     source_breakdown = result.get("source_breakdown", [])
     source_stats = result.get("source_stats", {})
 
@@ -342,8 +351,12 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         ss = result.get("smartscore_components", {})
         ss_components = ss
         ss_history = result.get("smartscore_history", [])
-        ss_signal = result.get("smartscore_signal", "NEUTRAL")
+        ss_signal_raw = result.get("smartscore_signal", "NEUTRAL")
+        # Strip trailing emoji — the raw string is "BULLISH 🟢" etc.
+        ss_signal = ss_signal_raw.rstrip(" 🟢🔴⚪") if isinstance(ss_signal_raw, str) else "NEUTRAL"
         ss_color = "#22b573" if ss_signal == "BULLISH" else "#f85149" if ss_signal == "BEARISH" else "#8891a0"
+        # SVG icon for the signal
+        ss_icon = _emoji_to_icon.get(result.get("smartscore_emoji", "⚪"), _ICON["neutral"])
 
         # Component mini-bars
         def _pct(v):
@@ -374,7 +387,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
             <div class="ss-main">
                 <div class="ss-score" style="color:{ss_color}">{smartscore_val:.0f}</div>
                 <div class="ss-label">SmartScore</div>
-                <div class="ss-qual">{ss_signal}</div>
+                <div class="ss-qual">{ss_icon} {ss_signal}</div>
             </div>
             <div class="ss-comps">
                 {comp_bars}
@@ -707,7 +720,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         <div class="card-title">{_ICON["newspaper"]} News Sentiment Analysis</div>
         <div class="sentiment-row">
             <div>
-                <div class="sentiment-hero {sent_class}">{primary_emoji} {primary_signal}</div>
+                <div class="sentiment-hero {sent_class}">{primary_emoji_svg} {primary_signal}</div>
                 <div class="sentiment-caption">Based on {len(news_items)} articles \u00b7 Weighted across {len(source_breakdown)} sources</div>
                 <div class="rec-callout {sent_class}">{rec_icon} {rec_text} \u2014 {rec_detail}</div>
             </div>
