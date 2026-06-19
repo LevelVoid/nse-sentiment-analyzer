@@ -244,49 +244,69 @@ def format_large_num(n):
 
 
 def get_stock_info(ticker):
-    """Fetch stock data from yfinance with retry and backoff."""
+    """Fetch stock data from yfinance with retry and backoff.
+
+    Two-phase approach:
+      1. info (metadata: name, sector, PE, 52w) — best-effort, not blocking.
+         If it fails, defaults are used.
+      2. history (price data: close, change, volume) — required.
+         Falls back to .BO suffix if .NS fails, then bare ticker.
+    """
     cached = cache_get(f"stock_{ticker}")
     if cached:
         return cached
+
+    import random
+    import math
+
+    def _retry_fetch(max_attempts=3, base_wait=1, backoff=2):
+        """Generator that yields (attempt_num, wait_seconds) for retry loops.
+        Uses exponential backoff with full jitter (AWS retry style).
+        """
+        for attempt in range(max_attempts):
+            yield attempt
+            if attempt < max_attempts - 1:
+                sleep = base_wait * (backoff ** attempt)
+                jitter = sleep * 0.5 * random.random()
+                time.sleep(sleep + jitter)
+
+    suffixes = [".NS", ".BO", ""]
+    info = None
+    hist = None
+    name_fallback = ticker
+
     try:
-        stock = yf.Ticker(f"{ticker}.NS")
+        # ── Phase 1: info (best-effort metadata) ──
+        for suffix in suffixes:
+            stock = yf.Ticker(f"{ticker}{suffix}")
+            for attempt in _retry_fetch(max_attempts=3, base_wait=1):
+                try:
+                    raw = stock.info
+                    if raw and isinstance(raw, dict) and len(raw) > 10:
+                        info = raw
+                        name_fallback = info.get("longName", info.get("shortName", ticker))
+                        break
+                except Exception:
+                    continue  # retry same suffix with backoff before trying next
+            if info:
+                break  # found valid info, stop trying suffixes
 
-        # Retry info with backoff (this is the heaviest yfinance call)
-        # Yahoo sometimes returns empty {} even without 429 — retry those too
-        info = None
-        for attempt in range(3):
-            try:
-                info = stock.info
-                if info and len(info) > 10:
-                    break
-                # Empty or near-empty response — wait and retry
-                wait = 2 ** attempt
-                time.sleep(wait)
-                info = None
-            except Exception as e:
-                if "Too Many" in str(e) or "429" in str(e):
-                    wait = 2 ** attempt
-                    time.sleep(wait)
-                    continue
-                raise
+        # ── Phase 2: history (required price data) ──
+        for suffix in suffixes if not hist else []:
+            stock = yf.Ticker(f"{ticker}{suffix}")
+            for attempt in _retry_fetch(max_attempts=3, base_wait=2):
+                try:
+                    raw = stock.history(period="1y")
+                    if raw is not None and not raw.empty:
+                        hist = raw
+                        break
+                except Exception:
+                    continue  # retry with backoff
+            if hist is not None:
+                break  # found valid history
 
-        if not info:
-            raise Exception("Empty response from Yahoo Finance")
-
-        # Retry history with backoff on any transient failure
-        hist = None
-        for attempt in range(3):
-            try:
-                hist = stock.history(period="1y")
-                if hist is not None:
-                    break
-            except Exception as e:
-                wait = 2 ** attempt + 1
-                time.sleep(wait)
-                continue
-
+        # ── Build result dict ──
         if hist is not None and not hist.empty:
-            # ponytail: cache 1y hist for get_technical_indicators to reuse
             _hist_cache[ticker] = hist
             current_price = float(hist["Close"].iloc[-1])
             prev_close = float(hist["Close"].iloc[-2]) if len(hist) > 1 else current_price
@@ -294,32 +314,41 @@ def get_stock_info(ticker):
             change_pct = float((change / prev_close) * 100)
             day_high = float(hist["High"].iloc[-1])
             day_low = float(hist["Low"].iloc[-1])
-            volume = int(hist["Volume"].iloc[-1])
-        else:
+            volume = int(hist["Volume"].iloc[-1]) if not math.isnan(hist["Volume"].iloc[-1]) else 0
+        elif info:
+            # No history but info is available — use info fields for price
             current_price = info.get("currentPrice") or info.get("regularMarketPrice")
             change = info.get("regularMarketChange")
             change_pct = info.get("regularMarketChangePercent")
             day_high = info.get("dayHigh")
             day_low = info.get("dayLow")
             volume = info.get("volume")
+        else:
+            # Neither info nor history — give up
+            st.error(
+                f"Could not fetch data for {ticker}. "
+                "Yahoo Finance may be rate-limited — wait a moment and try again."
+            )
+            return None
 
         result = {
-            "name": info.get("longName", info.get("shortName", ticker)),
-            "sector": info.get("sector", "N/A"),
-            "industry": info.get("industry", "N/A"),
-            "market_cap": info.get("marketCap"),
-            "pe_ratio": info.get("trailingPE"),
+            "name": info.get("longName", info.get("shortName", name_fallback)) if info else name_fallback,
+            "sector": info.get("sector", "N/A") if info else "N/A",
+            "industry": info.get("industry", "N/A") if info else "N/A",
+            "market_cap": info.get("marketCap") if info else None,
+            "pe_ratio": info.get("trailingPE") if info else None,
             "current_price": current_price,
             "change": change,
             "change_pct": change_pct,
             "day_high": day_high,
             "day_low": day_low,
             "volume": volume,
-            "52w_high": info.get("fiftyTwoWeekHigh"),
-            "52w_low": info.get("fiftyTwoWeekLow"),
+            "52w_high": info.get("fiftyTwoWeekHigh") if info else None,
+            "52w_low": info.get("fiftyTwoWeekLow") if info else None,
         }
         cache_set(f"stock_{ticker}", result)
         return result
+
     except Exception as e:
         st.error(f"Could not fetch data for {ticker}: {e}")
         return None

@@ -66,18 +66,22 @@ class TestStockInfo:
         assert isinstance(result["volume"], int)
 
     def test_stock_info_empty_response_retries(self, mocker):
-        """Empty info dict should trigger retry, eventually return None."""
+        """Empty info dict should trigger retry, eventually return partial data from history."""
         from data_fetcher import get_stock_info
 
-        # info with only 5 keys: len(info) < 10 triggers retry
+        # info with only 5 keys: len(info) < 10 triggers retry across all suffixes
         tiny_info = {"longName": "Test", "shortName": "T"}
-        _, p_info = _mock_yfinance_ticker(mocker, info=tiny_info)
+        _mock_yfinance_ticker(mocker, info=tiny_info)
         mocker.patch("time.sleep")
+        mocker.patch("data_fetcher.cache_get", return_value=None)  # isolate from real cache
+        mocker.patch("data_fetcher.cache_set")  # prevent writing to real cache
 
         result = get_stock_info("UNKNOWN")
-        assert result is None
-        # .info was accessed at least 3 times (3 retries)
-        assert p_info.call_count >= 3
+        # New behavior: when info fails but history works, return price data with defaults
+        assert result is not None
+        assert result["name"] == "UNKNOWN"  # ticker as fallback name
+        assert result["sector"] == "N/A"
+        assert result["current_price"] is not None  # price from history
 
     def test_stock_info_info_fallback(self, mocker):
         """When hist is empty, should fall back to info.get() for price."""
@@ -110,12 +114,16 @@ class TestStockInfo:
         assert result["current_price"] == 500.0
 
     def test_stock_info_none_on_total_failure(self, mocker):
-        """When all retries fail (info too small), should return None."""
+        """When both info AND history fail, should return None."""
         from data_fetcher import get_stock_info
 
+        import pandas as pd
         tiny_info = {"longName": "Bogus"}
-        _mock_yfinance_ticker(mocker, info=tiny_info)
+        # Empty history + tiny info = complete failure
+        _mock_yfinance_ticker(mocker, info=tiny_info, hist_df=pd.DataFrame())
         mocker.patch("time.sleep")
+        mocker.patch("data_fetcher.cache_get", return_value=None)  # isolate from real cache
+        mocker.patch("data_fetcher.cache_set")  # prevent writing to real cache
 
         result = get_stock_info("BOGUS")
         assert result is None
