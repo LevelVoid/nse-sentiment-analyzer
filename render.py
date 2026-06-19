@@ -401,7 +401,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     # any injected inline scripts from RSS/Reddit content
     _nonce = secrets.token_urlsafe(16)
     auto_height_script = f"""<script nonce="{_nonce}">
-(function(){{var o=document.referrer?new URL(document.referrer).origin:'*';function h(){{var d=document.body.scrollHeight;parent.postMessage({{type:'streamit:setFrameHeight',height:d}},o);}}window.addEventListener('load',h);window.addEventListener('resize',h);}})();
+(function(){{var o=document.referrer?new URL(document.referrer).origin:'*';function h(){{var d=document.body.scrollHeight;parent.postMessage({{type:'streamlit:setFrameHeight',height:d}},o);}}window.addEventListener('load',h);window.addEventListener('resize',h);}})();
 </script>"""
 
     return f"""<!DOCTYPE html>
@@ -415,6 +415,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    .sr-only {{ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }}
     body {{
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         font-display: swap;
@@ -436,7 +437,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }}
     .card-title {{
-        font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+        font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
         letter-spacing: 0.08em; color: #8891a0; margin-bottom: 0.75rem;
     }}
 
@@ -445,8 +446,8 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         display: flex; justify-content: space-between; align-items: flex-start;
         margin-bottom: 1rem;
     }}
-    .company-name {{ font-size: 1.1rem; font-weight: 700; }}
-    .company-ticker {{ color: #8891a0; font-size: 0.85rem; }}
+    .company-name {{ font-size: 1.35rem; font-weight: 700; }}
+    .company-ticker {{ color: #8891a0; font-size: 0.9rem; }}
 
     /* Price grid */
     .price-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }}
@@ -456,22 +457,23 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         border-radius: 10px;
         padding: 0.75rem 1rem;
     }}
-    .price-cell .label {{ font-size: 0.72rem; color: #8891a0; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }}
+    .price-cell .label {{ font-size: 0.78rem; color: #8891a0; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }}
     .price-cell .value {{ font-size: 1.1rem; font-weight: 700; }}
-    .price-cell .delta {{ font-size: 0.85rem; font-weight: 600; }}
+    .price-cell .value.price-main {{ font-size: 2rem; }}
+    .price-cell .delta {{ font-size: 0.9rem; font-weight: 600; }}
     .price-cell .delta.up {{ color: #22b573; }}
     .price-cell .delta.down {{ color: #f85149; }}
 
     /* Sentiment hero */
     .sentiment-row {{ display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; margin-bottom: 0.75rem; }}
-    .sentiment-hero {{ font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }}
+    .sentiment-hero {{ font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }}
     .sentiment-hero.bullish {{ background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
     .sentiment-hero.bearish {{ background: linear-gradient(135deg,#f85149,#da3633); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
     .sentiment-hero.neutral {{ background: linear-gradient(135deg,#8891a0,#6b7280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
     .sentiment-caption {{ font-size: 0.8rem; color: #8891a0; }}
     .confidence-box {{ text-align: center; }}
-    .confidence-num {{ font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
-    .confidence-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.05em; }}
+    .confidence-num {{ font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
+    .confidence-label {{ font-size: 0.75rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.05em; }}
 
     /* Recommendation callout */
     .rec-callout {{
@@ -488,7 +490,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .source-badge {{
         display: inline-flex; align-items: center; gap: 0.35rem;
         padding: 0.3rem 0.75rem; border-radius: 100px;
-        font-size: 0.75rem; font-weight: 500;
+        font-size: 0.8rem; font-weight: 500;
         border: 1px solid #2a2e3a;
         background: rgba(255,255,255,0.06);
         margin: 0.15rem; white-space: nowrap;
@@ -497,7 +499,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .source-badge.bearish {{ border-color: rgba(248,81,73,0.35); color: #ff6b6b; }}
     .source-badge.neutral {{ border-color: rgba(136,145,160,0.15); color: #8891a0; }}
     .badge-meta {{ opacity: 0.7; color: #8891a0; }}
-    .source-health {{ font-size: 0.75rem; color: #8891a0; margin-top: 0.5rem; }}
+    .source-health {{ font-size: 0.8rem; color: #8891a0; margin-top: 0.5rem; }}
 
     /* SmartScore section */
     .ss-section {{
@@ -509,17 +511,17 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         border-radius: 10px;
     }}
     .ss-main {{ text-align: center; min-width: 72px; flex-shrink: 0; }}
-    .ss-score {{ font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }}
-    .ss-label {{ font-size: 0.6rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }}
-    .ss-qual {{ font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.1rem; }}
+    .ss-score {{ font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }}
+    .ss-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }}
+    .ss-qual {{ font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.1rem; }}
     .ss-comps {{ flex: 1; display: flex; flex-direction: column; gap: 0.3rem; justify-content: center; }}
     .ss-comp {{ display: flex; align-items: center; gap: 0.4rem; }}
-    .ss-comp-label {{ font-size: 0.62rem; color: #8891a0; min-width: 3.2rem; text-transform: uppercase; letter-spacing: 0.04em; }}
+    .ss-comp-label {{ font-size: 0.72rem; color: #8891a0; min-width: 3.2rem; text-transform: uppercase; letter-spacing: 0.04em; }}
     .ss-comp-track {{ flex: 1; height: 4px; background: #1a1d26; border-radius: 2px; overflow: hidden; }}
     .ss-comp-fill {{ height: 100%; border-radius: 2px; transition: width 0.3s ease; }}
-    .ss-comp-val {{ font-size: 0.6rem; color: #8891a0; min-width: 2rem; text-align: right; }}
+    .ss-comp-val {{ font-size: 0.7rem; color: #8891a0; min-width: 2rem; text-align: right; }}
     .ss-spark {{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; min-width: 100px; }}
-    .ss-spark-label {{ font-size: 0.55rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.06em; }}
+    .ss-spark-label {{ font-size: 0.65rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.06em; }}
 
     /* Distribution bar */
     .dist-bar {{
@@ -528,7 +530,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .dist-bar .pos {{ background: #22b573; }}
     .dist-bar .neg {{ background: #f85149; }}
     .dist-bar .neu {{ background: #4b5563; }}
-    .dist-labels {{ display: flex; justify-content: space-around; font-size: 0.8rem; }}
+    .dist-labels {{ display: flex; justify-content: space-around; font-size: 0.85rem; }}
     .dist-labels span {{ display: flex; align-items: center; gap: 0.35rem; }}
     .dist-labels .pos {{ color: #2ecc71; }}
     .dist-labels .neg {{ color: #ff6b6b; }}
@@ -545,11 +547,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .news-title {{ font-size: 0.9rem; font-weight: 600; line-height: 1.4; }}
     .news-title a {{ color: #f0f2f5; text-decoration: none; }}
     .news-title a:hover {{ color: #22b573; text-decoration: underline; }}
-    .news-meta {{ font-size: 0.75rem; color: #8891a0; margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }}
-    .news-body {{ font-size: 0.8rem; color: #8891a0; margin-top: 0.25rem; line-height: 1.4; }}
+    .news-meta {{ font-size: 0.8rem; color: #8891a0; margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }}
+    .news-body {{ font-size: 0.85rem; color: #8891a0; margin-top: 0.25rem; line-height: 1.5; }}
     .sentiment-tag {{
         display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px;
-        font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+        font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
         letter-spacing: 0.03em;
     }}
     .sentiment-tag.bullish {{ background: rgba(34,181,115,0.15); color: #22b573; }}
@@ -559,21 +561,21 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     /* Stats grid */
     .stats-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }}
     .stat-item {{ padding: 0.5rem 0; }}
-    .stat-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; }}
+    .stat-label {{ font-size: 0.78rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; }}
     .stat-value {{ font-size: 0.9rem; font-weight: 500; display: block; margin-top: 0.15rem; }}
 
     /* Technical indicators */
     .ti-preview {{ font-size: 0.85rem; color: #8891a0; margin-bottom: 0.75rem; }}
     .ti-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }}
     .ti-item {{ padding: 0.5rem; text-align: center; }}
-    .ti-label {{ font-size: 0.72rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; display: block; }}
+    .ti-label {{ font-size: 0.78rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; display: block; }}
     .ti-value {{ font-size: 1rem; font-weight: 700; display: block; margin-top: 0.15rem; }}
-    .ti-sub {{ font-size: 0.75rem; color: #8891a0; display: block; margin-top: 0.1rem; }}
+    .ti-sub {{ font-size: 0.8rem; color: #8891a0; display: block; margin-top: 0.1rem; }}
 
     /* Cross-over badges */
     .cross-badge {{
         display: inline-block; padding: 0.25rem 0.65rem; border-radius: 6px;
-        font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem; margin-top: 0.5rem;
+        font-size: 0.8rem; font-weight: 600; margin-right: 0.5rem; margin-top: 0.5rem;
     }}
     .cross-badge.bullish {{ background: rgba(34,181,115,0.12); color: #2ecc71; border: 1px solid rgba(34,181,115,0.25); }}
     .cross-badge.bearish {{ background: rgba(248,81,73,0.12); color: #ff6b6b; border: 1px solid rgba(248,81,73,0.25); }}
@@ -581,7 +583,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     /* Volume spike badges */
     .spike-badge {{
         display: inline-block; padding: 0.25rem 0.65rem; border-radius: 6px;
-        font-size: 0.75rem; font-weight: 600;
+        font-size: 0.8rem; font-weight: 600;
     }}
     .spike-badge.huge {{ background: rgba(248,81,73,0.15); color: #ff6b6b; border: 1px solid rgba(248,81,73,0.3); }}
     .spike-badge.high {{ background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }}
@@ -590,7 +592,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     /* Proximity badges */
     .prox-badge {{
         display: inline-block; padding: 0.2rem 0.55rem; border-radius: 6px;
-        font-size: 0.7rem; font-weight: 500; margin-top: 0.35rem;
+        font-size: 0.78rem; font-weight: 500; margin-top: 0.35rem;
     }}
     .prox-badge.high {{ background: rgba(248,81,73,0.12); color: #ff6b6b; border: 1px solid rgba(248,81,73,0.2); }}
     .prox-badge.mid {{ background: rgba(34,181,115,0.1); color: #2ecc71; border: 1px solid rgba(34,181,115,0.2); }}
@@ -613,11 +615,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .fii-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }}
     .fii-item {{ padding: 0.75rem; text-align: center; border-radius: 8px; border: 1px solid #2a2e3a; background: #1a1d26; }}
     .fii-item.bearish {{ border-color: rgba(248,81,73,0.25); }}
-    .fii-label {{ font-size: 0.7rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }}
+    .fii-label {{ font-size: 0.75rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }}
     .fii-value {{ font-size: 1.05rem; font-weight: 700; }}
     .fii-item.bearish .fii-value {{ color: #ff6b6b; }}
     .fii-item:not(.bearish) .fii-value {{ color: #2ecc71; }}
-    .fii-sub {{ font-size: 0.72rem; color: #8891a0; margin-top: 0.2rem; }}
+    .fii-sub {{ font-size: 0.78rem; color: #8891a0; margin-top: 0.2rem; }}
 
     /* Responsive */
     @media (max-width: 640px) {{
@@ -631,7 +633,8 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 </style>
 </head>
 <body>
-<div class="dashboard">
+<div class="dashboard" role="region" aria-label="NSE Stock Analysis Dashboard for {h(ticker)}">
+    <h1 class="sr-only">NSE Stock Analysis Dashboard for {h(ticker)}</h1>
 
     <!-- ═══ PRICE CARD ═══ -->
     <div class="card">
@@ -646,7 +649,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         <div class="price-grid">
             <div class="price-cell">
                 <div class="label">{h(ticker[:6])}</div>
-                <div class="value">{fmt_price(price)}</div>
+                <div class="value price-main">{fmt_price(price)}</div>
                 <div class="delta {'up' if isinstance(change_val, (int, float)) and change_val >= 0 else 'down' if isinstance(change_val, (int, float)) else 'neutral'}">{fmt_delta(change_val) if isinstance(change_val, (int, float)) else "N/A"} ({fmt_delta(change_pct) if isinstance(change_pct, (int, float)) else "N/A"}%)</div>
             </div>
             <div class="price-cell">

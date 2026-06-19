@@ -22,7 +22,7 @@ from aggregate_sentiment import compute_smartscore
 st.set_page_config(
     page_title="NSE Sentiment Analyzer",
     page_icon="📊",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed",
 )
 
@@ -42,9 +42,7 @@ st.markdown("""
     ::-webkit-scrollbar-thumb {background: #1e2028; border-radius: 3px;}
     ::-webkit-scrollbar-thumb:hover {background: #2a2d35;}
     /* Widget overrides */
-    .stSelectbox [data-baseweb="select"] {border-radius: 8px;border-color: #1e2028 !important;}
-    .stSelectbox [data-baseweb="select"]:focus-within {border-color: #22b573 !important;box-shadow: 0 0 0 2px rgba(34,181,115,0.1) !important;}
-    .stTextInput input {border-radius: 8px;border-color: #1e2028 !important;}
+    .stTextInput input {border-radius: 8px;border-color: #1e2028 !important;font-size:1rem;padding:0.6rem 0.75rem;}
     .stTextInput input:focus {border-color: #22b573 !important;box-shadow: 0 0 0 2px rgba(34,181,115,0.1) !important;}
     .stButton button {border-radius: 8px;border: 1px solid #1e2028;background: rgba(19,21,26,0.6);color: #e4e6eb;font-weight: 500;transition: all 0.2s ease;}
     .stButton button:hover {border-color: rgba(34,181,115,0.3);background: rgba(34,181,115,0.08);}
@@ -163,7 +161,7 @@ with st.sidebar:
         new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
                               max_chars=15, key="portfolio_add")
     with add_c2:
-        if st.button("➕", use_container_width=True) and new_t.strip():
+        if st.button("➕", use_container_width=True, key="add_portfolio_btn") and new_t.strip():
             t = new_t.strip().upper().replace(".NS", "")
             if not t.isalnum():
                 st.warning("Invalid ticker format")
@@ -179,7 +177,7 @@ with st.sidebar:
         for t in portfolio:
             c1, c2 = st.columns([3, 1])
             c1.write(f"**{t}**")
-            if c2.button("✕", key=f"del_{t}"):
+            if c2.button("✕", key=f"del_{t}", help=f"Remove {t} from portfolio"):
                 portfolio.remove(t)
                 save_portfolio(portfolio)
                 st.session_state._skip_reanalysis = True
@@ -217,22 +215,17 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Ticker input — popular picker + custom override
-ticker = st.selectbox(
-    "Select or search a popular NSE ticker:",
-    options=[""] + sorted(NSE_TICKERS.keys()),
-    format_func=lambda x: f"{x} — {NSE_TICKERS.get(x, '')}" if x else "Choose a ticker...",
-    placeholder="Search tickers...",
-)
-custom_ticker = st.text_input(
-    "Or type any NSE symbol (overrides the selection above):",
-    placeholder="e.g., NYKAA, ZOMATO, PWL",
+# ─── Ticker Input — single text field (overrides selectbox) ───
+ticker_input = st.text_input(
+    "NSE Ticker Symbol",
+    placeholder="e.g., RELIANCE, HDFCBANK, TCS, NYKAA, ZOMATO",
     max_chars=15,
     label_visibility="collapsed",
 )
-st.caption("Type any NSE symbol not in the list — this overrides the select box above.")
 
-final_ticker = custom_ticker.strip().upper() if custom_ticker.strip() else ticker
+# Resolve final ticker: typed value wins, else session chip from quick-action buttons
+ticker_text = ticker_input.strip().upper().replace(".NS", "")
+final_ticker = ticker_text or st.session_state.pop("quick_ticker", "")
 
 if final_ticker and final_ticker != "":
     final_ticker = final_ticker.replace(".NS", "")
@@ -245,12 +238,13 @@ if final_ticker and final_ticker != "":
         st.session_state._skip_reanalysis = False
         result = st.session_state._last_result
     else:
-        with st.spinner(f"Fetching data for {final_ticker}..."):
-            result = analyze_ticker(final_ticker, company_name)
+        st.toast(f"📡 Fetching data for {final_ticker}...")
+        result = analyze_ticker(final_ticker, company_name)
         if result:
             st.session_state._last_ticker = final_ticker
             st.session_state._last_result = result
-            # Save to track record — only on fresh analysis, never on cache re-use
+            st.toast("✅ Analysis complete")
+            # Save to track record
             recs = load_track_record()
             recs.append({
                 "ticker": final_ticker,
@@ -282,8 +276,8 @@ if final_ticker and final_ticker != "":
                              technical_indicators=ti,
                              track_record=records,
                              fii_dii_data=fii_data),
-            height=3000,
-            scrolling=True,
+            height=0,
+            scrolling=False,
         )
 
         # Track record voting (Streamlit buttons outside the iframe)
@@ -353,20 +347,37 @@ elif st.session_state.get("run_briefing"):
             st.rerun()
 
 else:
-    st.info("👆 Select or type an NSE ticker above to begin.")
+    # ─── Empty state: guided launchpad ───
     st.markdown("""
-    ### How it works
-    1. **Enter** an NSE ticker (e.g., RELIANCE, HDFCBANK, TCS)
-    2. **We fetch** live price data from Yahoo Finance
-    3. **We scan** recent news from the web
-    4. **AI analyzes** sentiment headline-by-headline
-    5. **You get** a clear BUY / HOLD / CAUTION signal
+    <div style="text-align:center;padding:3rem 1rem 1rem">
+        <div style="font-size:1.5rem;font-weight:700;color:#f0f2f5;margin-bottom:0.5rem">
+            Enter a ticker to begin
+        </div>
+        <div style="color:#6b7280;font-size:0.95rem;max-width:400px;margin:0 auto">
+            Search any NSE symbol above or try a popular one below
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    ### Why use this?
-    - **Retail traders** — check sentiment before entering a trade
-    - **Swing traders** — scan your watchlist for news-driven moves
-    - **Portfolio holders** — keep a pulse on your holdings
-    """)
+    # Quick-action chips for popular tickers
+    st.markdown("<div style='text-align:center;padding:0.5rem 0 1.5rem'>", unsafe_allow_html=True)
+    popular = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "SBIN"]
+    cols = st.columns(len(popular))
+    for i, t in enumerate(popular):
+        if cols[i].button(t, key=f"chip_{t}", use_container_width=True, type="secondary"):
+            st.session_state.quick_ticker = t
+            st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Portfolio shortcut
+    portfolio = load_portfolio()
+    if portfolio:
+        st.markdown(
+            f"<div style='text-align:center;color:#6b7280;font-size:0.9rem'>"
+            f"📁 Portfolio: {', '.join(portfolio[:8])}{'…' if len(portfolio) > 8 else ''}"
+            f" — check the sidebar for details</div>",
+            unsafe_allow_html=True,
+        )
 
 # ─── PRIVACY POLICY ───
 with st.expander("🔒 Privacy & Data Policy"):
