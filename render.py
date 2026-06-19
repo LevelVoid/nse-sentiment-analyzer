@@ -7,6 +7,32 @@ rendered via st.components.v1.html().
 import html
 import secrets
 
+# ─── Inline SVG icons (Heroicons-style, stroke-based) ───
+# ponytail: handcrafted SVGs avoid a 100KB+ icon library for ~15 icons
+_ICON = {}
+
+def _svg(path, view_box="0 0 24 24"):
+    """Build a 16x16 inline SVG icon with currentColor stroke."""
+    return f'<svg class="icon" width="16" height="16" viewBox="{view_box}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{path}</svg>'
+
+_ICON["trending_up"] = _svg('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>')
+_ICON["newspaper"] = _svg('<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9a1 1 0 0 1 1-1h2"/>')
+_ICON["bar_chart"] = _svg('<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>')
+_ICON["file_text"] = _svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>')
+_ICON["bank"] = _svg('<path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 9-7 9 7"/><line x1="9" y1="21" x2="9" y2="15"/><line x1="15" y1="21" x2="15" y2="15"/>')
+_ICON["signal"] = _svg('<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>')
+_ICON["target"] = _svg('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>')
+_ICON["check"] = _svg('<polyline points="20 6 9 17 4 12"/>')
+_ICON["alert"] = _svg('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>')
+_ICON["minus"] = _svg('<line x1="5" y1="12" x2="19" y2="12"/>')
+_ICON["dot_green"] = _svg('<circle cx="12" cy="12" r="6" fill="#22b573" stroke="none"/>')
+_ICON["dot_red"] = _svg('<circle cx="12" cy="12" r="6" fill="#f85149" stroke="none"/>')
+_ICON["dot_grey"] = _svg('<circle cx="12" cy="12" r="6" fill="#8891a0" stroke="none"/>')
+_ICON["arrow_up"] = _svg('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>')
+_ICON["arrow_down"] = _svg('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>')
+_ICON["wifi"] = _svg('<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>')
+_ICON["layout"] = _svg('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>')
+
 
 def h(s):
     """Escape a string for safe HTML output."""
@@ -115,17 +141,17 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         sent_class = "bullish"
         rec_text = "BUY / HOLD"
         rec_detail = "Positive sentiment dominates"
-        rec_icon = "\u2705"
+        rec_icon = _ICON["check"]
     elif "BEARISH" in str(primary_signal):
         sent_class = "bearish"
         rec_text = "CAUTION / SELL"
         rec_detail = "Negative sentiment detected"
-        rec_icon = "\u26a0\ufe0f"
+        rec_icon = _ICON["alert"]
     else:
         sent_class = "neutral"
         rec_text = "HOLD"
         rec_detail = "Mixed or neutral sentiment"
-        rec_icon = "\U0001f4a4"
+        rec_icon = _ICON["minus"]
 
     confidence_pct = min(abs(primary_compound) * 100, 99)
 
@@ -186,13 +212,13 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     if technical_indicators:
         ti = technical_indicators
         if ti.get("sma50_cross") == "bullish":
-            cross_50_html = '<span class="cross-badge bullish">🟢 SMA50 bullish crossover</span>'
+            cross_50_html = '<span class="cross-badge bullish">{_ICON["arrow_up"]} SMA50 bullish crossover</span>'
         elif ti.get("sma50_cross") == "bearish":
-            cross_50_html = '<span class="cross-badge bearish">🔴 SMA50 bearish crossover</span>'
+            cross_50_html = '<span class="cross-badge bearish">{_ICON["arrow_down"]} SMA50 bearish crossover</span>'
         if ti.get("sma200_cross") == "bullish":
-            cross_200_html = '<span class="cross-badge bullish">🟢 SMA200 bullish crossover</span>'
+            cross_200_html = '<span class="cross-badge bullish">{_ICON["arrow_up"]} SMA200 bullish crossover</span>'
         elif ti.get("sma200_cross") == "bearish":
-            cross_200_html = '<span class="cross-badge bearish">🔴 SMA200 bearish crossover</span>'
+            cross_200_html = '<span class="cross-badge bearish">{_ICON["arrow_down"]} SMA200 bearish crossover</span>'
 
     # Track record accuracy
     acc_html = ""
@@ -204,7 +230,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
             acc_pct = (correct / total) * 100
             bar_c = "good" if acc_pct >= 70 else "ok" if acc_pct >= 50 else "poor"
             acc_html = f"""<div class="card">
-    <div class="card-title">📊 Signal Track Record</div>
+    <div class="card-title">{_ICON["target"]} Signal Track Record</div>
     <div class="acc-row">
         <div class="acc-circle {bar_c}">{acc_pct:.0f}%</div>
         <div>
@@ -219,8 +245,10 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     if fii_dii_data:
         fi = fii_dii_data
         comb = fi["combined_net"]
+        fii_icon = _ICON["dot_green"] if comb >= 0 else _ICON["dot_red"]
+        fii_stance = "Institutions net buying" if comb >= 0 else "Institutions net selling"
         fii_html = f"""<div class="card">
-    <div class="card-title">🏦 Institutional Flow ({fi.get("date", "Latest")})</div>
+    <div class="card-title">{_ICON["bank"]} Institutional Flow ({fi.get("date", "Latest")})</div>
     <div class="fii-grid">
         <div class="fii-item {'bearish' if fi['fii_net'] < 0 else ''}">
             <div class="fii-label">FII / FPI</div>
@@ -235,7 +263,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         <div class="fii-item {'bearish' if comb < 0 else ''}">
             <div class="fii-label">Combined Net</div>
             <div class="fii-value">₹{comb:,.0f} Cr</div>
-            <div class="fii-sub">{'🟢 Institutions net buying' if comb >= 0 else '🔴 Institutions net selling'}</div>
+            <div class="fii-sub">{fii_icon} {fii_stance}</div>
         </div>
     </div>
 </div>"""
@@ -394,7 +422,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     # Source badges section (pre-computed to avoid nested f-string issues)
     badge_section = f'<div class="badge-wrap">{badge_html}</div>' if badge_html else ""
-    source_health = f'<div class="source-health">📡 Sources: {sources_str}</div>' if sources_str else ""
+    source_health = f'<div class="source-health">{_ICON["wifi"]} Sources: {sources_str}</div>' if sources_str else ""
     ti_section = f'<div class="ti-preview">{ti_preview}</div>' if ti_preview else ""
 
     # ponytail: random CSP nonce for the auto-height script blocks
@@ -416,6 +444,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
     .sr-only {{ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }}
+    .icon {{ vertical-align: middle; margin-right: 0.15rem; }}
     body {{
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         font-display: swap;
@@ -638,7 +667,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     <!-- ═══ PRICE CARD ═══ -->
     <div class="card">
-        <div class="card-title">\U0001f4c8 Live Price</div>
+        <div class="card-title">{_ICON["trending_up"]} Live Price</div>
         <div class="company-header">
             <div>
                 <div class="company-name">{h(company_name)}</div>
@@ -669,7 +698,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     <!-- ═══ SENTIMENT CARD ═══ -->
     <div class="card">
-        <div class="card-title">\U0001f4f0 News Sentiment Analysis</div>
+        <div class="card-title">{_ICON["newspaper"]} News Sentiment Analysis</div>
         <div class="sentiment-row">
             <div>
                 <div class="sentiment-hero {sent_class}">{primary_emoji} {primary_signal}</div>
@@ -688,34 +717,34 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     <!-- ═══ SENTIMENT DISTRIBUTION ═══ -->
     <div class="card">
-        <div class="card-title">\U0001f4c8 Sentiment Distribution</div>
+        <div class="card-title">{_ICON["bar_chart"]} Sentiment Distribution</div>
         <div class="dist-bar">
             <div class="pos" style="width:{pos_pct:.1f}%"></div>
             <div class="neu" style="width:{neu_pct:.1f}%"></div>
             <div class="neg" style="width:{neg_pct:.1f}%"></div>
         </div>
         <div class="dist-labels">
-            <span class="pos">\U0001f7e2 Positive: {pos_pct:.0f}%</span>
-            <span class="neu">\u26aa Neutral: {neu_pct:.0f}%</span>
-            <span class="neg">\U0001f534 Negative: {neg_pct:.0f}%</span>
+            <span class="pos">{_ICON["dot_green"]} Positive: {pos_pct:.0f}%</span>
+            <span class="neu">{_ICON["dot_grey"]} Neutral: {neu_pct:.0f}%</span>
+            <span class="neg">{_ICON["dot_red"]} Negative: {neg_pct:.0f}%</span>
         </div>
     </div>
 
     <!-- ═══ NEWS HEADLINES ═══ -->
     <div class="card">
-        <div class="card-title">\U0001f4cb Recent News ({len(news_items)} articles)</div>
+        <div class="card-title">{_ICON["file_text"]} Recent News ({len(news_items)} articles)</div>
         {news_html}
     </div>
 
     <!-- ═══ ADDITIONAL STATS ═══ -->
     <div class="card">
-        <div class="card-title">\U0001f4ca Additional Stats</div>
+        <div class="card-title">{_ICON["layout"]} Additional Stats</div>
         {stats_rows}
     </div>
 
     <!-- ═══ TECHNICAL INDICATORS ═══ -->
     <div class="card">
-        <div class="card-title">📈 Technical Indicators</div>
+        <div class="card-title">{_ICON["signal"]} Technical Indicators</div>
         {ti_section}
         {ti_rows}
         <div style="margin-top:0.5rem">{cross_50_html}{cross_200_html}</div>
