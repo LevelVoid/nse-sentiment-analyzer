@@ -10,11 +10,12 @@ from datetime import datetime
 from data_fetcher import (
     NSE_TICKERS, get_stock_info, search_news,
 )
-from sentiment import get_sia, analyze_headline_sentiment, get_overall_signal, get_weighted_signal
+from sentiment import get_sia, analyze_headline_sentiment, get_overall_signal, get_weighted_signal, classify_headline, adjust_with_event
 from indicators import get_technical_indicators
-from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record
+from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history
 from render import render_dashboard
 from market_data import get_fii_dii_flow
+from aggregate_sentiment import compute_smartscore
 
 # ─── Page config ───
 st.set_page_config(
@@ -92,9 +93,42 @@ def analyze_ticker(ticker, company_name):
         return None
     sia = get_sia()
     news_items, source_stats = search_news(ticker, company_name)
-    headline_scores = [analyze_headline_sentiment(n["title"], n["body"], sia, source=n.get("source")) for n in news_items]
+
+    # Phase 1: Event classification + adjusted sentiment
+    headline_scores = []
+    event_adjusted_scores = []
+    event_tags = []
+    for n in news_items:
+        score = analyze_headline_sentiment(n["title"], n["body"], sia, source=n.get("source"))
+        event_type, event_base = classify_headline(n["title"], n["body"])
+        adjusted = adjust_with_event(score["compound"], event_base)
+        # Enrich score dict with event metadata
+        score["event_type"] = event_type
+        score["event_base"] = event_base
+        score["adjusted_compound"] = adjusted
+        headline_scores.append(score)
+        event_adjusted_scores.append(adjusted)
+        event_tags.append(event_type)
+
+    # Phase 2: SmartScore composite (0-100) with EWMA + breadth + volume
+    history = load_sentiment_history(ticker)
+    ss_result, ss_history = compute_smartscore(headline_scores, event_adjusted_scores, history)
+
+    # Persist today's aggregated stats to history CSV
+    if event_adjusted_scores:
+        save_sentiment_history(ticker, {
+            "headline_count": str(ss_result["headline_count"]),
+            "pos_count": str(ss_result["pos_count"]),
+            "neg_count": str(ss_result["headline_count"] - ss_result["pos_count"] - ss_result["neg_count"]),
+            "avg_compound": str(sum(event_adjusted_scores) / len(event_adjusted_scores)),
+            "event_avg": str(ss_result["s_events"]),
+            "smartscore": str(ss_result["smartscore"]),
+        })
+
+    # Keep existing signal computation (backward compat — render uses it)
     signal, avg_compound, signal_emoji = get_overall_signal(headline_scores)
     weighted_signal, blended_compound, weighted_emoji, source_breakdown = get_weighted_signal(headline_scores)
+
     return {
         "stock_data": stock_data,
         "news_items": news_items,
@@ -108,6 +142,13 @@ def analyze_ticker(ticker, company_name):
         "source_breakdown": source_breakdown,
         "num_articles": len(news_items),
         "source_stats": source_stats,
+        # New SmartScore data (consumed by render.py)
+        "smartscore": ss_result["smartscore"],
+        "smartscore_signal": ss_result["signal"],
+        "smartscore_emoji": ss_result["signal_emoji"],
+        "smartscore_components": ss_result,
+        "event_tags": event_tags,
+        "smartscore_history": ss_history,
     }
 
 

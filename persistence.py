@@ -14,6 +14,7 @@ DATA_DIR.mkdir(exist_ok=True)
 PORTFOLIO_FILE = DATA_DIR / "portfolio.json"
 TRACK_FILE = DATA_DIR / "track_record.json"
 CACHE_FILE = DATA_DIR / "cache.json"
+HISTORY_FILE = DATA_DIR / "sentiment_history.csv"
 
 CACHE_TTL = 15 * 60  # 15 minutes
 
@@ -107,3 +108,78 @@ def cache_set(key, data):
     cache = load_cache()
     cache[key] = {"data": data, "cached_at": datetime.now().isoformat()}
     save_cache(cache)
+
+
+# ─── Sentiment History (CSV) ───
+
+
+HISTORY_FIELDS = [
+    "date", "ticker", "headline_count", "pos_count", "neg_count",
+    "avg_compound", "event_avg", "smartscore",
+]
+
+
+def load_sentiment_history(ticker, days=10):
+    """Load last N days of aggregated sentiment history for a ticker.
+
+    Returns list of dicts sorted by date ascending (oldest first).
+    Returns [] if file missing or ticker not found.
+    """
+    import csv
+
+    records = []
+    try:
+        with open(HISTORY_FILE, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row.get("ticker") == ticker:
+                    records.append(row)
+    except (FileNotFoundError, IOError):
+        return []
+
+    records.sort(key=lambda r: r.get("date", ""))
+    return records[-days:]
+
+
+def save_sentiment_history(ticker, row_data):
+    """Append or update today's sentiment history entry for a ticker.
+
+    row_data: dict with keys matching HISTORY_FIELDS (excluding date/ticker).
+    If an entry already exists for this ticker today, it's updated in-place.
+    Silently handles read-only filesystem (Streamlit Cloud).
+    """
+    import csv
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    existing = []
+    try:
+        with open(HISTORY_FILE, newline="") as f:
+            reader = csv.DictReader(f)
+            existing = list(reader)
+    except (FileNotFoundError, IOError):
+        pass
+
+    # Remove any existing entry for this ticker today
+    existing = [
+        r for r in existing
+        if not (r.get("ticker") == ticker and r.get("date") == today)
+    ]
+
+    # Build new row
+    new_row = {"date": today, "ticker": ticker}
+    new_row.update(row_data)
+
+    # Ensure all fields exist (fill missing with defaults)
+    for f in HISTORY_FIELDS:
+        new_row.setdefault(f, "")
+
+    existing.append(new_row)
+
+    try:
+        with open(HISTORY_FILE, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=HISTORY_FIELDS)
+            writer.writeheader()
+            writer.writerows(existing)
+    except (OSError, PermissionError):
+        pass  # Read-only filesystem on Streamlit Cloud

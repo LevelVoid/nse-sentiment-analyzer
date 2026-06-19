@@ -63,6 +63,39 @@ def get_sentiment_emoji(compound):
     return "\u26aa"
 
 
+def render_sparkline(values, width=160, height=32, color="#22b573"):
+    """Render an inline SVG sparkline from a list of 0-100 values.
+
+    Returns empty string if < 2 values.
+    """
+    if not values or len(values) < 2:
+        return ""
+
+    min_v = min(values)
+    max_v = max(values)
+    rng = max_v - min_v if max_v > min_v else 1
+
+    points = []
+    for i, v in enumerate(values):
+        x = (i / (len(values) - 1)) * width
+        y = height - ((v - min_v) / rng) * (height - 6) - 3
+        points.append(f"{x:.1f},{y:.1f}")
+
+    # Gradient from latest (right side) to oldest (left)
+    grad_id = f"spark-{id(values)}"
+    return f"""<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"
+    style="vertical-align:middle;display:inline-block;">
+    <defs>
+        <linearGradient id="{grad_id}" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="{color}" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="{color}" stop-opacity="0.8"/>
+        </linearGradient>
+    </defs>
+    <polyline points="{' '.join(points)}" fill="none" stroke="url(#{grad_id})"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>"""
+
+
 def render_dashboard(result, ticker, company_name, technical_indicators=None,
                      track_record=None, fii_dii_data=None):
     """Return a complete premium HTML dashboard as a string."""
@@ -268,6 +301,56 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         parts.append(f"{s} ({n})")
     sources_str = " \u00b7 ".join(parts)
 
+    # ── SmartScore display ──
+    smartscore_val = result.get("smartscore")
+    ss_html = ""
+    if smartscore_val is not None:
+        ss = result.get("smartscore_components", {})
+        ss_components = ss
+        ss_history = result.get("smartscore_history", [])
+        ss_signal = result.get("smartscore_signal", "NEUTRAL")
+        ss_color = "#22b573" if ss_signal == "BULLISH" else "#f85149" if ss_signal == "BEARISH" else "#8891a0"
+
+        # Component mini-bars
+        def _pct(v):
+            return max(0, min(100, v * 100))
+
+        comp_bars = ""
+        comps = [
+            ("Recency", ss_components.get("s_recency", 0.5)),
+            ("Events", ss_components.get("s_events", 0.5)),
+            ("Breadth", ss_components.get("s_breadth", 0.5)),
+            ("Volume", ss_components.get("s_volume", 0.5)),
+        ]
+        for label, val in comps:
+            pct = _pct(val)
+            comp_bars += f"""
+            <div class="ss-comp">
+                <div class="ss-comp-label">{label}</div>
+                <div class="ss-comp-track">
+                    <div class="ss-comp-fill" style="width:{pct:.0f}%;background:{ss_color};"></div>
+                </div>
+                <div class="ss-comp-val">{pct:.0f}%</div>
+            </div>"""
+
+        sparkline_svg = render_sparkline(ss_history, width=140, height=28, color=ss_color)
+
+        ss_html = f"""
+        <div class="ss-section">
+            <div class="ss-main">
+                <div class="ss-score" style="color:{ss_color}">{smartscore_val:.0f}</div>
+                <div class="ss-label">SmartScore</div>
+                <div class="ss-qual">{ss_signal}</div>
+            </div>
+            <div class="ss-comps">
+                {comp_bars}
+            </div>
+            <div class="ss-spark">
+                <div class="ss-spark-label">Trend</div>
+                {sparkline_svg}
+            </div>
+        </div>"""
+
     # News items
     news_html = ""
     for item, scores in zip(news_items, headline_scores):
@@ -415,6 +498,28 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .source-badge.neutral {{ border-color: rgba(136,145,160,0.15); color: #8891a0; }}
     .badge-meta {{ opacity: 0.7; color: #8891a0; }}
     .source-health {{ font-size: 0.75rem; color: #8891a0; margin-top: 0.5rem; }}
+
+    /* SmartScore section */
+    .ss-section {{
+        display: flex; align-items: stretch; gap: 1rem;
+        margin: 0.75rem 0 0.5rem 0;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, rgba(21,24,31,0.8), rgba(26,29,38,0.6));
+        border: 1px solid #2a2e3a;
+        border-radius: 10px;
+    }}
+    .ss-main {{ text-align: center; min-width: 72px; flex-shrink: 0; }}
+    .ss-score {{ font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }}
+    .ss-label {{ font-size: 0.6rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }}
+    .ss-qual {{ font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.1rem; }}
+    .ss-comps {{ flex: 1; display: flex; flex-direction: column; gap: 0.3rem; justify-content: center; }}
+    .ss-comp {{ display: flex; align-items: center; gap: 0.4rem; }}
+    .ss-comp-label {{ font-size: 0.62rem; color: #8891a0; min-width: 3.2rem; text-transform: uppercase; letter-spacing: 0.04em; }}
+    .ss-comp-track {{ flex: 1; height: 4px; background: #1a1d26; border-radius: 2px; overflow: hidden; }}
+    .ss-comp-fill {{ height: 100%; border-radius: 2px; transition: width 0.3s ease; }}
+    .ss-comp-val {{ font-size: 0.6rem; color: #8891a0; min-width: 2rem; text-align: right; }}
+    .ss-spark {{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; min-width: 100px; }}
+    .ss-spark-label {{ font-size: 0.55rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.06em; }}
 
     /* Distribution bar */
     .dist-bar {{
@@ -573,6 +678,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
                 <div class="confidence-label">Weighted Confidence</div>
             </div>
         </div>
+        {ss_html}
         {badge_section}
         {source_health}
     </div>

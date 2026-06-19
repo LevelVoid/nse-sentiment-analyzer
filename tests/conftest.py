@@ -135,6 +135,7 @@ def tmp_data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr("persistence.PORTFOLIO_FILE", tmp_path / "portfolio.json")
     monkeypatch.setattr("persistence.TRACK_FILE", tmp_path / "track_record.json")
     monkeypatch.setattr("persistence.CACHE_FILE", tmp_path / "cache.json")
+    monkeypatch.setattr("persistence.HISTORY_FILE", tmp_path / "sentiment_history.csv")
     return tmp_path
 
 

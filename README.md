@@ -8,7 +8,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-[![Tests](https://img.shields.io/badge/tests-68%20passing-brightgreen)](#-testing)
+[![Tests](https://img.shields.io/badge/tests-114%20passing-brightgreen)](#-testing)
 [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 
 <p align="center">
@@ -41,6 +41,8 @@ Enter any NSE ticker and get:
 
 - **Live market data** — price, change %, volume, PE ratio via Yahoo Finance
 - **Multi-source news sentiment** — RSS feeds from Moneycontrol, Economic Times, LiveMint, NDTV Profit, Google News, with DuckDuckGo fallback
+- **Event-aware scoring** — headlines classified by event type (earnings, order wins, litigation, regulatory, buybacks, etc.) with signed sentiment bias. Catches what VADER misses—"SEBI penalty" is correctly scored as negative
+- **SmartScore composite (0–100)** — combines recency-weighted EWMA (36h half-life), event-adjusted sentiment, headline breadth, and news volume into a single score
 - **Source-weighted scoring** — each source has a confidence weight; the blended score is a weighted average
 - **Technical indicators** — RSI(14), SMA crossover (50/200), MACD from 1-year history
 - **Portfolio mode** — scan multiple tickers at once with a single run
@@ -60,6 +62,11 @@ app.py ───────────────────── (entry po
   ├── render.py ──────────── (HTML/CSS dashboard template via st.components)
   │
   ├── sentiment.py ───────── (VADER + financial lexicon, source-weighted scoring)
+  │     └── event_classifier.py ── (14 event types: earnings, litigation,
+  │                                  order wins, buybacks, regulatory, etc.)
+  │
+  ├── aggregate_sentiment.py ── (SmartScore 0–100: EWMA recency, breadth,
+  │                               volume, event-weighted components)
   │
   ├── data_fetcher.py ────── (stock info, RSS news, DuckDuckGo, Reddit)
   │     ├── yfinance        → stock price, info, 1yr history
@@ -71,7 +78,8 @@ app.py ───────────────────── (entry po
   │
   ├── market_data.py ─────── (FII/DII flow data, optional)
   │
-  └── persistence.py ─────── (JSON-based portfolio, track record, cache)
+  └── persistence.py ─────── (JSON-based portfolio, track record, cache +
+                               CSV-based sentiment history for SmartScore)
 ```
 
 ### Data Flow
@@ -80,30 +88,42 @@ app.py ───────────────────── (entry po
 Ticker Input
     │
     ▼
-┌─────────────────────────────────────────────────────┐
-│  analyze_ticker(ticker, company)                    │
-│                                                     │
-│  ┌─────────────┐   ┌──────────┐   ┌─────────────┐  │
-│  │ get_stock_   │   │ search_  │   │ get_techni- │  │
-│  │ info()       │   │ news()   │   │ cal_indica- │  │
-│  │ • yfinance   │   │ • 5 RSS  │   │ tors()      │  │
-│  │ • 1yr hist   │   │ • DDG    │   │ • RSI(14)   │  │
-│  │              │   │ • Reddit │   │ • SMA 50/200│  │
-│  └──────┬──────┘   └────┬─────┘   │ • MACD      │  │
-│         │               │         └──────┬───────┘  │
-│         ▼               ▼                ▼          │
-│  ┌─────────────────────────────────────────────┐    │
-│  │ sentiment.py: source-weighted blending      │    │
-│  │ VADER + financial lexicon (38 terms)        │    │
-│  │ → BULLISH / NEUTRAL / BEARISH               │    │
-│  └─────────────────────┬───────────────────────┘    │
-│                        │                            │
-└────────────────────────┼────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│  analyze_ticker(ticker, company)                                  │
+│                                                                   │
+│  ┌─────────────┐   ┌──────────┐   ┌─────────────┐                │
+│  │ get_stock_   │   │ search_  │   │ get_techni- │                │
+│  │ info()       │   │ news()   │   │ cal_indica- │                │
+│  │ • yfinance   │   │ • 5 RSS  │   │ tors()      │                │
+│  │ • 1yr hist   │   │ • DDG    │   │ • RSI(14)   │                │
+│  │              │   │ • Reddit │   │ • SMA 50/200│                │
+│  └──────┬──────┘   └────┬─────┘   │ • MACD      │                │
+│         │               │         └──────┬───────┘                │
+│         ▼               ▼                ▼                        │
+│  ┌─────────────────────────────────────────────────────┐          │
+│  │ sentiment.py: source-weighted blending               │          │
+│  │ VADER + financial lexicon (38 terms)                 │          │
+│  │   └── event_classifier.py: classify each headline    │          │
+│  │        → EARNINGS, LITIGATION, ORDER_WIN, etc.      │          │
+│  │        → adjust_with_event() blends VADER + event   │          │
+│  │                                                      │          │
+│  │ aggregate_sentiment.py: SmartScore composite (0–100) │          │
+│  │   ├── S_recency: EWMA, half-life 36h                │          │
+│  │   ├── S_events:  event-adjusted sentiment            │          │
+│  │   ├── S_breadth: (pos − neg) / total                 │          │
+│  │   └── S_volume:  log(news count)                     │          │
+│  │                                                      │          │
+│  │ → BULLISH / NEUTRAL / BEARISH + SmartScore          │          │
+│  └─────────────────────┬───────────────────────────────┘          │
+│                        │                                          │
+└────────────────────────┼──────────────────────────────────────────┘
                          │
                          ▼
          ┌───────────────────────────────────┐
          │       render_dashboard()          │
-         │   Dark-themed HTML via streamlit  │
+         │   Dark-themed HTML + SmartScore   │
+         │   number + component bars +       │
+         │   trend sparkline                 │
          └───────────────────────────────────┘
 ```
 
@@ -135,10 +155,14 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Live price data** — Current price, day change %, day range, volume, PE ratio for any NSE stock or ETF
 - **Multi-source news** — Google News + Moneycontrol + Economic Times + LiveMint + NDTV Profit RSS feeds (DuckDuckGo fallback)
 - **Reddit community chatter** — OAuth API or local `rdt-cli`. Brings retail conversation into the sentiment pipeline
+- **Event-aware classification** — Headlines automatically tagged by event type: earnings beats/misses, order wins, litigation, regulatory actions, buybacks/dividends, debt stress, management changes, product launches, guidance changes, expansion. Each event type carries a signed sentiment bias that corrects VADER's blind spots
+- **SmartScore composite (0–100)** — A weighted index of 4 components: recency-weighted EWMA (45%), event-adjusted sentiment (25%), headline breadth (20%), and news volume (10%). The SmartScore replaces guesswork with a single, calibrated number
+- **Trend sparkline** — Visual history of SmartScore over recent sessions, showing sentiment momentum at a glance
 - **Source-weighted scoring** — Each source has a confidence weight. Blended score = weighted average across active sources
 - **VADER + Financial Lexicon** — 38 domain-specific financial terms tuned for Indian markets
 - **BULLISH / NEUTRAL / BEARISH signal** — Weighted across sources, with per-source breakdown in the UI
 - **Technical indicators** — RSI(14), SMA 50/200 crossover, MACD histogram. Works with 26+ days of data
+- **Ticker alias matching** — 70+ company name aliases (SBI→SBIN, HUL→HINDUNILVR, DIVIS→DIVISLAB) ensure more headlines are matched to the right ticker
 - **News source health** — See which sources returned results at a glance
 - **Clickable news links** — Every headline opens the original article
 - **Headline breakdown** — See which headlines are driving sentiment positive / negative
@@ -208,10 +232,12 @@ nse-sentiment-analyzer/
 ├── app.py                  # Streamlit entry point, UI logic
 ├── data_fetcher.py         # Stock info, RSS news, Reddit, DuckDuckGo
 ├── sentiment.py            # VADER + financial lexicon, source-weighted scoring
+├── event_classifier.py     # 14 event types: earnings, litigation, order wins, etc.
+├── aggregate_sentiment.py  # SmartScore 0–100: EWMA, breadth, volume, events
 ├── indicators.py           # RSI, SMA crossover, MACD
 ├── market_data.py          # FII/DII flow (optional, nsepython)
-├── persistence.py          # JSON file I/O: portfolio, track record, cache
-├── render.py               # Dark-themed HTML dashboard via st.components
+├── persistence.py          # JSON file I/O: portfolio, track record, cache, sentiment history
+├── render.py               # Dark-themed HTML dashboard + SmartScore sparkline
 ├── requirements.txt
 ├── pyproject.toml          # Pytest config, coverage
 ├── .streamlit/
@@ -222,7 +248,9 @@ nse-sentiment-analyzer/
     ├── test_indicators.py
     ├── test_persistence.py
     ├── test_render.py
-    └── test_sentiment.py
+    ├── test_sentiment.py
+    ├── test_event_classifier.py   # 14 event types, VADER blending
+    └── test_aggregate_sentiment.py # EWMA, breadth, volume, sparkline
 ```
 
 ### Adding a New News Source
@@ -251,7 +279,7 @@ nse-sentiment-analyzer/
 ## 🧪 Testing
 
 ```bash
-# Run all tests (68 tests, mocked APIs, no network)
+# Run all tests (114 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # Run with coverage
@@ -268,7 +296,7 @@ python -m pytest tests/test_sentiment.py::TestSentiment::test_bullish_headline -
 
 - **All external APIs are mocked** — tests run offline
 - **Fixtures** in `conftest.py` provide a `tmp_data_dir` for isolated file I/O + a `sample_hist` DataFrame for indicators
-- **68 tests** across 5 modules (sentiment, indicators, data_fetcher, persistence, render)
+- **114 tests** across 7 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment)
 - **No network calls** — `yfinance`, `feedparser`, `duckduckgo_search`, `requests`, and `rdt-cli` are all patched with `pytest-mock`
 
 ### Test Markers
@@ -295,7 +323,8 @@ Defined in `pyproject.toml`:
 The app runs at `https://<your-app>.streamlit.app`.
 
 **Notes:**
-- The filesystem is ephemeral on Streamlit Cloud — portfolio and track records are session-only
+- The filesystem is ephemeral on Streamlit Cloud — portfolio, track records, and sentiment history are session-only
+- SmartScore history resets on each deploy — the score works with just today's data; history accumulates over multiple queries within a session
 - RSS + DuckDuckGo + Reddit OAuth work on the cloud
 - `rdt-cli` and `nsepython` are local-only tools (not available on Streamlit Cloud)
 - `yfinance` can be throttled if you run too many tickers in rapid succession

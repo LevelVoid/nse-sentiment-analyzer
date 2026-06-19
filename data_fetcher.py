@@ -134,6 +134,83 @@ NSE_TICKERS = {
     "RECLTD": "REC Ltd",
 }
 
+# ─── Company name aliases for RSS headline matching ───
+# Maps common names/abbreviations → ticker symbols.
+# RSS headlines rarely use official company names ("SBI" not "State Bank of India").
+ALIASES = {
+    "HCL TECH": "HCLTECH",
+    "HCL TECHNOLOGIES": "HCLTECH",
+    "HDFC": "HDFCBANK",
+    "SBI": "SBIN",
+    "STATE BANK": "SBIN",
+    "HUL": "HINDUNILVR",
+    "HINDUSTAN UNILEVER": "HINDUNILVR",
+    "L&T": "LT",
+    "LARSEN": "LT",
+    "NESTLE": "NESTLEIND",
+    "DMART": "DMART",
+    "HERO": "HEROMOTOCO",
+    "HERO HONDA": "HEROMOTOCO",
+    "DIVIS": "DIVISLAB",
+    "DIVI": "DIVISLAB",
+    "JSW STEEL": "JSWSTEEL",
+    "TATA MOTORS": "TATAMOTORS",
+    "TATA STEEL": "TATASTEEL",
+    "TATA CONSUMER": "TATACONSUM",
+    "BHARTI": "BHARTIARTL",
+    "AIRTEL": "BHARTIARTL",
+    "MARUTI SUZUKI": "MARUTI",
+    "TECH MAHINDRA": "TECHM",
+    "INDUSIND": "INDUSINDBK",
+    "POWER GRID": "POWERGRID",
+    "COAL INDIA": "COALINDIA",
+    "HIND UNILEVER": "HINDUNILVR",
+    "SUN PHARMA": "SUNPHARMA",
+    "DR REDDY": "DRREDDY",
+    "DR. REDDY": "DRREDDY",
+    "BAJAJ FINANCE": "BAJFINANCE",
+    "ADANI ENTERPRISES": "ADANIENT",
+    "ADANI PORTS": "ADANIPORTS",
+    "ADANI GREEN": "ADANIGREEN",
+    "ADANI POWER": "ADANIPOWER",
+    "ADANI TRANS": "ADANITRANS",
+    "ULTRATECH": "ULTRACEMCO",
+    "ASIAN PAINTS": "ASIANPAINT",
+    "APOLLO HOSPITALS": "APOLLOHOSP",
+    "APOLLO": "APOLLOHOSP",
+    "TORRENT PHARMA": "TORNTPHARM",
+    "JUBILANT": "JUBLFOOD",
+    "TVS": "TVSMOTOR",
+    "VARUN BEVERAGES": "VBL",
+    "YES BANK": "YESBANK",
+    "BANK OF BARODA": "BANKBARODA",
+    "MAHINDRA": "M&M",
+    "INDIAN OIL": "IOC",
+    "BHARAT PETROLEUM": "BPCL",
+    "HINDUSTAN AERONAUTICS": "HAL",
+    "BHARAT ELECTRONICS": "BEL",
+    "POWER FINANCE": "PFC",
+    "SOLAR INDUSTRIES": "SOLARINDS",
+    "BALKRISHNA": "BALKRISIND",
+    "PW LAKSHMI": "PWL",
+    "VEDANTA": "VEDL",
+    "REC": "RECLTD",
+    "Pidilite": "PIDILITIND",
+    "HAVELLS": "HAVELLS",
+    "SIEMENS": "SIEMENS",
+    "POLYCAB": "POLYCAB",
+    "DIXON": "DIXON",
+    "ASTRAL": "ASTRAL",
+    "IDFC": "IDFCFIRSTB",
+    "EICHER": "EICHERMOT",
+    "MARICO": "MARICO",
+    "DABUR": "DABUR",
+    "GODREJ": "GODREJCP",
+    "CIPLA": "CIPLA",
+    "LUPIN": "LUPIN",
+    "BIOCON": "BIOCON",
+}
+
 # ponytail: in-memory 1y price history cache, populated by get_stock_info,
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _hist_cache = {}
@@ -256,10 +333,27 @@ def _parse_date(d):
         return ""
 
 
+def _alias_terms(ticker):
+    """Get additional search terms from ALIASES dict for a ticker.
+
+    E.g., for ticker='SBIN', returns {'sbi', 'state', 'bank'}
+    since ALIASES has 'SBI' -> 'SBIN' and 'STATE BANK' -> 'SBIN'.
+    """
+    terms = set()
+    for alias_key, alias_ticker in ALIASES.items():
+        if alias_ticker == ticker:
+            terms.update(alias_key.lower().split())
+    return terms
+
+
 def _relevant(ticker, company_name, title, body):
-    """Check if a headline is relevant to the given ticker/company."""
+    """Check if a headline is relevant to the given ticker/company.
+
+    Searches ticker name, company name, AND known aliases.
+    """
     text = (title + " " + (body or "")).lower()
     words = set(ticker.lower().split()) | set(company_name.lower().split())
+    words.update(_alias_terms(ticker))
     return any(re.search(r'\b' + re.escape(w) + r'\b', text) for w in words if len(w) > 2)
 
 
