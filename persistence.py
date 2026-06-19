@@ -187,3 +187,51 @@ def save_sentiment_history(ticker, row_data):
             writer.writerows(existing)
     except (OSError, PermissionError):
         pass  # Read-only filesystem on Streamlit Cloud
+
+
+# ─── Bayesian Source Calibration ───
+# Each source is tracked as a Beta(alpha, beta) distribution.
+# Weight = alpha / (alpha + beta) = posterior mean accuracy.
+# Priors start centered on the hand-tuned default weights.
+
+SOURCE_WEIGHTS_PRIOR = {
+    "Economic Times": 1.0, "Moneycontrol": 0.9, "LiveMint": 0.8,
+    "NDTV Profit": 0.7, "Google News": 0.6, "DuckDuckGo": 0.5,
+    "Reddit": 0.5, "Unknown": 0.5,
+}
+ACCURACY_FILE = DATA_DIR / "source_accuracy.json"
+
+
+def load_source_accuracy():
+    """Return {source: {"alpha": float, "beta": float}}.
+    Starts with an informative Beta(weight*10+1, (1-weight)*10+1) prior
+    centered on the hand-tuned default weights.
+    """
+    try:
+        data = _load_json(ACCURACY_FILE, None)
+        if data:
+            return data
+    except Exception:
+        pass
+    return {
+        src: {"alpha": w * 10 + 1, "beta": (1 - w) * 10 + 1}
+        for src, w in SOURCE_WEIGHTS_PRIOR.items()
+    }
+
+
+def save_source_accuracy(data):
+    _save_json(ACCURACY_FILE, data)
+
+
+def update_source_accuracy(source, was_correct):
+    """Increment alpha (correct) or beta (wrong) for a source.
+    Called after each user vote. Creates entry with prior if new source."""
+    acc = load_source_accuracy()
+    if source not in acc:
+        prior_w = SOURCE_WEIGHTS_PRIOR.get(source, 0.5)
+        acc[source] = {"alpha": prior_w * 10 + 1, "beta": (1 - prior_w) * 10 + 1}
+    if was_correct:
+        acc[source]["alpha"] += 1
+    else:
+        acc[source]["beta"] += 1
+    save_source_accuracy(acc)

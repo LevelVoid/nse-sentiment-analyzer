@@ -13,7 +13,7 @@ from data_fetcher import (
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
-from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history
+from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, update_source_accuracy
 from render import render_dashboard, get_signal_icon
 from market_data import get_fii_dii_flow
 from aggregate_sentiment import compute_smartscore
@@ -65,24 +65,38 @@ def analyze_ticker(ticker, company_name):
     stock_data = get_stock_info(ticker)
     if not stock_data:
         return None
-    sia = get_sia()
+
+    import os
+    use_finbert = os.environ.get("USE_FINBERT", "").strip().lower() in ("1", "true", "yes")
+    pipe_finbert = None
+    if use_finbert:
+        from sentiment import get_finbert, analyze_headline_finbert
+        pipe_finbert = get_finbert()
+
+    sia = None if use_finbert else get_sia()
     news_items, source_stats = search_news(ticker, company_name)
 
-    # Phase 1: Event classification + adjusted sentiment
+    # Phase 1: Sentiment scoring (FinBERT or VADER+events)
     headline_scores = []
     event_adjusted_scores = []
     event_tags = []
     for n in news_items:
-        score = analyze_headline_sentiment(n["title"], n["body"], sia, source=n.get("source"))
-        event_type, event_base = classify_headline(n["title"], n["body"])
-        adjusted = adjust_with_event(score["compound"], event_base)
-        # Enrich score dict with event metadata
-        score["event_type"] = event_type
-        score["event_base"] = event_base
-        score["adjusted_compound"] = adjusted
+        if pipe_finbert:
+            score = analyze_headline_finbert(n["title"], n["body"], pipe_finbert)
+            score["source"] = n.get("source")
+            score["event_type"] = None
+            score["event_base"] = 0.0
+            score["adjusted_compound"] = score["compound"]
+        else:
+            score = analyze_headline_sentiment(n["title"], n["body"], sia, source=n.get("source"))
+            event_type, event_base = classify_headline(n["title"], n["body"])
+            adjusted = adjust_with_event(score["compound"], event_base)
+            score["event_type"] = event_type
+            score["event_base"] = event_base
+            score["adjusted_compound"] = adjusted
         headline_scores.append(score)
-        event_adjusted_scores.append(adjusted)
-        event_tags.append(event_type)
+        event_adjusted_scores.append(score["adjusted_compound"])
+        event_tags.append(score.get("event_type"))
 
     # Phase 2: SmartScore composite (0-100) with EWMA + breadth + volume
     history = load_sentiment_history(ticker)
@@ -247,6 +261,8 @@ if final_ticker and final_ticker != "":
             else:
                 recs.append(entry)
             save_track_record(recs)
+        # Stash source breakdown for vote-based calibration
+        st.session_state._last_source_breakdown = result.get("source_breakdown", [])
     if result:
         stock_data = result["stock_data"]
         news_items = result["news_items"]
@@ -282,6 +298,8 @@ if final_ticker and final_ticker != "":
                 if st.button("👍 Yes", key="vote_up", use_container_width=True):
                     last_rec["vote"] = True
                     save_track_record(records)
+                    for src in st.session_state.get("_last_source_breakdown", []):
+                        update_source_accuracy(src["source"], was_correct=True)
                     st.toast("Signal logged as accurate ✅", icon="👍")
                     st.session_state._skip_reanalysis = True
                     st.rerun()
@@ -289,6 +307,8 @@ if final_ticker and final_ticker != "":
                 if st.button("👎 No", key="vote_down", use_container_width=True):
                     last_rec["vote"] = False
                     save_track_record(records)
+                    for src in st.session_state.get("_last_source_breakdown", []):
+                        update_source_accuracy(src["source"], was_correct=False)
                     st.toast("Signal logged as inaccurate ❌", icon="👎")
                     st.session_state._skip_reanalysis = True
                     st.rerun()

@@ -53,6 +53,7 @@ FINANCIAL_BOOSTERS = {
 # ─── Source weights (0.0–1.0) ───
 # Confidence that a source's sentiment signal is reliable.
 # Financial news > aggregators > social.
+# Used as priors for Bayesian calibration from user votes.
 SOURCE_WEIGHTS = {
     "Economic Times": 1.0,
     "Moneycontrol": 0.9,
@@ -61,6 +62,20 @@ SOURCE_WEIGHTS = {
     "Google News": 0.6,
     "DuckDuckGo": 0.5,
 }
+
+
+def get_source_weights():
+    """Return learned source weights from Bayesian calibration.
+    Falls back to static defaults if calibration file missing or empty."""
+    try:
+        from persistence import load_source_accuracy
+        acc = load_source_accuracy()
+        return {
+            src: max(0.01, acc[src]["alpha"] / (acc[src]["alpha"] + acc[src]["beta"]))
+            for src in acc
+        }
+    except Exception:
+        return dict(SOURCE_WEIGHTS)
 
 
 @st.cache_resource
@@ -81,16 +96,61 @@ def analyze_headline_sentiment(headline, body, sia, source=None):
     return result
 
 
-def get_weighted_signal(headline_scores):
+# ─── FinBERT (optional upgrade) ───
+# Feature-gated via env var USE_FINBERT=true. Falls back to VADER if
+# transformers/torch not installed or model download fails.
+
+@st.cache_resource(show_spinner="Loading FinBERT model...")
+def get_finbert():
+    """Load FinBERT pipeline for financial sentiment. Cached — 10s first load,
+    instant thereafter. Returns None if dependencies unavailable."""
+    try:
+        from transformers import pipeline
+        return pipeline(
+            "sentiment-analysis",
+            model="ProsusAI/finbert",
+            top_k=None,
+        )
+    except (ImportError, OSError) as e:
+        st.warning(f"FinBERT unavailable ({e}). Using VADER.")
+        return None
+
+
+def analyze_headline_finbert(headline, body, pipe):
+    """Score a headline using FinBERT. Returns same shape as
+    analyze_headline_sentiment() for drop-in compatibility."""
+    if pipe is None:
+        return {"compound": 0.0}
+
+    text = f"{headline}. {body}" if body else headline
+    try:
+        result = pipe(text[:512])[0]  # truncate to 512 tokens
+        scores = {r["label"]: r["score"] for r in result}
+        compound = scores.get("positive", 0.0) - scores.get("negative", 0.0)
+        return {
+            "compound": round(compound, 4),
+            "positive": scores.get("positive", 0.0),
+            "negative": scores.get("negative", 0.0),
+            "neutral": scores.get("neutral", 0.0),
+        }
+    except Exception:
+        return {"compound": 0.0}
+
+
+def get_weighted_signal(headline_scores, source_weights=None):
     """Compute source-weighted blended signal.
 
     headline_scores: list of {"compound": float, "source": str}
+    source_weights: optional dict of {source: weight}. Defaults to Bayesian-calibrated weights.
     Returns (signal, blended_compound, emoji, per_source_breakdown).
 
     per_source_breakdown: list of {"source": str, "weight": float, "avg": float, "count": int}
     """
     if not headline_scores:
         return "NEUTRAL ⚪", 0.0, "⚪", []
+
+    if source_weights is None:
+        source_weights = get_source_weights()
 
     # Group by source
     from collections import defaultdict
@@ -105,7 +165,7 @@ def get_weighted_signal(headline_scores):
     weighted_sum = 0.0
     for src, compounds in by_source.items():
         avg = sum(compounds) / len(compounds)
-        weight = SOURCE_WEIGHTS.get(src, 0.5)
+        weight = source_weights.get(src, 0.5)
         source_avgs.append({
             "source": src,
             "weight": weight,
