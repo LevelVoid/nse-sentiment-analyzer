@@ -56,14 +56,7 @@ def get_signal_icon(emoji):
 
 
 def h(s):
-    """Escape a string for safe HTML output."""
-    if s is None:
-        return ""
-    return html.escape(str(s), quote=True)
-
-
-def h_attr(s):
-    """Escape a string for safe insertion into an HTML attribute value."""
+    """Escape a string for safe HTML output (content or attribute)."""
     if s is None:
         return ""
     return html.escape(str(s), quote=True)
@@ -426,7 +419,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
             s_class = "neutral"
 
         title_html = (
-            f'<a href="{h_attr(item.get("url", ""))}" target="_blank" rel="noopener">{h(item.get("title", ""))}</a>'
+            f'<a href="{h(item.get("url", ""))}" target="_blank" rel="noopener">{h(item.get("title", ""))}</a>'
             if item.get("url")
             else h(item.get("title", ""))
         )
@@ -765,7 +758,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     <!-- ═══ NEWS HEADLINES ═══ -->
     <div class="card">
         <div class="card-title">{_ICON["file_text"]} Recent News ({len(news_items)} articles)</div>
-        {news_html}
+        {news_html if news_html else '<div class="ss-comp-label" style="padding:0.75rem 0;color:#8891a0">No articles found for this ticker</div>'}
     </div>
 
     <!-- ═══ ADDITIONAL STATS ═══ -->

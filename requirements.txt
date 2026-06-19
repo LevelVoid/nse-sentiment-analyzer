@@ -5,3 +5,4 @@ vaderSentiment>=3.3.2
 feedparser>=6.0.0
 duckduckgo_search>=8.0.0
 requests>=2.31.0
+nsepython>=1.0.0

@@ -158,7 +158,7 @@ class TestRenderDashboard:
         )
 
         assert html is not None
-        assert "No articles found" in html or "news" in html.lower()
+        assert "No articles found" in html
 
     def test_handles_missing_stock_fields(self):
         """Stock data with missing fields (sector=None, pe=None) should not crash."""
