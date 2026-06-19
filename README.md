@@ -8,7 +8,7 @@
 | [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 | [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 | [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-| [![Tests](https://img.shields.io/badge/tests-112%20passing-brightgreen)](#-testing)
+| [![Tests](https://img.shields.io/badge/tests-108%20passing-brightgreen)](#-testing)|
 | [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 |
 |<p align="center">
@@ -64,7 +64,7 @@ app.py ───────────────────── (entry po
   ├── render.py ──────────── (HTML/CSS dashboard template via st.components)
   │
   ├── sentiment.py ───────── (VADER + financial lexicon, source-weighted scoring)
-  │     ├── event_classifier.py ── (14 event types — used in VADER mode only)
+  │     ├── event_classifier.py ── (13 event types — used in VADER mode only)
   │     ├── get_finbert()    ── (optional: FinBERT transformer, USE_FINBERT=true)
   │     └── get_source_weights() ── (Bayesian calibration from track record votes)
   │
@@ -181,7 +181,9 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - Stock info and history are decoupled — if metadata fetch fails, price data still loads
 - Cache entries with partial metadata expire in 2 min instead of 15 (next retry comes sooner)
 - Technical indicators fall back through `.BO` suffix
-- All 112 tests pass
+- All 108 tests pass
+- **Lucide SVGs** — All UI indicators migrated from Unicode emojis to inline Lucide SVGs (source badges, SMA indicators, news icons) for sharper rendering and consistency
+- **Housekeeping** — Removed dead `format_large_num` / `_is_numeric` functions (−21 lines)
 
 ---
 
@@ -276,7 +278,7 @@ nse-sentiment-analyzer/
 ├── app.py                  # Streamlit entry point, UI logic
 ├── data_fetcher.py         # Stock info, RSS news, Reddit, DuckDuckGo
 ├── sentiment.py            # VADER + financial lexicon, FinBERT integration, source-weighted scoring
-├── event_classifier.py     # 14 event types: earnings, litigation, order wins, etc.
+├── event_classifier.py     # 13 event types: earnings, litigation, order wins, etc.
 ├── aggregate_sentiment.py  # SmartScore 0–100: EWMA, breadth, volume, events
 ├── indicators.py           # RSI, SMA crossover, MACD
 ├── market_data.py          # FII/DII flow (optional, nsepython)
@@ -347,7 +349,7 @@ python -m pytest tests/test_sentiment.py::TestSentiment::test_bullish_headline -
 
 - **All external APIs are mocked** — tests run offline
 - **Fixtures** in `conftest.py` provide a `tmp_data_dir` for isolated file I/O + a `sample_hist` DataFrame for indicators
-- **112 tests** across 8 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
+- **108 tests** across 8 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
 - **Integration tests** verify the full pipeline end-to-end at module boundaries (stock data → sentiment → event classification → SmartScore)
 - **No network calls** — `yfinance`, `feedparser`, `duckduckgo_search`, `requests`, and `rdt-cli` are all patched with `pytest-mock`
 

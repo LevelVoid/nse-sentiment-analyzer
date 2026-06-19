@@ -285,22 +285,6 @@ class TestRedditFetch:
 class TestFormatting:
     """Tests for data_fetcher formatting helpers."""
 
-    def test_is_numeric(self):
-        from data_fetcher import _is_numeric
-        assert _is_numeric(42) is True
-        assert _is_numeric(3.14) is True
-        assert _is_numeric("N/A") is False
-        assert _is_numeric(None) is False
-        assert _is_numeric(True) is False
-
-    def test_format_large_num(self):
-        from data_fetcher import format_large_num
-        assert "Cr" in format_large_num(100_00_000)
-        assert "L" in format_large_num(1_00_000)
-        assert "₹" in format_large_num(1000)
-        assert "N/A" in format_large_num(None)
-        assert "N/A" in format_large_num("N/A")
-
     def test_parse_date(self):
         from data_fetcher import _parse_date
         result = _parse_date((2026, 6, 18, 10, 30, 0))

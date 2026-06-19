@@ -95,12 +95,12 @@ def fmt_large(val):
     return "N/A"
 
 
-def get_sentiment_emoji(compound):
+def get_sentiment_svg(compound):
     if compound >= 0.3:
-        return "\U0001f7e2"
+        return _ICON["bullish"]
     if compound <= -0.3:
-        return "\U0001f534"
-    return "\u26aa"
+        return _ICON["bearish"]
+    return _ICON["neutral"]
 
 
 def render_sparkline(values, width=160, height=32, color="#22b573"):
@@ -299,10 +299,12 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         close = ti["close"]
         sma50 = ti.get("sma_50")
         sma200 = ti.get("sma_200")
-        above_50 = "\U0001f7e2" if (sma50 is not None and close > sma50) else "\U0001f534" if (sma50 is not None and close < sma50) else "\u2014"
-        above_200 = "\U0001f7e2" if (sma200 is not None and close > sma200) else "\U0001f534" if (sma200 is not None and close < sma200) else "\u2014"
+        _up_dot = _ICON["dot_green"]
+        _down_dot = _ICON["dot_red"]
+        above_50 = _up_dot if (sma50 is not None and close > sma50) else _down_dot if (sma50 is not None and close < sma50) else "\u2014"
+        above_200 = _up_dot if (sma200 is not None and close > sma200) else _down_dot if (sma200 is not None and close < sma200) else "\u2014"
         macd_hist = ti["macd_hist"]
-        macd_label = "\U0001f7e2 Bullish" if macd_hist > 0 else "\U0001f534 Bearish"
+        macd_label = _up_dot + " Bullish" if macd_hist > 0 else _down_dot + " Bearish"
         ti_preview = f"RSI {rsi:.1f} ({rsi_label}) \u00b7 SMA50 {above_50} \u00b7 SMA200 {above_200} \u00b7 MACD {macd_label}"
         ti_rows = f"""
         <div class="ti-grid">
@@ -325,18 +327,21 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         <div class="stat-item"><span class="stat-label">P/E Ratio</span><span class="stat-value">{pe_str}</span></div>
     </div>"""
 
-    # Source badges
     badge_html = ""
+    # Source badges — SVG dots
+    _src_dot_green = _ICON["dot_green"]
+    _src_dot_red = _ICON["dot_red"]
+    _src_dot_grey = _ICON["dot_grey"]
     for src in source_breakdown:
         if src["avg"] >= 0.3:
             b_class = "bullish"
-            b_emoji = "\U0001f7e2"
+            b_emoji = _src_dot_green
         elif src["avg"] <= -0.3:
             b_class = "bearish"
-            b_emoji = "\U0001f534"
+            b_emoji = _src_dot_red
         else:
             b_class = "neutral"
-            b_emoji = "\u26aa"
+            b_emoji = _src_dot_grey
         badge_html += (
             f'<span class="source-badge {b_class}">'
             f'{b_emoji} {src["source"]}'
@@ -407,7 +412,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     # News items
     news_html = ""
     for item, scores in zip(news_items, headline_scores):
-        emoji = get_sentiment_emoji(scores["compound"])
+        emoji = get_sentiment_svg(scores["compound"])
         if scores["compound"] >= 0.3:
             s_label = "Positive"
             s_class = "bullish"
@@ -425,9 +430,9 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         )
         meta_parts = []
         if item.get("source"):
-            meta_parts.append(f"\U0001f4e1 {h(item['source'])}")
+            meta_parts.append(f"{_ICON['wifi']} {h(item['source'])}")
         if item.get("date"):
-            meta_parts.append(f"\U0001f4c5 {h(item['date'][:10])}")
+            meta_parts.append(f"{h(item['date'][:10])}")
         if item.get("source") == "Reddit" and item.get("author"):
             sub = f"r/{h(item['subreddit'])}/" if item.get("subreddit") else ""
             meta_parts.append(f"by u/{h(item['author'])} on {sub}Reddit")

@@ -239,11 +239,6 @@ ALIASES = {
 _hist_cache = {}
 
 
-def _is_numeric(v):
-    """Check if value is a number (int or float, not bool, not None)."""
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
-
-
 def _strip_html(text):
     """Strip HTML tags + unescape entities for clean text analysis & display."""
     if not text:
@@ -251,19 +246,6 @@ def _strip_html(text):
     text = re.sub(r"<[^>]+>", " ", text)
     text = html.unescape(text)
     return " ".join(text.split())
-
-
-def format_large_num(n):
-    """Format large numbers in Indian notation (Cr, L)."""
-    if not _is_numeric(n):
-        return "N/A"
-    if n >= 1_00_00_000:
-        return f"₹{n / 1_00_00_000:.2f}Cr"
-    elif n >= 1_00_000:
-        return f"₹{n / 1_00_000:.2f}L"
-    elif n >= 1_000:
-        return f"₹{n:,.0f}"
-    return f"₹{n}"
 
 
 def get_stock_info(ticker):

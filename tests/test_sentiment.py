@@ -12,8 +12,6 @@ from sentiment import (
     FINANCIAL_BOOSTERS,
 )
 from data_fetcher import (
-    _is_numeric,
-    format_large_num,
     NSE_TICKERS,
 )
 
@@ -105,17 +103,3 @@ class TestDataFetcher:
         assert "RELIANCE" in NSE_TICKERS
         assert "HDFCBANK" in NSE_TICKERS
         assert "TCS" in NSE_TICKERS
-
-    def test_is_numeric(self):
-        assert _is_numeric(42)
-        assert _is_numeric(3.14)
-        assert not _is_numeric("N/A")
-        assert not _is_numeric(None)
-        assert not _is_numeric(True)
-
-    def test_format_large_num(self):
-        assert "Cr" in format_large_num(100_00_000)
-        assert "L" in format_large_num(1_00_000)
-        assert "₹" in format_large_num(1000)
-        assert "N/A" in format_large_num(None)
-        assert "N/A" in format_large_num("N/A")
