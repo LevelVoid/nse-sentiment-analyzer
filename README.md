@@ -169,6 +169,11 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Portfolio mode** — Add stocks to a watchlist and scan all at once
 - **Track record** — Rate each signal as accurate or wrong; track your precision over time
 - **Dark-themed UI** — Card-based layout, sentiment badges, responsive design
+- **Single search input** — Text input + 🔍 search button replaces confusing dual-input. Type any ticker and press Enter or click Search
+- **Quick-action chips** — RELIANCE, HDFCBANK, TCS, INFY, SBIN one-click buttons in the empty state for instant access
+- **Guided empty state** — Centered launchpad with popular ticker chips replaces the old instruction wall
+- **Larger, readable type** — Minimum font raised from 8.8px → 10.4px, with clearer visual hierarchy: Price (2rem) > SmartScore (1.5rem) > Signal
+- **FII/DII institutional flow** — NSE India's official FII/FPI and DII data, shown in Cr with net buying/selling stance
 - **Zero API keys** — Works out of the box
 - **Free & open-source** — MIT license
 
