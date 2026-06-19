@@ -281,18 +281,18 @@ if final_ticker and final_ticker != "":
 
         # Render premium HTML dashboard — dynamic height to avoid iframe scrollbars
         n_news = len(news_items)
-        n_sources = max(len(result.get("source_breakdown", [])), 1)
         n_track = len(records) if records else 0
-        # ponytail: base ~250 header + 400 price/sentiment + 400 SmartScore/badges
-        # + 150 distribution + 100 per news item + 250 stats + 300 tech indicators
-        # + 150 FII/DII + 200 per 10 track records + 100 padding
-        dash_height = 1600 + n_news * 140 + min(n_track, 20) * 18
+        # ponytail: per-section heights measured from rendered HTML:
+        #   price card 230 + sentiment 170 + smartscore 190 + distribution 110
+        #   + stats 170 + tech 270 + fiidii 120 + track 140 + padding 80 = ~1480 base
+        #   each news item ≈ 95px (title + meta + body + tag + border)
+        dash_height = 1480 + n_news * 95 + min(n_track, 10) * 22
         st.components.v1.html(
             render_dashboard(result, final_ticker, company_name,
                              technical_indicators=ti,
                              track_record=records,
                              fii_dii_data=fii_data),
-            height=dash_height,
+            height=int(dash_height),
             scrolling=False,
         )
 

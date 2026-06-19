@@ -18,6 +18,29 @@ from duckduckgo_search import DDGS
 from persistence import cache_get, cache_set
 
 
+# ─── Global rate-limit cooldown ───
+# When yfinance returns 429, all yfinance calls skip for this duration
+# to let the rate-limit window clear.
+_RATE_LIMITED_UNTIL = 0.0
+_RATE_LIMIT_COOLDOWN = 45  # seconds
+
+
+def _check_rate_limited():
+    """Return True if we're in a global rate-limit cooldown.
+    Resets automatically after COOLDOWN seconds."""
+    global _RATE_LIMITED_UNTIL
+    now = time.time()
+    if now < _RATE_LIMITED_UNTIL:
+        return True
+    return False
+
+
+def _mark_rate_limited():
+    """Set global cooldown. All yfinance calls skip for COOLDOWN seconds."""
+    global _RATE_LIMITED_UNTIL
+    _RATE_LIMITED_UNTIL = time.time() + _RATE_LIMIT_COOLDOWN
+
+
 # ─── yfinance: set browser User-Agent to avoid 429 rate limiting ───
 _session = requests.Session()
 _session.headers["User-Agent"] = (
@@ -259,6 +282,14 @@ def get_stock_info(ticker):
     import random
     import math
 
+    # Global rate-limit cooldown — if yfinance recently 429'd us, skip early
+    if _check_rate_limited():
+        st.warning(
+            f"Yahoo Finance rate-limited. Waiting {_RATE_LIMIT_COOLDOWN}s "
+            "before retrying. Try again shortly."
+        )
+        return None
+
     def _retry_fetch(max_attempts=3, base_wait=1, backoff=2):
         """Generator that yields (attempt_num, wait_seconds) for retry loops.
         Uses exponential backoff with full jitter (AWS retry style).
@@ -286,7 +317,10 @@ def get_stock_info(ticker):
                         info = raw
                         name_fallback = info.get("longName", info.get("shortName", ticker))
                         break
-                except Exception:
+                except Exception as e:
+                    # ponytail: any yfinance error could be rate-limiting
+                    if "429" in str(e) or "Too Many" in str(e) or "Rate Limit" in str(e):
+                        _mark_rate_limited()
                     continue  # retry same suffix with backoff before trying next
             if info:
                 break  # found valid info, stop trying suffixes
