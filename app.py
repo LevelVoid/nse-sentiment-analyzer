@@ -22,7 +22,7 @@ from aggregate_sentiment import compute_smartscore
 st.set_page_config(
     page_title="NSE Sentiment Analyzer",
     page_icon="📊",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
@@ -248,12 +248,11 @@ if final_ticker and final_ticker != "":
         st.session_state._skip_reanalysis = False
         result = st.session_state._last_result
     else:
-        st.toast(f"📡 Fetching data for {final_ticker}...")
-        result = analyze_ticker(final_ticker, company_name)
+        with st.spinner(f"Fetching data for {final_ticker}..."):
+            result = analyze_ticker(final_ticker, company_name)
         if result:
             st.session_state._last_ticker = final_ticker
             st.session_state._last_result = result
-            st.toast("✅ Analysis complete")
             # Save to track record
             recs = load_track_record()
             recs.append({
@@ -286,8 +285,8 @@ if final_ticker and final_ticker != "":
                              technical_indicators=ti,
                              track_record=records,
                              fii_dii_data=fii_data),
-            height=0,
-            scrolling=False,
+            height=2000,
+            scrolling=True,
         )
 
         # Track record voting (Streamlit buttons outside the iframe)
