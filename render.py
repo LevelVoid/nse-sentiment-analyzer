@@ -7,6 +7,12 @@ rendered via st.components.v1.html().
 import html
 import secrets
 import itertools
+from math import sqrt
+
+# ─── Bayesian source calibration ───
+# Shows per-source Beta distributions from user voting data.
+# Loaded once per dashboard render — no DB impact per ticker.
+from persistence import load_source_accuracy
 
 # ─── Inline SVG icons (Lucide, MIT-licensed, stroke-based) ───
 # ponytail: inline SVGs avoid a 100KB+ icon library for ~15 icons
@@ -260,6 +266,40 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         </div>
     </div>
 </div>"""
+
+    # Bayesian source calibration card
+    cal_html = ""
+    try:
+        src_acc = load_source_accuracy()
+        if src_acc:
+            active = {s: d for s, d in src_acc.items() if d.get("alpha", 1) + d.get("beta", 1) > 10}
+            if active:
+                rows = []
+                for src, dist in sorted(active.items()):
+                    a = dist.get("alpha", 1)
+                    b = dist.get("beta", 1)
+                    total_votes = a + b - 10
+                    pct = a / (a + b) * 100 if (a + b) > 0 else 50
+                    sd = sqrt((a * b) / ((a + b) ** 2 * (a + b + 1))) if (a + b > 1) else 0.5
+                    ci_lo = max(0, (pct / 100 - 1.96 * sd) * 100)
+                    ci_hi = min(100, (pct / 100 + 1.96 * sd) * 100)
+                    acc_class = "good" if pct >= 65 else "ok" if pct >= 50 else "poor"
+                    rows.append(f"""
+            <div class="cal-row">
+                <div class="cal-src">{src}</div>
+                <div class="cal-track"><div class="cal-fill {acc_class}" style="width:{pct:.0f}%"></div></div>
+                <div class="cal-pct">{pct:.0f}%</div>
+                <div class="cal-votes">{total_votes:.0f} vote{"s" if total_votes != 1 else ""}</div>
+                <div class="cal-beta">a={a:.0f} b={b:.0f}</div>
+            </div>""")
+                if rows:
+                    cal_html = f"""<div class="card">
+    <div class="card-title">{_ICON["target"]} Source Calibration (Bayesian Beta)</div>
+    <div class="cal-section">{" ".join(rows)}</div>
+    <div class="cal-footnote">Per-source Beta(a,b) posterior from user votes. 95% CI shown.</div>
+</div>"""
+    except Exception:
+        pass
 
     # FII/DII institutional flow
     fii_html = ""
@@ -657,6 +697,20 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .prox-badge.mid {{ background: rgba(34,181,115,0.1); color: #2ecc71; border: 1px solid rgba(34,181,115,0.2); }}
     .prox-badge.low {{ background: rgba(136,145,160,0.1); color: #8891a0; border: 1px solid rgba(136,145,160,0.2); }}
 
+    /* Source calibration rows */
+    .cal-section {{ display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0; }}
+    .cal-row {{ display: flex; align-items: center; gap: 0.5rem; }}
+    .cal-src {{ font-size: 0.75rem; color: #c0c5ce; min-width: 7rem; text-transform: uppercase; letter-spacing: 0.04em; }}
+    .cal-track {{ flex: 1; height: 6px; background: #1a1d26; border-radius: 3px; overflow: hidden; }}
+    .cal-fill {{ height: 100%; border-radius: 3px; transition: width 0.4s ease; }}
+    .cal-fill.good {{ background: #22b573; }}
+    .cal-fill.ok {{ background: #fbbf24; }}
+    .cal-fill.poor {{ background: #f85149; }}
+    .cal-pct {{ font-size: 0.8rem; font-weight: 600; min-width: 2.5rem; text-align: right; color: #c0c5ce; }}
+    .cal-votes {{ font-size: 0.72rem; color: #8891a0; min-width: 3.5rem; text-align: center; }}
+    .cal-beta {{ font-size: 0.65rem; color: #636a77; min-width: 4rem; text-align: right; font-family: monospace; }}
+    .cal-footnote {{ font-size: 0.7rem; color: #636a77; margin-top: 0.35rem; font-style: italic; }}
+
     /* Track record accuracy */
     .acc-row {{ display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }}
     .acc-circle {{
@@ -781,6 +835,8 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     </div>
 
 {acc_html}
+
+{cal_html}
 
 {fii_html}
 

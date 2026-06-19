@@ -77,6 +77,24 @@ EVENT_MAP = [
         r"\bpromot(?:es?|ed)\b",
     ]),
 
+    # ── New positive events ──────────────
+
+    ("RATING_UPGRADE", 0.20, [
+        r"\bupgrad(?:e|es|ed)\s+(?:credit\s+)?(?:rating|outlook)\b",
+        r"\brating\s+(?:upgraded|upgrade)\b",
+        r"\boutlook\s+(?:revised\s+to\s+positive|positive\s+outlook)\b",
+    ]),
+    ("JV_MOU", 0.15, [
+        r"\bjoint\s+venture\b|\bJV\b",
+        r"\bMoU\b|\bmemorandum\s+of\s+understanding\b",
+        r"\bstrategic\s+(?:alliance|partnership|collaboration|tie-up)\b",
+        r"\bsigns?\s+(?:MoU|MOU|agreement|pact|deal|partnership)\b",
+    ]),
+    ("FUNDRAISE", 0.15, [
+        r"\bQIP\b|\bFPO\b|\brights\s+issue\b",
+        r"\bpreferential\s+(?:issue|allotment)\b",
+    ]),
+
     # ── Negative events (most specific first) ──────────────
 
     ("DEBT_STRESS", -0.40, [
@@ -99,6 +117,12 @@ EVENT_MAP = [
         r"\blegal\s+(?:notice|tussle|battle|dispute|hurdle)\b",
         r"\bsue[sd]?\b|\blawsuit\b|\blitigation\b",
         r"\bfraud\b|\bscam\b|\bembezzlement\b",
+        r"\bSFIO\b|\bserious\s+fraud\b",
+        r"\bDRI\b|\bdirectorate\s+of\s+revenue\b",
+        r"\bNIA\b|\bnational\s+investigation\s+agency\b",
+        r"\bregulatory\s+(?:action|restriction|sanction)\s+(?:against|on)\b",
+        r"\battachment\s+of\b|\bfreeze(?:s|d)?\s+(?:bank\s+)?accounts?\b",
+        r"\bboxed?\s+director\b|\bdirector\s+disqualified\b",
     ]),
     ("REGULATORY", -0.30, [
         r"\bregulatory\s+(?:crackdown|hurdle|barrier|issue|action|probe)\b",
@@ -108,6 +132,16 @@ EVENT_MAP = [
         r"\bIRDAI\b",
         r"\bDGGI\b",
         r"\btax\s+notice\b|\bGST\s+notice\b",
+        r"\bPERDA\b|\bPFRDA\b",
+        r"\bRERA\b|\breal\s+estate\s+regulatory\b",
+        r"\bNCLT\b|\bNCLAT\b",
+        r"\bSAT\b|\bsecurities\s+appellate\b",
+        r"\bDGCA\b",
+        r"\bTRAI\b",
+        r"\bCERC\b|\bcentral\s+electricity\b",
+        r"\bDGFT\b",
+        r"\bFSSAI\b",
+        r"\bed\s+attaches?\b",
     ]),
     ("EARNINGS_MISS", -0.35, [
         r"\bprofit\s+(?:falls?|declines?|drops?|plunges?|slips?|tumbles)\b",
@@ -124,6 +158,23 @@ EVENT_MAP = [
         r"\bcuts?\b\s+.*?\b(?:guidance|outlook|forecast)\b",
         r"\bcautious\s+(?:outlook|guidance|view)\b",
     ]),
+
+    # ── New negative events ──────────────
+
+    ("CONTRACT_LOSS", -0.30, [
+        r"\bloses?\b\s+.*?\b(?:contract|order|deal|mandate|client)\b",
+        r"\bterminated\s+.*?\b(?:contract|order|deal)\b",
+        r"\bcancell?(?:ed|ation)?\s+.*?\b(?:order|contract|deal)\b",
+        r"\b(?:contract|order|deal)\s+(?:lost|terminated|cancelled)\b",
+    ]),
+    ("DIVESTMENT", -0.20, [
+        r"\bsells?\s+(?:stake|shares|equity|business|subsidiary|unit)\b",
+        r"\bdivest(?:s|ed|iture)?\b",
+        r"\bpromoter\s+sells?\b",
+        r"\bexits?\s+.*?\b(?:venture|business|investment)\b",
+        r"\bstake\s+sale\b",
+    ]),
+
     ("MGMT_CHANGE_NEGATIVE", -0.20, [
         r"\bresign(?:s|ed|ation)\b",
         r"\bstep(?:s)?\s+down\b",
