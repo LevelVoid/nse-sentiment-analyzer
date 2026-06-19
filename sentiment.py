@@ -6,9 +6,6 @@ VADER + custom financial lexicon tuned for Indian markets.
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import streamlit as st
 
-# Re-export event classifier functions for convenience
-from event_classifier import classify_headline, adjust_with_event  # noqa: F401
-
 
 # ─── Financial sentiment augmentations ───
 # Words VADER doesn't score well for finance

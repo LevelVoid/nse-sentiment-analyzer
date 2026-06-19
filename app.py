@@ -10,7 +10,8 @@ from datetime import datetime
 from data_fetcher import (
     NSE_TICKERS, get_stock_info, search_news,
 )
-from sentiment import get_sia, analyze_headline_sentiment, get_overall_signal, get_weighted_signal, classify_headline, adjust_with_event
+from sentiment import get_sia, analyze_headline_sentiment, get_overall_signal, get_weighted_signal
+from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
 from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history
 from render import render_dashboard
