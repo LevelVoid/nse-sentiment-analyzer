@@ -185,132 +185,135 @@ with st.sidebar:
     portfolio = load_portfolio()
     entry_prices = load_entry_prices()
 
-    # ─── Add ticker + optional entry price ───
-    st.markdown("<div style='font-size:0.85rem;font-weight:600;color:#8891a0;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;'>Add Stock</div>", unsafe_allow_html=True)
-    add_c1, add_c2, add_c3 = st.columns([2, 1, 1])
-    with add_c1:
-        new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
-                              max_chars=15, key="portfolio_add")
-    with add_c2:
-        ep_input = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
-                                 max_chars=10, key="entry_price_add", help="Optional: your average trade price for P&L tracking")
-    with add_c3:
-        if st.button("➕", use_container_width=True, key="add_portfolio_btn", help="Add to portfolio") and new_t.strip():
-            t = new_t.strip().upper().replace(".NS", "")
-            if not t.isalnum():
-                st.warning("Invalid ticker format")
-            elif t in portfolio:
-                st.warning(f"{t} already in portfolio")
-            else:
-                portfolio.append(t)
-                save_portfolio(portfolio)
-                if ep_input.strip():
-                    try:
-                        save_entry_price(t, float(ep_input.strip().replace(",", "")))
-                    except ValueError:
-                        pass
-                st.session_state._skip_reanalysis = True
-                st.rerun()
+    # ─── Indicator to track init ───
+    if "_sidebar_init" not in st.session_state:
+        st.session_state._sidebar_init = True
 
-    # ponytail: hint to set entry prices for better P&L
-    if portfolio and not entry_prices:
-        st.caption("💡 Set an ATP above to track your P&L")
-    elif entry_prices:
-        missing_ep = [t for t in portfolio if t not in entry_prices]
-        if missing_ep:
-            st.caption(f"💡 Set ATP for {', '.join(missing_ep[:3])}{'…' if len(missing_ep) > 3 else ''}")
+    # ─── Portfolio section (default expanded) ───
+    with st.expander("📁 Portfolio", expanded=True):
+        add_c1, add_c2, add_c3 = st.columns([2, 1, 1])
+        with add_c1:
+            new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
+                                  max_chars=15, key="portfolio_add")
+        with add_c2:
+            ep_input = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
+                                     max_chars=10, key="entry_price_add", help="Optional: your average trade price for P&L tracking")
+        with add_c3:
+            if st.button("➕", use_container_width=True, key="add_portfolio_btn", help="Add to portfolio") and new_t.strip():
+                t = new_t.strip().upper().replace(".NS", "")
+                if not t.isalnum():
+                    st.warning("Invalid ticker format")
+                elif t in portfolio:
+                    st.warning(f"{t} already in portfolio")
+                else:
+                    portfolio.append(t)
+                    save_portfolio(portfolio)
+                    if ep_input.strip():
+                        try:
+                            save_entry_price(t, float(ep_input.strip().replace(",", "")))
+                        except ValueError:
+                            pass
+                    st.session_state._skip_reanalysis = True
+                    st.rerun()
 
-    if portfolio:
-        # ─── Market Heatmap (compact 3-col grid) ───
-        # ponytail: inline in sidebar, no extra page/section
-        heatmap_html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:0 0 4px 0;">'
-        for t in portfolio:
-            sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
-            if sd_cache is not None:
-                chg = sd_cache.get("change_pct") or 0
-                color = "#22c55e" if chg >= 0 else "#ef4444"
-            else:
-                chg = 0
-                color = "#6b7280"
-            heatmap_html += f'<div style="background:#1a1a2e;border-radius:6px;padding:4px;text-align:center;font-size:0.65rem;"><div style="font-weight:600;color:#e4e6eb;">{t}</div><div style="color:{color};">{chg:+.1f}%</div></div>'
-        heatmap_html += "</div>"
-        st.markdown(heatmap_html, unsafe_allow_html=True)
-        st.caption("🟢 Day gain  🔴 Day loss  ⚫ No data")
+        # ponytail: hint to set entry prices for better P&L
+        if portfolio and not entry_prices:
+            st.caption("💡 Set an ATP above to track your P&L")
+        elif entry_prices:
+            missing_ep = [t for t in portfolio if t not in entry_prices]
+            if missing_ep:
+                st.caption(f"💡 Set ATP for {', '.join(missing_ep[:3])}{'…' if len(missing_ep) > 3 else ''}")
 
-        for t in portfolio:
-            c1, c2 = st.columns([3, 1])
-            ep = entry_prices.get(t)
-            sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
-            cp = sd_cache.get("current_price") if sd_cache else None
+        if portfolio:
+            # ─── Market Heatmap (compact 3-col grid) ───
+            heatmap_html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:0 0 4px 0;">'
+            for t in portfolio:
+                sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
+                if sd_cache is not None:
+                    chg = sd_cache.get("change_pct") or 0
+                    color = "#22c55e" if chg >= 0 else "#ef4444"
+                else:
+                    chg = 0
+                    color = "#6b7280"
+                heatmap_html += f'<div style="background:#1a1a2e;border-radius:6px;padding:4px;text-align:center;font-size:0.65rem;"><div style="font-weight:600;color:#e4e6eb;">{t}</div><div style="color:{color};">{chg:+.1f}%</div></div>'
+            heatmap_html += "</div>"
+            st.markdown(heatmap_html, unsafe_allow_html=True)
+            st.caption("🟢 Day gain  🔴 Day loss  ⚫ No data")
 
-            # Build display: ticker + current price on line 1, P&L on line 2
-            display_parts = [f"<strong>{t}</strong>"]
-            if _is_valid_num(cp):
-                display_parts.append(f'<span style="font-size:0.85rem;">₹{cp:,.2f}</span>')
-            elif sd_cache is not None:
-                display_parts.append(f'<span style="font-size:0.85rem;color:#6b7280;">Price N/A</span>')
+            for t in portfolio:
+                c1, c2 = st.columns([3, 1])
+                ep = entry_prices.get(t)
+                sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
+                cp = sd_cache.get("current_price") if sd_cache else None
 
-            if ep and _is_valid_num(cp):
-                pnl = calc_portfolio_pnl(ep, cp)
-                pnl_class = "up" if pnl["pnl_pct"] >= 0 else "down"
-                sign = "+" if pnl["pnl_pct"] >= 0 else ""
-                display_parts.append(
-                    f'<span style="font-size:0.8rem;color:{"#22c55e" if pnl["pnl_pct"] >= 0 else "#ef4444"};">'
-                    f'{sign}{pnl["pnl_pct"]:.1f}%</span>'
+                # Build display: ticker + current price on line 1, P&L on line 2
+                display_parts = [f"<strong>{t}</strong>"]
+                if _is_valid_num(cp):
+                    display_parts.append(f'<span style="font-size:0.85rem;">₹{cp:,.2f}</span>')
+                elif sd_cache is not None:
+                    display_parts.append(f'<span style="font-size:0.85rem;color:#6b7280;">Price N/A</span>')
+
+                if ep and _is_valid_num(cp):
+                    pnl = calc_portfolio_pnl(ep, cp)
+                    sign = "+" if pnl["pnl_pct"] >= 0 else ""
+                    display_parts.append(
+                        f'<span style="font-size:0.8rem;color:{"#22c55e" if pnl["pnl_pct"] >= 0 else "#ef4444"};">'
+                        f'{sign}{pnl["pnl_pct"]:.1f}%</span>'
+                    )
+                    display_parts.append(
+                        f'<span style="font-size:0.7rem;color:#6b7280;">ATP: ₹{ep:,.0f}</span>'
+                    )
+                elif ep:
+                    display_parts.append(
+                        f'<span style="font-size:0.75rem;color:#6b7280;">ATP: ₹{ep:,.0f}</span>'
+                    )
+                elif cp:
+                    display_parts.append(
+                        f'<span style="font-size:0.7rem;color:#6b7280;">No ATP set</span>'
+                    )
+
+                c1.markdown(
+                    '<div style="line-height:1.5;">' + '<br>'.join(display_parts) + '</div>',
+                    unsafe_allow_html=True,
                 )
-                display_parts.append(
-                    f'<span style="font-size:0.7rem;color:#6b7280;">ATP: ₹{ep:,.0f}</span>'
-                )
-            elif ep:
-                display_parts.append(
-                    f'<span style="font-size:0.75rem;color:#6b7280;">ATP: ₹{ep:,.0f}</span>'
-                )
-            elif cp:
-                display_parts.append(
-                    f'<span style="font-size:0.7rem;color:#6b7280;">No ATP set</span>'
-                )
+                if c2.button("✕", key=f"del_{t}", help=f"Remove {t} from portfolio"):
+                    portfolio.remove(t)
+                    save_portfolio(portfolio)
+                    st.session_state._skip_reanalysis = True
+                    st.rerun()
 
-            c1.markdown(
-                '<div style="line-height:1.5;">' + '<br>'.join(display_parts) + '</div>',
-                unsafe_allow_html=True,
-            )
-            if c2.button("✕", key=f"del_{t}", help=f"Remove {t} from portfolio"):
-                portfolio.remove(t)
-                save_portfolio(portfolio)
-                st.session_state._skip_reanalysis = True
-                st.rerun()
+            if st.button("📡 Run Portfolio Briefing", type="primary", use_container_width=True):
+                st.session_state.run_briefing = True
+                st.caption("Scans every ticker for live prices + sentiment signals")
 
-        if st.button("📡 Run Portfolio Briefing", type="primary", use_container_width=True):
-            st.session_state.run_briefing = True
-            st.caption("Scans every ticker for live prices + sentiment signals")
+    # ─── Market Context (default collapsed) ───
+    with st.expander("🌍 Market Context", expanded=False):
+        # India VIX
+        if "vix" not in st.session_state:
+            st.session_state.vix = get_vix()
+        vix_d = st.session_state.vix
+        if vix_d and vix_d.get("vix") is not None:
+            col1, col2 = st.columns([1, 1])
+            vix_dir = "⬆️" if vix_d["change"] >= 0 else "⬇️"
+            col1.metric("India VIX", f"{vix_d['vix']:.1f}", f"{vix_dir} {vix_d['change']:+.2f}")
+            col2.metric("Volatility", vix_d["level"])
+            if vix_d["level"] == "High":
+                st.caption("⚠️ High VIX (>20) — sharp reversals likely. Trade with caution.")
+            elif vix_d["level"] == "Low":
+                st.caption("✅ Low VIX (<15) — trending markets favored.")
+        else:
+            st.caption("India VIX data unavailable")
 
-    # ─── India VIX ───
-    if "vix" not in st.session_state:
-        st.session_state.vix = get_vix()
-    vix_d = st.session_state.vix
-    if vix_d and vix_d.get("vix") is not None:
-        vix_dir = "⬆️" if vix_d["change"] >= 0 else "⬇️"
-        vix_color = {"High": "inverse", "Medium": "off", "Low": "normal"}.get(vix_d["level"], "normal")
-        st.markdown("---")
-        col1, col2 = st.columns([1, 1])
-        col1.metric("India VIX", f"{vix_d['vix']:.1f}", f"{vix_dir} {vix_d['change']:+.2f}")
-        col2.metric("Volatility", vix_d["level"])
-        if vix_d["level"] == "High":
-            st.caption("⚠️ High VIX (>20) — sharp reversals likely. Trade with caution.")
-        elif vix_d["level"] == "Low":
-            st.caption("✅ Low VIX (<15) — trending markets favored.")
-
-    # ─── Track Record Stats ───
-    st.markdown("---")
-    st.header("📊 Track Record")
-    records = load_track_record()
-    total = len(records)
-    voted = [r for r in records if r.get("vote") is not None]
-    accurate = sum(1 for r in voted if r["vote"] is True)
-    if voted:
-        st.metric("Accuracy", f"{accurate/len(voted)*100:.0f}%", help=f"{accurate}/{len(voted)} signals rated")
-    st.metric("Total Scans", total)
-    st.caption("👍 = signal was right, 👎 = wrong")
+    # ─── Track Record (default collapsed) ───
+    with st.expander("📊 Track Record", expanded=False):
+        records = load_track_record()
+        total = len(records)
+        voted = [r for r in records if r.get("vote") is not None]
+        accurate = sum(1 for r in voted if r["vote"] is True)
+        if voted:
+            st.metric("Accuracy", f"{accurate/len(voted)*100:.0f}%", help=f"{accurate}/{len(voted)} signals rated")
+        st.metric("Total Scans", total)
+        st.caption("👍 = signal was right, 👎 = wrong")
 
     # ─── Changelog & Feedback ───
     with st.expander("📝 What's New"):
