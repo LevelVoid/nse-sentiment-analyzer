@@ -27,15 +27,27 @@ def compute_vwap(ticker):
     if data is None or data.empty or len(data) < 2:
         return {"vwap": None, "price": None, "deviation_pct": None}
 
-    # VWAP = Sigma(typical_price * volume) / Sigma(volume)
-    typ_price = (data["High"] + data["Low"] + data["Close"]) / 3
-    vol = data["Volume"]
-    vol_sum = vol.sum()
-    if vol_sum == 0:
+    try:
+        # VWAP = Sigma(typical_price * volume) / Sigma(volume)
+        typ_price = (data["High"] + data["Low"] + data["Close"]) / 3
+        vol = data["Volume"]
+        vol_sum = vol.sum()
+    except (KeyError, TypeError, AttributeError):
         return {"vwap": None, "price": None, "deviation_pct": None}
 
-    vwap_val = (typ_price * vol).sum() / vol_sum
-    current_price = float(data["Close"].iloc[-1])
+    # vol_sum can be a Series from MultiIndex columns — check scalar-safe
+    try:
+        if float(vol_sum) == 0:
+            return {"vwap": None, "price": None, "deviation_pct": None}
+    except (TypeError, ValueError, AttributeError):
+        return {"vwap": None, "price": None, "deviation_pct": None}
+
+    try:
+        vwap_val = (typ_price * vol).sum() / vol_sum
+        current_price = float(data["Close"].iloc[-1])
+    except (TypeError, ValueError, KeyError, IndexError, AttributeError):
+        return {"vwap": None, "price": None, "deviation_pct": None}
+
     deviation = ((current_price - vwap_val) / vwap_val) * 100 if vwap_val else 0.0
 
     return {
