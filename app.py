@@ -518,6 +518,13 @@ if final_ticker and final_ticker != "":
         )
 
         # ─── Bottom section: Portfolio + Track Record cards (after analysis results) ───
+        # Lucide SVGs used in markdown (safe) — button labels use plain text
+        _FOLDER = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+        _BAR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'
+        _CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        _X = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+        _MAIL = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+
         st.markdown("""<style>
 .btm-card{background:#15181f;border:1px solid #2a2e3a;border-radius:12px;padding:1rem;height:100%}
 .btm-title{display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;font-weight:600;color:#f0f2f5;margin-bottom:0.6rem}
@@ -532,8 +539,8 @@ if final_ticker and final_ticker != "":
         eprices = load_entry_prices()
 
         with bc1:
-            st.markdown('<div class="btm-card">', unsafe_allow_html=True)
-            st.markdown('<div class="btm-title">📁 Portfolio</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-title">{_FOLDER} Portfolio</div>', unsafe_allow_html=True)
             ia, ib, ic = st.columns([2, 1, 0.5])
             with ia:
                 _pt = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed", max_chars=15, key="btm_add")
@@ -583,15 +590,15 @@ if final_ticker and final_ticker != "":
             st.markdown('</div>', unsafe_allow_html=True)
 
         with bc2:
-            st.markdown('<div class="btm-card">', unsafe_allow_html=True)
-            st.markdown('<div class="btm-title">📊 Track Record</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-title">{_BAR} Track Record</div>', unsafe_allow_html=True)
             recs = load_track_record()
             voted = [r for r in recs if r.get("vote") is not None]
             if voted:
                 acc = sum(1 for r in voted if r["vote"] is True)
                 st.metric("Accuracy", f"{acc/len(voted)*100:.0f}%", help=f"{acc}/{len(voted)} correct")
             st.metric("Total Scans", len(recs))
-            st.markdown('<div class="btm-muted">✅ right · ❌ wrong · <a href="mailto:darkcharon3301@gmail.com" class="btm-link">💬 feedback</a></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong · <a href="mailto:darkcharon3301@gmail.com" class="btm-link">{_MAIL} feature request</a></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ─── Historical Sentiment Archive ───
