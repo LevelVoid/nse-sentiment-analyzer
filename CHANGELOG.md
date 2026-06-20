@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.2.0] — 2026-06-20
+
+### Added
+- **Portfolio P&L Tracking** — Set entry price when adding a stock. Sidebar shows live P&L (₹ and %) per holding, green for profit, red for loss.
+- **Market Heatmap** — Compact 3-column grid in sidebar, every holding color-coded by daily % change.
+- **Portfolio News Badges** — 📌 In portfolio badge on headlines that mention your holdings.
+- **Volume Spike Detection** — `detect_volume_spike()` flags abnormal trading volume (N× 20-day average).
+- **Stagnation Warnings** — `detect_stagnation()` flags stocks stuck in a tight range for 10+ days.
+
+### Changed
+- New entry price column in add-ticker row (sidebar)
+- Metrics grid on landing page expanded from 4 to 6 columns
+
 ## [2.1.3] — 2026-06-20
 
 ### Added
