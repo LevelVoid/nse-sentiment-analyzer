@@ -777,6 +777,12 @@ st.markdown("---")
 st.caption("Built with Streamlit + yfinance + VADER · FinBERT · Bayesian Calibration · Financial Lexicon | Data from Yahoo Finance + RSS News")
 st.caption("📌 Not financial advice. This tool is for educational purposes only. Trading stocks carries financial risk. Consult a SEBI-registered advisor before making investment decisions.")
 st.markdown(
+    '<div style="text-align:center;margin-bottom:0.5rem;">'
+    '<span style="color:#6b7280;font-size:0.75rem;font-style:italic;">'
+    'Like this tool? Support the developer with a chai.</span></div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
     '<div style="display:flex;justify-content:center;margin-top:12px">'
     '<a href="https://chai4.me/darkcharon3301" target="_blank" rel="noopener noreferrer" '
     'style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;'
