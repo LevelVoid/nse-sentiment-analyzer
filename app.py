@@ -30,6 +30,35 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ─── Global UI constants & styles ───
+_CARET = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8891a0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="caret"><path d="m9 18 6-6-6-6"/></svg>'
+st.markdown("""<style>
+details.hermes-expander {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:8px;
+    padding:0.5rem 0.75rem;
+    margin-bottom:0.5rem;
+}
+details.hermes-expander summary {
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-weight:600;
+    font-size:0.95rem;
+    color:#e4e6eb;
+    list-style:none;
+}
+details.hermes-expander summary::-webkit-details-marker { display:none; }
+details.hermes-expander summary .caret {
+    transition:transform 0.2s;
+}
+details.hermes-expander[open] summary .caret {
+    transform:rotate(90deg);
+}
+</style>""", unsafe_allow_html=True)
+
 # ─── Streamlit chrome CSS (Inter, hide chrome, widget overrides) ───
 st.markdown("""
 <style>
@@ -412,7 +441,7 @@ with st.sidebar:
 
     # ─── Changelog & Feedback ───
     _FILE_TEXT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
-    st.markdown(f'<details><summary style="cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;font-size:0.95rem;color:#e4e6eb;">{_FILE_TEXT_SVG} What\'s New</summary>', unsafe_allow_html=True)
+    st.markdown(f'<details class="hermes-expander"><summary>{_CARET}{_FILE_TEXT_SVG} What\'s New</summary>', unsafe_allow_html=True)
     try:
         with open("CHANGELOG.md") as f:
             lines = f.readlines()
@@ -493,16 +522,17 @@ with btn_col:
         f"""
         <div style="width:100%;height:38px;display:flex;align-items:center;justify-content:center;">
         <button id="{search_trigger_id}"
-                style="width:38px;height:38px;background:rgba(19,21,26,0.6);"
-                "border:1px solid #1e2028;border-radius:8px;cursor:pointer;"
-                "display:flex;align-items:center;justify-content:center;"
-                "color:#e4e6eb;transition:all 0.2s ease;padding:0;"
+                style="width:38px;height:38px;background:rgba(19,21,26,0.6);
+                       border:1px solid #1e2028;border-radius:8px;cursor:pointer;
+                       display:flex;align-items:center;justify-content:center;
+                       color:#e4e6eb;transition:all 0.2s ease;padding:0;"
                 onmouseover="this.style.borderColor='rgba(34,181,115,0.3)';this.style.background='rgba(34,181,115,0.08)'"
                 onmouseout="this.style.borderColor='#1e2028';this.style.background='rgba(19,21,26,0.6)'"
                 title="Search ticker" aria-label="Search ticker">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="display:block;">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.3-4.3"/>
             </svg>
@@ -709,7 +739,7 @@ if final_ticker and final_ticker != "":
         history = load_sentiment_history(final_ticker)
         if history:
             _TREND_UP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
-            st.markdown(f'<details><summary style="cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;font-size:0.95rem;color:#e4e6eb;">{_TREND_UP} Sentiment History</summary>', unsafe_allow_html=True)
+            st.markdown(f'<details class="hermes-expander"><summary>{_CARET}{_TREND_UP} Sentiment History</summary>', unsafe_allow_html=True)
             df = pd.DataFrame(history)
             if "smartscore" in df.columns:
                 df["smartscore"] = pd.to_numeric(df["smartscore"], errors="coerce")
@@ -835,7 +865,7 @@ with st.expander("🔒 Privacy & Data Policy"):
 
 # ─── DISCLAIMER ───
 _ALERT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'
-st.markdown(f'<details><summary style="cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;font-size:0.95rem;color:#e4e6eb;">{_ALERT_SVG} Disclaimer</summary>', unsafe_allow_html=True)
+st.markdown(f'<details class="hermes-expander"><summary>{_CARET}{_ALERT_SVG} Disclaimer</summary>', unsafe_allow_html=True)
 st.markdown("""
 **Not financial advice.** This tool provides data-driven sentiment analysis and technical indicators for educational and informational purposes only. Nothing on this platform constitutes investment advice, a recommendation, or a solicitation to buy or sell securities.
 

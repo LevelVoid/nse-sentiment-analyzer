@@ -274,7 +274,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         if spike_result["spike"]:
             ratio = spike_result["ratio"]
             if ratio >= 3:
-                vol_spike_html = '<span class="spike-badge huge">🚨 3x volume surge!</span>'
+                vol_spike_html = '<span class="spike-badge huge"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> 3x volume surge!</span>'
             elif ratio >= 2:
                 vol_spike_html = f'<span class="spike-badge high">{ratio:.1f}x normal volume</span>'
             else:
