@@ -8,7 +8,7 @@
 | [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 | [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 | [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-[![Tests](https://img.shields.io/badge/tests-130%20passing-brightgreen)](#-testing)
+[![Tests](https://img.shields.io/badge/tests-137%20passing-brightgreen)](#-testing)
 | [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 |
 |<p align="center">
@@ -170,6 +170,16 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
+### v2.3.0 — VWAP, pivot levels, India VIX (June 2026)
+
+**VWAP + Deviation** — Every analysis now shows a VWAP badge beneath the price: green *"🔺 VWAP: ₹101.33 (+0.66% above)"* or red *"🔻 VWAP: ₹101.33 (−1.20% below)"*. Fetches 5-min intraday data for the day. Price above VWAP = bullish intraday bias, below = bearish. Deviation % tells you if momentum is exhausted.
+
+**Pivot Levels** — R1, Pivot, and S1 levels computed from yesterday's high/low/close using the classic formula `P=(H+L+C)/3`, `R1=2P−L`, `S1=2P−H`. Displayed as a compact 3-column grid inside the Technical Indicators card. Know your intraday entry/exit levels without switching to a charting app.
+
+**India VIX in Sidebar** — VIX level, daily change, and volatility bucket (Low/Medium/High) shown in the sidebar, fetched once per session. Caption tells you what the level means: *"⚠️ High VIX (>20) — sharp reversals likely"* or *"✅ Low VIX (<15) — trending markets favored"*.
+
+**13 new tests** — Full TDD: RED → GREEN before implementation. 137 total.
+
 ### v2.2.2 — Smarter trend, clearer portfolio sidebar (June 2026)
 
 **SmartScore trend accuracy improved** — The SmartScore now accounts for event-adjusted headline signals (earnings, deals, regulatory actions) when measuring market breadth. The composite trend number and component bars are more reliable when event-heavy news is in play.
@@ -306,6 +316,9 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Portfolio P&amp;L tracking** — Entry price per holding, live P&amp;L (₹ and %) in sidebar
 - **Market heatmap** — Portfolio stocks color-coded by daily % change
 - **Volume spike detection** — Flags abnormal trading volume (N× average)
+- **VWAP + Deviation** — Volume-weighted average price with % deviation badge beneath the price. Shows intraday fair value and whether momentum is bullish (above VWAP) or bearish (below).
+- **Pivot Levels (R1 / Pivot / S1)** — Classic intraday support/resistance levels from yesterday's HLC. Compact 3-column grid inside Technical Indicators.
+- **India VIX** — Sidebar shows live VIX level, daily change, and volatility bucket (Low/Medium/High) with actionable captions.
 - **Portfolio news badges** — 📌 highlights headlines matching your holdings
 - **Historical sentiment archive** — SmartScore time series + CSV export per ticker
 - **Public changelog** — Sidebar shows what's new; feature requests via email
@@ -402,9 +415,10 @@ nse-sentiment-analyzer/
     ├── test_aggregate_sentiment.py # EWMA, breadth, volume, sparkline
     ├── test_public_teaser.py      # Shareable snapshot public card
     ├── test_changelog.py          # CHANGELOG.md infrastructure
-    ├── test_history_export.py     # Sentiment archive CSV export
     ├── test_market_indicators.py  # Volume spike detection
     ├── test_entry_prices.py       # Portfolio P&L, entry prices
+    ├── test_intraday.py           # VWAP, pivot levels, India VIX
+    └── test_history_export.py     # Sentiment archive CSV export
 ```
 
 ### Adding a New News Source
@@ -433,7 +447,7 @@ nse-sentiment-analyzer/
 ## 🧪 Testing
 
 ```bash
-# Run all tests (130 tests, mocked APIs, no network)
+# Run all tests (137 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # Run with coverage
@@ -450,7 +464,7 @@ python -m pytest tests/test_sentiment.py::TestSentiment::test_bullish_headline -
 
 - **All external APIs are mocked** — tests run offline
 - **Fixtures** in `conftest.py` provide a `tmp_data_dir` for isolated file I/O + a `sample_hist` DataFrame for indicators
-- **130 tests** across 11 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
+- **137 tests across 12 modules**
 - **Integration tests** verify the full pipeline end-to-end at module boundaries (stock data → sentiment → event classification → SmartScore)
 - **No network calls** — `yfinance`, `feedparser`, `duckduckgo_search`, and `requests` are all patched with `pytest-mock`
 
