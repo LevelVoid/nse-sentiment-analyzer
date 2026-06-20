@@ -199,7 +199,7 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - All 108 tests still pass — zero regressions
 
 **UX improvements:**
-- Dashboard iframe height is now fully dynamic — the auto-height postMessage script handles all layout sizing, replacing the fragile `1480 + n_news*95 + n_track*22` formula that was wrong on every layout change
+- Dashboard iframe height simplified to a cleaner formula (`1630 + n_news*95`, capped at 5000) — the old `1480 + n_news*95 + n_track*22` was tracking stale layout pixels. The auto-height postMessage script refines the height after load as a secondary adjustment
 - Added mobile-responsive CSS breakpoints — buttons and inputs scale on screens under 640px
 
 ### v2.0 — Bayesian Calibration + Optional FinBERT (June 2026)
