@@ -170,6 +170,16 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
+### v2.2.2 — Trend fix: Breadth uses event-adjusted scores, safer history checks (June 2026)
+
+**Fixed: SmartScore breadth calculation** — S_breadth was counting positive/negative headlines using raw VADER compound scores, ignoring event classifier adjustments. A headline like *"SEBI penalty"* (VADER neutral → correctly negative after event adjustment) now properly counts toward the breadth component. The composite trend and component bars are now more accurate for event-heavy news.
+
+**Fixed: History entries with 0.0 score no longer skipped** — `avg_compound` and `smartscore` truthiness checks (which treat `0.0` as falsy in Python) now allow zero values through. A genuinely neutral trading day no longer silently falls out of the EWMA recency calculation and the trend sparkline history.
+
+**Fixed: Bold markdown in sidebar** — `**PARAS**` showed literal asterisks in the portfolio list because Streamlit doesn't process markdown inside HTML elements with `unsafe_allow_html=True`. Switched to `<strong>` HTML tag.
+
+**Changed: Sidebar portfolio UX** — Clearer "ADD STOCK" section header, "ATP" (Average Trade Price) field label, inline current price display, heatmap legend (green/red/grey color key), and explicit "No ATP set" state.
+
 ### v2.2.1 — Ponytail cleanup: -101 lines, 130 tests (June 2026)
 
 **Removed dead code for a leaner codebase:**

@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.2.2] — 2026-06-20
+
+### Fixed
+- **SmartScore breadth now uses event-adjusted scores** — S_breadth was counting positive/negative headlines using raw VADER compound scores, ignoring event classifier adjustments. Headlines like "SEBI penalty" (VADER neutral, event-adjusted negative) are now correctly counted. This improves the composite Trend number and component bars.
+- **History entries with 0.0 score no longer skipped** — `avg_compound` and `smartscore` truthiness checks now allow 0.0 values. A genuinely neutral day no longer falls out of the EWMA recency calculation and sparkline history.
+- **Bold markdown rendering in sidebar** — `**PARAS**` was showing literal asterisks in the portfolio list because markdown bold syntax inside an HTML `<div>` with `unsafe_allow_html=True` isn't processed by Streamlit. Switched to `<strong>` HTML tag.
+
+### Changed
+- **Sidebar portfolio UX** — Clearer layout with "ADD STOCK" section header, "ATP" (Average Trade Price) field label instead of cryptic "₹", current price shown inline, buy price shown as "ATP: ₹X,XXX", heatmap legend, and explicit "No ATP set" state.
+- **Portfolio field relabeled: "Buy Price" → "ATP"** — All sidebar labels, tooltips, and portfolio display lines now use "ATP" (Average Trade Price) for consistency with brokerage terminology.
+
+## [2.2.1] — 2026-06-20
+
+### Changed
+- **Dead code removed:** `find_portfolio_matches()`, `_fill_from_nse()`, `_fetch_reddit_rdtcli()`, `detect_stagnation()` — net -101 lines.
+- **Duplicate config unified:** `sentiment.py:SOURCE_WEIGHTS` removed; `get_source_weights()` now references `persistence.SOURCE_WEIGHTS_PRIOR` as single source of truth.
+- **Reddit simplified:** OAuth-only path; rdt-cli fallback removed.
+- **`detect_volume_spike()` wired** — now powers dashboard volume spike badges (was duplicated inline in render.py).
+
+### Fixed
+- **Sentiment history CSV mislabeled field** — `neg_count` was storing neutral count instead of actual negative headline count. Field semantics corrected.
+- **Orphaned import removed:** `import subprocess` removed from data_fetcher.py.
+
 ## [2.2.0] — 2026-06-20
 
 ### Added
