@@ -154,10 +154,20 @@ def get_sentiment_svg(compound):
 def render_sparkline(values, width=160, height=32, color="#22b573"):
     """Render an inline SVG sparkline from a list of 0-100 values.
 
-    Returns empty string if < 2 values.
+    Shows a flat line for 1 value. Returns empty string if None or empty list.
     """
-    if not values or len(values) < 2:
+    if not values:
         return ""
+
+    # Single value → flat horizontal line at that value
+    if len(values) == 1:
+        y = height - ((values[0] / 100) * (height - 6)) - 3
+        return f"""<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"
+    style="vertical-align:middle;display:inline-block;">
+    <polyline points="0,{y} {width},{y}" fill="none" stroke="{color}"
+    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4,3"/>
+    <circle cx="{width}" cy="{y}" r="2.5" fill="{color}"/>
+    </svg>"""
 
     min_v = min(values)
     max_v = max(values)
