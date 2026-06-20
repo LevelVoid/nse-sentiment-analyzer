@@ -344,6 +344,117 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# ─── Dashboard Controls — Tailwind-inspired cards (visible when sidebar is collapsed) ───
+st.markdown("""
+<style>
+.tw-card {
+    background: #15181f;
+    border: 1px solid #2a2e3a;
+    border-radius: 12px;
+    padding: 1rem;
+    height: 100%;
+}
+.tw-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+    color: #f0f2f5;
+}
+.tw-muted { color: #8891a0; font-size: 0.8rem; }
+.tw-green { color: #22b573; }
+.tw-red { color: #ef4444; }
+</style>
+""", unsafe_allow_html=True)
+
+dash_c1, dash_c2, dash_c3 = st.columns([1.6, 1, 1])
+
+with dash_c1:
+    st.markdown('<div class="tw-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tw-title">📁 Portfolio</div>', unsafe_allow_html=True)
+    ac1, ac2, ac3 = st.columns([2, 1, 1])
+    with ac1:
+        mp_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
+                             max_chars=15, key="mp_add")
+    with ac2:
+        mp_ep = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
+                              max_chars=10, key="mp_ep")
+    with ac3:
+        if st.button("➕", use_container_width=True, key="mp_add_btn") and mp_t.strip():
+            t = mp_t.strip().upper().replace(".NS", "")
+            if t.isalnum() and t not in portfolio:
+                portfolio.append(t)
+                save_portfolio(portfolio)
+                if mp_ep.strip():
+                    try:
+                        save_entry_price(t, float(mp_ep.strip().replace(",", "")))
+                    except ValueError:
+                        pass
+                st.rerun()
+    if portfolio:
+        heat_html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin:4px 0;">'
+        for t in portfolio:
+            sd = st.session_state.get("_stock_price_cache", {}).get(t, {})
+            chg = sd.get("change_pct") or 0
+            c = "#22c55e" if chg >= 0 else "#ef4444"
+            heat_html += f'<div style="background:#1a1a2e;border-radius:5px;padding:3px 6px;text-align:center;font-size:0.65rem;"><div style="font-weight:600;color:#e4e6eb;">{t}</div><div style="color:{c};">{chg:+.1f}%</div></div>'
+        heat_html += "</div>"
+        st.markdown(heat_html, unsafe_allow_html=True)
+        for t in portfolio:
+            ca, cb = st.columns([3, 1])
+            ep = entry_prices.get(t)
+            sd2 = st.session_state.get("_stock_price_cache", {}).get(t)
+            cp = sd2.get("current_price") if sd2 else None
+            parts = [f"**{t}**"]
+            if _is_valid_num(cp):
+                parts.append(f"₹{cp:,.2f}")
+            if ep and _is_valid_num(cp):
+                pnl = calc_portfolio_pnl(ep, cp)
+                sgn = "+" if pnl["pnl_pct"] >= 0 else ""
+                parts.append(f"{sgn}{pnl['pnl_pct']:.1f}%  ATP: ₹{ep:,.0f}")
+            elif ep:
+                parts.append(f"ATP: ₹{ep:,.0f}")
+            ca.markdown(" · ".join(parts), help=f"P&L for {t}")
+            if cb.button("✕", key=f"mp_del_{t}"):
+                portfolio.remove(t)
+                save_portfolio(portfolio)
+                st.rerun()
+        st.button("📡 Run Briefing", type="primary", use_container_width=True, key="mp_briefing")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with dash_c2:
+    st.markdown('<div class="tw-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tw-title">🌍 Market Context</div>', unsafe_allow_html=True)
+    if "vix" not in st.session_state:
+        st.session_state.vix = get_vix()
+    vd = st.session_state.vix
+    if vd and vd.get("vix") is not None:
+        mc1, mc2 = st.columns(2)
+        mc1.metric("India VIX", f"{vd['vix']:.1f}", f"{'⬆️' if vd['change']>=0 else '⬇️'} {vd['change']:+.2f}")
+        mc2.metric("Volatility", vd["level"])
+        if vd["level"] == "High":
+            st.caption("⚠️ High VIX — sharp reversals likely")
+        elif vd["level"] == "Low":
+            st.caption("✅ Low VIX — trending markets favored")
+    else:
+        st.caption("VIX unavailable")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with dash_c3:
+    st.markdown('<div class="tw-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tw-title">📊 Track Record</div>', unsafe_allow_html=True)
+    recs = load_track_record()
+    voted = [r for r in recs if r.get("vote") is not None]
+    if voted:
+        acc = sum(1 for r in voted if r["vote"] is True)
+        st.metric("Accuracy", f"{acc/len(voted)*100:.0f}%", help=f"{acc}/{len(voted)} correct")
+    st.metric("Total Scans", len(recs))
+    st.caption("👍 = signal right, 👎 = wrong")
+    st.markdown('<div class="tw-muted" style="margin-top:6px;"><a href="mailto:darkcharon3301@gmail.com" style="color:#22b573;text-decoration:none;">Feature requests →</a></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 # ─── Ticker Input — single text field + search button ───
 # ─── Shareable snapshot link: ?ticker=X bypasses normal input ───
 query_ticker = st.query_params.get("ticker", "")
