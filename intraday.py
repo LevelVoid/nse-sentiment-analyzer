@@ -4,8 +4,6 @@ All functions are pure-data: they take inputs, return dicts, and have zero
 Streamlit dependencies. Designed to be testable with mocked yfinance calls.
 """
 
-import math
-
 
 def compute_vwap(ticker):
     """Compute VWAP + deviation from intraday 5-min data.
@@ -29,7 +27,7 @@ def compute_vwap(ticker):
     if data is None or data.empty or len(data) < 2:
         return {"vwap": None, "price": None, "deviation_pct": None}
 
-    # VWAP = Σ(typical_price * volume) / Σ(volume)
+    # VWAP = Sigma(typical_price * volume) / Sigma(volume)
     typ_price = (data["High"] + data["Low"] + data["Close"]) / 3
     vol = data["Volume"]
     vol_sum = vol.sum()
@@ -52,8 +50,8 @@ def compute_pivot_levels(hist):
 
     Uses the last bar's High, Low, Close to compute:
         Pivot  = (H + L + C) / 3
-        R1     = 2 × Pivot − L
-        S1     = 2 × Pivot − H
+        R1     = 2 * Pivot - L
+        S1     = 2 * Pivot - H
 
     Args:
         hist: pd.DataFrame with 'High', 'Low', 'Close' columns, or None.
@@ -64,9 +62,12 @@ def compute_pivot_levels(hist):
     if hist is None or hist.empty:
         return {"pivot": None, "resistance": None, "support": None}
 
-    high = float(hist["High"].iloc[-1])
-    low = float(hist["Low"].iloc[-1])
-    close = float(hist["Close"].iloc[-1])
+    try:
+        high = float(hist["High"].iloc[-1])
+        low = float(hist["Low"].iloc[-1])
+        close = float(hist["Close"].iloc[-1])
+    except (KeyError, IndexError, TypeError, ValueError):
+        return {"pivot": None, "resistance": None, "support": None}
 
     pivot = (high + low + close) / 3
     r1 = 2 * pivot - low
@@ -82,25 +83,35 @@ def compute_pivot_levels(hist):
 def get_vix():
     """Fetch India VIX level and daily change.
 
+    Fully wrapped in try/except — yfinance can return unexpected data shapes
+    for index tickers (^INDIAVIX) across different environments. Fails
+    gracefully to {'vix': None, ...} on any error.
+
     Returns:
         dict with keys:
-            vix (float|None) — latest VIX close
-            change (float) — point change from previous day
-            level (str) — 'Low' (<15), 'Medium' (15-20), 'High' (>20), or 'N/A'
+            vix (float|None) - latest VIX close
+            change (float) - point change from previous day
+            level (str) - 'Low' (<15), 'Medium' (15-20), 'High' (>20), or 'N/A'
     """
     import yfinance as yf
 
-    data = yf.download("^INDIAVIX", period="5d", progress=False, auto_adjust=True)
+    try:
+        data = yf.download("^INDIAVIX", period="5d", progress=False, auto_adjust=True)
+    except Exception:
+        return {"vix": None, "change": 0.0, "level": "N/A"}
 
     if data is None or data.empty or len(data) < 2:
         return {"vix": None, "change": 0.0, "level": "N/A"}
 
-    closes = data["Close"].dropna()
-    if len(closes) < 2:
+    try:
+        closes = data["Close"].dropna()
+        if len(closes) < 2:
+            return {"vix": None, "change": 0.0, "level": "N/A"}
+        latest = float(closes.iloc[-1])
+        prev = float(closes.iloc[-2])
+    except (KeyError, IndexError, TypeError, ValueError, AttributeError):
         return {"vix": None, "change": 0.0, "level": "N/A"}
 
-    latest = float(closes.iloc[-1])
-    prev = float(closes.iloc[-2])
     change = round(latest - prev, 2)
 
     if latest > 20:
