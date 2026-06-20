@@ -165,6 +165,12 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
+### v2.4.0 — Fully free & open-source, no paywall (June 2026)
+
+**No more paywall.** The `?ticker=` shareable links now show the **full dashboard** instead of a teaser card with a Buy CTA. The app is completely free to use — no Gumroad, no password, no gating.
+
+**Cleaned up:** Removed `render_public_teaser()`, its tests, and all pricing/paywall references from the codebase. The app now runs exactly the same analysis whether you visit the main URL or a shareable link.
+
 ### v2.3.2 — Cleaner code, no Reddit dependency, leaner install (June 2026)
 
 **Reddit removed as a news source** — Reddit OAuth (and the required `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` env vars) have been removed entirely. The app no longer depends on any API keys. All news comes from RSS feeds + DuckDuckGo fallback — zero configuration required.
@@ -241,7 +247,7 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ### v2.1.3 — Phase 0 moats: Shareable links, changelog, history archive (June 2026)
 
-**Shareable Sentiment Snapshot Links** — Every ticker now has a public URL (`?ticker=RELIANCE`). Send the link on Telegram/WhatsApp/X — recipients see a teaser card with SmartScore, signal, and price, with a "Buy ₹499" CTA to unlock the full analysis.
+**Shareable Sentiment Snapshot Links** — Every ticker now has a public URL (`?ticker=RELIANCE`). Send the link on Telegram/WhatsApp/X — recipients see the full analysis dashboard directly.
 
 **Public changelog** — CHANGELOG.md + sidebar expander so users can see what's new.
 
@@ -336,7 +342,7 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Guided empty state** — Centered launchpad with popular ticker chips replaces the old instruction wall
 - **Larger, readable type** — Minimum font raised from 8.8px → 10.4px, with clearer visual hierarchy: Price (2rem) > SmartScore (1.5rem) > Signal
 - **FII/DII institutional flow** — NSE India's official FII/FPI and DII data, shown in Cr with net buying/selling stance
-- **Shareable snapshot links** — Every ticker has a public URL (`?ticker=RELIANCE`) with teaser card + paywall CTA
+- **Shareable snapshot links** — Every ticker has a public URL (`?ticker=RELIANCE`) showing the full analysis dashboard
 - **Portfolio P&amp;L tracking** — Entry price per holding, live P&amp;L (₹ and %) in sidebar
 - **Market heatmap** — Portfolio stocks color-coded by daily % change
 - **Volume spike detection** — Flags abnormal trading volume (N× average)
@@ -433,7 +439,6 @@ nse-sentiment-analyzer/
     ├── test_sentiment.py
     ├── test_event_classifier.py   # 18 event types, VADER blending
     ├── test_aggregate_sentiment.py # EWMA, breadth, volume, sparkline
-    ├── test_public_teaser.py      # Shareable snapshot public card
     ├── test_changelog.py          # CHANGELOG.md infrastructure
     ├── test_market_indicators.py  # Volume spike detection
     ├── test_entry_prices.py       # Portfolio P&L, entry prices

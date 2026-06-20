@@ -17,7 +17,7 @@ from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
 from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, calc_portfolio_pnl
-from render import render_dashboard, render_public_teaser, get_signal_icon, _is_valid_num
+from render import render_dashboard, get_signal_icon, _is_valid_num
 from market_data import get_fii_dii_flow
 from aggregate_sentiment import compute_smartscore
 from intraday import compute_vwap, compute_pivot_levels, get_vix
@@ -416,17 +416,23 @@ if query_ticker:
         with st.spinner(f"Loading analysis for {final_ticker}..."):
             result = analyze_ticker(final_ticker, company_name)
         if result:
-            html = render_public_teaser(result, final_ticker, company_name)
-            st.markdown(html, unsafe_allow_html=True)
             st.markdown(
-                '<div style="text-align:center;margin-top:1rem;">'
-                '<a href="/" style="color:#22b573;font-size:0.9rem;text-decoration:none;">'
-                '\u2190 Back to full app</a></div>',
+                '<div style="text-align:right;margin-bottom:0.5rem;">'
+                '<a href="/" style="color:#22b573;font-size:0.85rem;text-decoration:none;">'
+                '\u2190 Back to main app</a></div>',
                 unsafe_allow_html=True,
             )
+            html = render_dashboard(
+                result, final_ticker, company_name,
+                technical_indicators=result.get("technical_indicators"),
+                vwap_data=result.get("vwap"),
+                pivot_levels=result.get("pivot_levels"),
+                fii_data=result.get("fii_dii"),
+                records=result.get("records"),
+            )
+            st.components.v1.html(html, height=result.get("_height", 3000), scrolling=False)
         else:
             st.error(f"No data found for **{final_ticker}**")
-        # Hide everything else when showing a teaser
         st.stop()
 
 ticker_col, btn_col = st.columns([4, 1])
