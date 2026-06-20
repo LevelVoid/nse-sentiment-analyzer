@@ -59,9 +59,34 @@ st.markdown("""
 
     /* Responsive: mobile-friendly adjustments */
     @media (max-width: 640px) {
-        .stButton button {font-size: 0.85rem; padding: 0.35rem 0.5rem;}
-        .stTextInput input {font-size: 0.9rem;}
+        /* General sizing and tap targets */
+        .stButton button {font-size: 0.8rem; padding: 0.3rem 0.5rem; min-height: 40px;}
+        .stTextInput input {font-size: 0.95rem; padding: 0.5rem 0.65rem;}
         .st-emotion-cache-16idsys {gap: 0.25rem;}
+        .block-container {padding-left: 0.75rem !important; padding-right: 0.75rem !important;}
+
+        /* Search button — bigger tap target */
+        .stTextInput + div .stButton button {font-size: 1.15rem; padding: 0.45rem 0.75rem;}
+
+        /* Smaller header */
+        .custom-header .logo {font-size: 1.3rem !important;}
+        .custom-header .tagline {font-size: 0.7rem !important;}
+
+        /* Smaller caption text */
+        .stCaption {font-size: 0.75rem;}
+        .stMetric label {font-size: 0.8rem;}
+        .stMetric div[data-testid="stMetricValue"] {font-size: 1.2rem !important;}
+
+        /* Portfolio briefing containers stack well */
+        .stContainer .stHorizontalBlock > div {min-width: 0;}
+
+        /* Privacy expander compact */
+        .streamlit-expanderContent {font-size: 0.8rem;}
+        .streamlit-expanderContent li, .streamlit-expanderContent p {font-size: 0.8rem;}
+
+        /* Footer Chai4Me badge */
+        a[aria-label*="Support"] {padding: 6px 16px !important;}
+        a[aria-label*="Support"] img {height: 24px !important;}
     }
 </style>""", unsafe_allow_html=True)
 
@@ -211,7 +236,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ─── Ticker Input — single text field + search button ───
-ticker_col, btn_col = st.columns([5, 1])
+ticker_col, btn_col = st.columns([4, 1])
 with ticker_col:
     ticker_input = st.text_input(
         "NSE Ticker Symbol",
@@ -361,7 +386,7 @@ elif st.session_state.get("run_briefing"):
                 sd = r["stock_data"]
                 change_str = f"{'+' if sd['change'] >= 0 else ''}{sd['change']:.2f}" if isinstance(sd['change'], (int, float)) else "N/A"
                 with st.container(border=True):
-                    cols = st.columns([2, 1, 1])
+                    cols = st.columns([1, 1, 1])
                     price_str = f"₹{sd['current_price']:,.2f}" if isinstance(sd['current_price'], (int, float)) else "N/A"
                     cols[0].markdown(f"**{t}** — {price_str}")
                     cols[0].caption(f"{sd['name'][:40]}")
@@ -385,12 +410,12 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # Quick-action chips for popular tickers
+    # Quick-action chips for popular tickers — 3 per row; wraps nicely on all screens
     st.markdown("<div style='text-align:center;padding:0.5rem 0 1.5rem'>", unsafe_allow_html=True)
     popular = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "SBIN"]
-    cols = st.columns(len(popular))
+    chip_cols = st.columns(3)
     for i, t in enumerate(popular):
-        if cols[i].button(t, key=f"chip_{t}", use_container_width=True, type="secondary"):
+        if chip_cols[i % 3].button(t, key=f"chip_{t}", use_container_width=True, type="secondary"):
             st.session_state.quick_ticker = t
             st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
