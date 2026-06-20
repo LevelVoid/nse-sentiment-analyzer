@@ -13,8 +13,8 @@ from data_fetcher import (
 )
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
-from indicators import get_technical_indicators
-from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy
+from indicators import get_technical_indicators, detect_volume_spike, detect_stagnation
+from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, calc_portfolio_pnl, find_portfolio_matches
 from render import render_dashboard, render_public_teaser, get_signal_icon
 from market_data import get_fii_dii_flow
 from aggregate_sentiment import compute_smartscore
@@ -175,12 +175,17 @@ def analyze_ticker(ticker, company_name):
 with st.sidebar:
     st.header("📁 My Portfolio")
     portfolio = load_portfolio()
+    entry_prices = load_entry_prices()
 
-    add_c1, add_c2 = st.columns([3, 1])
+    # ─── Add ticker + optional entry price ───
+    add_c1, add_c2, add_c3 = st.columns([2, 1, 1])
     with add_c1:
         new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
                               max_chars=15, key="portfolio_add")
     with add_c2:
+        ep_input = st.text_input("₹", placeholder="2800", label_visibility="collapsed",
+                                 max_chars=10, key="entry_price_add")
+    with add_c3:
         if st.button("➕", use_container_width=True, key="add_portfolio_btn") and new_t.strip():
             t = new_t.strip().upper().replace(".NS", "")
             if not t.isalnum():
@@ -190,13 +195,53 @@ with st.sidebar:
             else:
                 portfolio.append(t)
                 save_portfolio(portfolio)
+                if ep_input.strip():
+                    try:
+                        save_entry_price(t, float(ep_input.strip().replace(",", "")))
+                    except ValueError:
+                        pass
                 st.session_state._skip_reanalysis = True
                 st.rerun()
 
+    # ponytail: show warning if entry prices have zero values
+    if entry_prices:
+        missing_ep = [t for t in portfolio if t not in entry_prices]
+        if missing_ep:
+            st.caption(f"ℹ️ Set entry price for {', '.join(missing_ep[:3])}{'…' if len(missing_ep) > 3 else ''}")
+
     if portfolio:
+        # ─── Market Heatmap (compact 3-col grid) ───
+        # ponytail: inline in sidebar, no extra page/section
+        heatmap_html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:0 0 8px 0;">'
+        for t in portfolio:
+            sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
+            if sd_cache is not None:
+                chg = sd_cache.get("change_pct") or 0
+                color = "#22c55e" if chg >= 0 else "#ef4444"
+            else:
+                chg = 0
+                color = "#6b7280"
+            heatmap_html += f'<div style="background:#1a1a2e;border-radius:6px;padding:4px;text-align:center;font-size:0.65rem;"><div style="font-weight:600;color:#e4e6eb;">{t}</div><div style="color:{color};">{chg:+.1f}%</div></div>'
+        heatmap_html += "</div>"
+        st.markdown(heatmap_html, unsafe_allow_html=True)
+
         for t in portfolio:
             c1, c2 = st.columns([3, 1])
-            c1.write(f"**{t}**")
+            ep = entry_prices.get(t)
+            display = f"**{t}**"
+
+            # P&L from cached stock prices
+            sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
+            if ep and sd_cache is not None:
+                cp = sd_cache.get("current_price")
+                if cp:
+                    pnl = calc_portfolio_pnl(ep, cp)
+                    sign = "+" if pnl["pnl_pct"] >= 0 else ""
+                    display += f'<br><span style="font-size:0.8rem;color:{"#22c55e" if pnl["pnl_pct"] >= 0 else "#ef4444"};">{sign}{pnl["pnl_pct"]:.1f}%</span>'
+            elif ep:
+                display += f'<br><span style="font-size:0.75rem;color:#6b7280;">₹{ep:,.0f}</span>'
+
+            c1.markdown(display, unsafe_allow_html=True)
             if c2.button("✕", key=f"del_{t}", help=f"Remove {t} from portfolio"):
                 portfolio.remove(t)
                 save_portfolio(portfolio)
@@ -314,6 +359,13 @@ if final_ticker and final_ticker != "":
         if result:
             st.session_state._last_ticker = final_ticker
             st.session_state._last_result = result
+            # Cache current prices for sidebar heatmap + P&L
+            sd = result["stock_data"]
+            price_cache = st.session_state.setdefault("_stock_price_cache", {})
+            price_cache[final_ticker] = {
+                "change_pct": sd.get("change_pct"),
+                "current_price": sd.get("current_price"),
+            }
             # Save to track record (dedup: update last unvoted entry for same ticker, else append)
             recs = load_track_record()
             now_iso = datetime.now().isoformat(timespec="minutes")
@@ -357,6 +409,15 @@ if final_ticker and final_ticker != "":
         #   price(280) + sentiment+smartscore(450) + dist(130) + stats(200)
         #   + techs(290) + track(180) + fiidii(200) + cal(270) + buffer(200)
         # Each news item ≈ 120px (title + meta + body text wrapping)
+        # ─── Annotate news with portfolio match badges ───
+        portfolio = load_portfolio()
+        if portfolio and news_items:
+            for item in news_items:
+                item["in_portfolio"] = any(
+                    t in (item.get("title") or "").upper()
+                    for t in portfolio
+                )
+
         n_news = len(news_items)
         dash_height = min(2200 + n_news * 120, 6000)
         st.components.v1.html(

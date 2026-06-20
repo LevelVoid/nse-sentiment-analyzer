@@ -15,6 +15,7 @@ PORTFOLIO_FILE = DATA_DIR / "portfolio.json"
 TRACK_FILE = DATA_DIR / "track_record.json"
 CACHE_FILE = DATA_DIR / "cache.json"
 HISTORY_FILE = DATA_DIR / "sentiment_history.csv"
+ENTRY_PRICES_FILE = DATA_DIR / "entry_prices.json"
 
 CACHE_TTL = 15 * 60  # 15 minutes
 
@@ -56,6 +57,44 @@ def load_portfolio():
 def save_portfolio(tickers):
     _save_json(PORTFOLIO_FILE, tickers)
     st.session_state._portfolio = list(tickers)
+
+
+# ─── Entry Prices ───
+
+def load_entry_prices():
+    """Return {ticker: entry_price} dict. Empty dict if none saved."""
+    return _load_json(ENTRY_PRICES_FILE, {})
+
+
+def save_entry_price(ticker, price):
+    """Save or update entry price for a ticker."""
+    prices = load_entry_prices()
+    prices[ticker.upper()] = price
+    _save_json(ENTRY_PRICES_FILE, prices)
+
+
+def calc_portfolio_pnl(entry_price, current_price, qty=1):
+    """Calculate P&L from entry price, current price, and quantity.
+    Returns {pnl_abs: float, pnl_pct: float}.
+    """
+    if not current_price or not entry_price:
+        return {"pnl_abs": 0.0, "pnl_pct": 0.0}
+    pnl_abs = (current_price - entry_price) * qty
+    pnl_pct = ((current_price - entry_price) / entry_price) * 100
+    return {"pnl_abs": round(pnl_abs, 2), "pnl_pct": round(pnl_pct, 2)}
+
+
+def find_portfolio_matches(news_items, portfolio):
+    """Check which portfolio tickers are mentioned in news headlines.
+    Returns {ticker: [headline_index, ...]} for each match.
+    """
+    matches = {}
+    for i, item in enumerate(news_items):
+        title = (item.get("title") or item.get("headline") or "").upper()
+        for t in portfolio:
+            if t.upper() in title:
+                matches.setdefault(t, []).append(i)
+    return matches
 
 
 # ─── Track Record ───

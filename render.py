@@ -513,12 +513,14 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         if item.get("source") != "Reddit" and item.get("body"):
             body = h(item["body"][:200])
 
+        in_portfolio = item.get("in_portfolio", False)
+        port_badge = '<span class="port-badge">\U0001f4cc In portfolio</span>' if in_portfolio else ""
         news_html += f"""
         <div class="news-item">
             <div class="news-emoji">{emoji}</div>
             <div class="news-content">
                 <div class="news-title">{title_html}</div>
-                <div class="news-meta">{' · '.join(meta_parts)} <span class="sentiment-tag {s_class}">{s_label}</span></div>
+                <div class="news-meta">{' · '.join(meta_parts)} {port_badge}<span class="sentiment-tag {s_class}">{s_label}</span></div>
                 {'<div class="news-body">' + body + '</div>' if body else ''}
             </div>
         </div>"""
@@ -681,6 +683,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .news-title a:hover {{ color: #22b573; text-decoration: underline; }}
     .news-meta {{ font-size: 0.8rem; color: #8891a0; margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }}
     .news-body {{ font-size: 0.85rem; color: #8891a0; margin-top: 0.25rem; line-height: 1.5; }}
+    .port-badge {{
+        display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px;
+        font-size: 0.72rem; font-weight: 600;
+        background: rgba(34,197,94,0.12); color: #22b573;
+    }}
     .sentiment-tag {{
         display: inline-block; padding: 0.1rem 0.45rem; border-radius: 100px;
         font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
