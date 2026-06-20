@@ -6,9 +6,9 @@
 
 [![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
 | [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
-| [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+| [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue)](LICENSE)
 | [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-|[![Tests](https://img.shields.io/badge/tests-140%20passing-brightgreen)](#-testing)
+|[![Tests](https://img.shields.io/badge/tests-135%20passing-brightgreen)](#-testing)
 | [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 |
 |<p align="center">
@@ -170,154 +170,26 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
-### v2.4.0 — Fully free & open-source, no paywall (June 2026)
+See the full changelog in [CHANGELOG.md](CHANGELOG.md).
 
-**No more paywall.** The `?ticker=` shareable links now show the **full dashboard** instead of a teaser card with a Buy CTA. The app is completely free to use — no Gumroad, no password, no gating.
+### v2.4.0 — Fully free & open-source (June 2026)
 
-**Cleaned up:** Removed `render_public_teaser()`, its tests, and all pricing/paywall references from the codebase. The app now runs exactly the same analysis whether you visit the main URL or a shareable link.
+- **No more paywall.** Shareable `?ticker=` links show the full dashboard. No Gumroad, no password, no gating.
+- **All emojis replaced with Lucide SVG icons** — search button, signal indicators, badges, expanders, headers, captions across the entire app.
+- **Search button CSS fixed** — broken inline styles (properties outside `style` attribute) corrected.
+- **Expanders restyled** — What's New, Sentiment History, and Disclaimer now use consistent HTML `<details>` with border, background, padding, and animated caret.
+- **AGPL v3 license** added — prevents closed-source monetization.
 
-### v2.3.2 — Cleaner code, no Reddit dependency, leaner install (June 2026)
+### v2.3.2 — Cleaner code, no Reddit (June 2026)
 
-**Reddit removed as a news source** — Reddit OAuth (and the required `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` env vars) have been removed entirely. The app no longer depends on any API keys. All news comes from RSS feeds + DuckDuckGo fallback — zero configuration required.
+- Reddit removed as a news source — zero API keys needed.
+- Portfolio management refactored into shared `_render_portfolio_list()` helper.
+- Pivot levels reuse cached 1-year history — one fewer yfinance call.
+- Optional torch/transformers truly optional (default install saves ~2GB).
+- Corrupted cache files no longer crash the app.
+- 135 tests passing.
 
-**Portfolio management refactored** — The sidebar and bottom-card portfolio sections used to duplicate ~100 lines of Streamlit widget code. Both now share a single `_render_portfolio_list()` helper. Adding a feature (or fixing a bug) in one place fixes both.
-
-**One fewer yfinance API call per analysis** — Pivot levels (R1/Pivot/S1) were fetched via a separate `yf.download()` call. Now they use the 1-year history already cached in memory from `get_stock_info()`. Lower rate-limit exposure.
-
-**Optional torch/transformers truly optional** — The `requirements.txt` no longer installs PyTorch and Transformers by default. Uncomment a line if you need FinBERT (enabled via `USE_FINBERT=true`). A fresh `pip install` saves ~2GB.
-
-**Corrupted cache files no longer crash the app** — `cache_get()` now wraps `datetime.fromisoformat()` in a try/except. A mangled manual edit of `cache.json` returns `None` instead of raising `ValueError`.
-
-**Internal cleanups** — `indicators.py` now imports `get_cached_history()` (a public API) instead of grabbing the private `_hist_cache` dict. Test helper in `test_indicators.py` simplified. 140 tests passing (−3 Reddit-specific tests removed).
-
-### v2.3.1 — Bug fixes, briefing speed, cleaner UI (June 2026)
-
-**Briefing now actually runs** — The portfolio briefing button was silently ignored because stale ticker text in the search input hijacked the if/elif chain. Fixed: briefing clears stale ticker state when triggered.
-
-**Briefing is 5× faster** — Briefing mode skips news fetching (all 9 RSS feeds + DuckDuckGo) since only price data is displayed. Per-ticker time dropped from ~9s to ~1.5s. A 14-stock portfolio briefs in ~6s instead of ~50s.
-
-**Fixed: BAJAJ-AUTO, M&M, J&KBANK can now be added to portfolio** — Ticker validation used `str.isalnum()` which rejects hyphens and ampersands. Replaced with `re.match(r'^[A-Z0-9&-]+$')`.
-
-**Fixed: bottom "Briefing" button was decorative** — The bottom card's ⚡ Briefing button had no `on_click` handler. Clicking it did nothing. Now wired to trigger the briefing.
-
-**Fixed: stale vote indicator** — After searching RELIANCE then voting on HDFCBANK, searching RELIANCE again showed HDFCBANK's vote status. Now checks ticker match before displaying vote feedback.
-
-**Fixed: 30+ regulator aliases removed from news matching** — RBI, SEBI, ED, CBI, NCLT, DGCA, TRAI, FDA etc. were mapped to tickers (RBI→SBIN, DGCA→INDIGO...), causing every regulatory news article to produce false-positive matches. Removed. Company name aliases (SBI→SBIN, STATE BANK→SBIN) are unaffected.
-
-**Fixed: RSI division by zero** — When 14 consecutive upward days produce zero losses, RSI could display "inf". Now safely clamped to 100.
-
-**Fixed: empty news blocking recovery for 15 minutes** — Empty news results (all feeds down) were cached with the standard 15-minute TTL. Now only positive results are cached; empty feeds are retried on the next search.
-
-**Fixed: 5 data corruption bugs in file persistence** — All file opens now use `encoding="utf-8"` (was crashing on Windows with ₹/Unicode). Duplicate CSV column headers in `sentiment_history.csv` removed. Thread-safe locking added for concurrent briefing saves.
-
-**UI refinements** — Dashboard portfolio/track-record cards moved below analysis results (after institutional flow). Emojis replaced with Lucide SVGs in card titles and footer. ATP parse failures now show a clear warning instead of silent failure. Briefing buttons disable while running to prevent double-trigger.
-
-**Performance** — Portfolio briefing uses `analyze_ticker(ticker, quick=True)` which skips news fetching (5 parallel workers → ~1.5s/ticker). Full analysis (for individual ticker search) is unchanged.
-
-**Tech debt** — Added `import re`, replaced `str.isalnum()` with regex, swapped `str()` + concatenation with f-strings in bottom card section. 143 tests passing.
-
-### v2.2.2 — Smarter trend, clearer portfolio sidebar (June 2026)
-
-**SmartScore trend accuracy improved** — The SmartScore now accounts for event-adjusted headline signals (earnings, deals, regulatory actions) when measuring market breadth. The composite trend number and component bars are more reliable when event-heavy news is in play.
-
-**Sidebar portfolio UX redesigned** — Clearer section labels, current price shown inline with every holding, and a heatmap legend so you know what each colour means at a glance.
-
-**Sidebar ticker names fixed** — Bold ticker names in the portfolio list were rendering as `**RELIANCE**` due to a markdown rendering bug. Now showing correctly as **RELIANCE**.
-
-### v2.2.1 — Leaner code, cleaner Reddit setup (June 2026)
-
-**App loads faster** — Removed unused code paths and consolidated duplicate configuration. Smaller codebase means less to maintain.
-
-**Reddit: no more local CLI setup** — Removed the `rdt-cli` fallback. Reddit now works exclusively through OAuth (the cloud-friendly path). If you have OAuth env vars set, Reddit posts show up; if not, they're skipped — no extra tools needed.
-
-**Volume spike detection now active** — The volume spike badges on portfolio holdings were always computed but never shown. Now they're live.
-
-**Bug fix: Sentiment history CSV** — The `neg_count` column in exported CSVs was mislabelled (stored neutral count instead of negatives). Exports now correctly label negative headline counts.
-
-### v2.2.0 — Investonks-inspired: P&amp;L tracking, heatmap, news badges, volume spike detection (June 2026)
-
-**Four new features inspired by competitor analysis (investonks.com):**
-
-**P&amp;L from Entry** — Add entry price when adding a stock to your portfolio. The sidebar shows live P&amp;L (₹ and %) for every holding, green for profit, red for loss.
-
-**Market Heatmap** — Compact 3-column grid in the sidebar showing every portfolio ticker color-coded by daily % change. At-a-glance portfolio health.
-
-**Portfolio News Badges** — News headlines that mention a stock you hold get a 📌 In portfolio badge. You never miss news that affects your money.
-
-**Volume Spike Detection** — Flags holdings trading at abnormal volume (N× their 20-day average). Early warning for accumulation/distribution.
-
-**18 new tests** — TDD workflow: RED → GREEN before any implementation.
-
-**Bug fix** — Trend sparkline now shows a flat line + dot for single data points instead of rendering blank. Users see their SmartScore on first analysis.
-
-### v2.1.3 — Phase 0 moats: Shareable links, changelog, history archive (June 2026)
-
-**Shareable Sentiment Snapshot Links** — Every ticker now has a public URL (`?ticker=RELIANCE`). Send the link on Telegram/WhatsApp/X — recipients see the full analysis dashboard directly.
-
-**Public changelog** — CHANGELOG.md + sidebar expander so users can see what's new.
-
-**Historical Sentiment Archive** — Sentiment History expander in every dashboard: line chart + CSV export. After 6 months of daily usage, this becomes the largest free NSE sentiment time series.
-
-**Legal disclaimer** — Expanded ⚠️ Disclaimer expander covering not financial advice, no SEBI registration, data accuracy, no liability, past performance, and use-at-your-own-risk. Footer strengthened with explicit SEBI-registered advisor consultation warning.
-
-- 119 tests passing (+10 new: public teaser, changelog, history CSV export)
-
-### v2.1.2 — Bug fix: ETF NaN prices + audit pass (June 2026)
-
-**Critical bug fix:** ETFs (NIFTYBEES, GOLDBEES, MIDCAPETF, etc.) showed `₹nan` and `nan%` for price/change/day-range. Root cause: yfinance returns `NaN` for ETF price fields, and `float('nan')` is truthy in Python, so `or` fallbacks and `isinstance(val, float)` checks both passed NaN through to the renderer.
-
-- Added `_nf()` NaN-safe extractor in `data_fetcher.py:get_stock_info()` — returns `None` for NaN on all price fields
-- Added `_is_valid_num()` in `render.py` — rejects NaN/Inf in `fmt_price`, `fmt_delta`, `fmt_vol`, `fmt_large`, PE ratio, and HTML template ternary
-- Added `test_stock_info_nan_prices_from_etf` regression test (simulates yfinance returning NaN for all ETF fields)
-- Consolidated `from math import sqrt` → `import math` in render.py (eliminates redundant local import)
-- 109 tests passing (108 → 109 with new regression test)
-
-### v2.1.1 — Audit cleanup: -22 lines, responsive layout, dynamic iframe height (June 2026)
-
-**Ponytail audit findings applied:**
-- Removed duplicate emoji-to-SVG mapping (`_emoji_to_icon`), now using `get_signal_icon()` throughout — eliminates a maintenance drift point
-- Collapsed 15-line if/elif sentiment class chain into a 7-line dict lookup
-- Moved lazy `import os` / `import math` / `import random` to module-level — fewer per-call allocations
-- Removed 6 redundant `str()` wrappers in `save_sentiment_history()` — CSV writer handles conversion natively
-- All 108 tests still pass — zero regressions
-
-**UX improvements:**
-- Dashboard iframe height now uses a properly measured formula (`2200 + n_news*120`, capped at 6000) — each section measured in pixels from rendered CSS. The auto-height postMessage script refines after load as a secondary adjustment
-- Added mobile-responsive CSS breakpoints — buttons and inputs scale on screens under 640px
-
-### v2.1 — Moat Build: 504 Aliases, 18 Event Types, Bayesian Benchmark UI (June 2026)
-
-**Alias Map: 72 → 504 entries.** Every major NSE stock now has 2-3 common name/abbreviation aliases. Headline matching recall is dramatically higher — \"HUL\", \"L&T\", \"SBI CARD\", \"JINDAL STAINLESS\", \"RBI\", \"SEBI\", \"CBI\" all map to the right ticker. Organised by sector with regulatory body coverage spanning 18 Indian agencies (ED, CBI, NCLT, SAT, RERA, NPCI, DGFT, FSSAI, CCI, SFIO, DRI, PERDA, etc.).
-
-**Event Classifier: 13 → 18 event types.**
-- New positive: `RATING_UPGRADE` (credit upgrades), `JV_MOU` (joint ventures, MoUs, strategic partnerships), `FUNDRAISE` (QIP, FPO, rights issue)
-- New negative: `CONTRACT_LOSS` (lost/terminated orders), `DIVESTMENT` (promoter stake sale, exit)
-- Enhanced LITIGATION: SFIO, DRI, NIA, asset freeze, director disqualification
-- Enhanced REGULATORY: PERDA/PFRDA, RERA, NCLT/NCLAT, SAT, DGCA, TRAI, CERC, DGFT, FSSAI
-
-**Bayesian Calibration now visible in the dashboard.** The Source Calibration card shows per-source Beta(α,β) distributions with accuracy %, total votes, and a 95% credibility interval. Users can see which sources earn their trust — Economic Times vs Moneycontrol vs LiveMint — all tuned by your 👍/👎 votes. This is the first published Beta-benchmark for Indian financial news source accuracy.
-
-**NSE_TICKERS: 85 → 270 stocks.** Full Nifty 200+ coverage plus sector depth in banking, IT, pharma, auto, FMCG, energy, metals, cement, capital goods, chemicals, infra, media, logistics, and textiles.
-
-**Other improvements:**
-- Event classifier ~80 lines richer with LITIGATION + REGULATORY body coverage
-- All 109 tests pass — zero regressions from expansion
-- Ticker alias matching now covers 504 common name forms and 20+ regulatory agencies
-
-### v2.0 — Bayesian Calibration + Optional FinBERT (June 2026)
-
-**Source weights now learn from your votes.** The old hand-tuned weights (ET=1.0, MC=0.9, ...) were guesses. Every time you vote 👍/👎 on a signal, the app updates a Beta distribution for each source that contributed. Weight = `α/(α+β)` — the posterior mean. After ~10-50 votes, your source weights converge to your actual accuracy experience.
-
-**FinBERT transformer support** — set `USE_FINBERT=true` to replace VADER + event rules with `ProsusAI/finbert`, a financial-domain transformer. Delivers 15-20% better accuracy on financial text. Falls back gracefully if dependencies aren't available. Feature-gated — VADER mode is unchanged by default.
-
-**Other improvements:**
-- Yahoo Finance retries now use 5-shot with AWS-style jitter + suffix fallback (`.NS` → `.BO` → bare)
-- Stock info and history are decoupled — if metadata fetch fails, price data still loads
-- Cache entries with partial metadata expire in 2 min instead of 15 (next retry comes sooner)
-- Technical indicators fall back through `.BO` suffix
-- All 108 tests pass
-- **Lucide SVGs** — All UI indicators migrated from Unicode emojis to inline Lucide SVGs (source badges, SMA indicators, news icons) for sharper rendering and consistency
-- **Housekeeping** — Removed dead `format_large_num` / `_is_numeric` functions (−21 lines)
+[Earlier versions](CHANGELOG.md) — v2.3.1 (briefing speed, 10+ bug fixes), v2.2.2–v2.2.0 (P&amp;L tracking, heatmap, VWAP, pivot levels, India VIX), v2.1.3–v2.1.0 (504 aliases, 18 event types, Bayesian calibration, FinBERT), v2.0 (source-weight learning).
 
 ---
 
@@ -342,7 +214,7 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Portfolio mode** — Add stocks to a watchlist and scan all at once
 - **Track record** — Rate each signal as accurate or wrong; track your precision over time
 - **Dark-themed UI** — Card-based layout, sentiment badges, responsive design
-- **Single search input** — Text input + 🔍 search button replaces confusing dual-input. Type any ticker and press Enter or click Search
+- **Text input + search button** replaces confusing dual-input. Type any ticker and press Enter or click Search
 - **Quick-action chips** — RELIANCE, HDFCBANK, TCS, INFY, SBIN one-click buttons in the empty state for instant access
 - **Guided empty state** — Centered launchpad with popular ticker chips replaces the old instruction wall
 - **Larger, readable type** — Minimum font raised from 8.8px → 10.4px, with clearer visual hierarchy: Price (2rem) > SmartScore (1.5rem) > Signal
@@ -354,11 +226,11 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **VWAP + Deviation** — Volume-weighted average price with % deviation badge beneath the price. Shows intraday fair value and whether momentum is bullish (above VWAP) or bearish (below).
 - **Pivot Levels (R1 / Pivot / S1)** — Classic intraday support/resistance levels from yesterday's HLC. Compact 3-column grid inside Technical Indicators.
 - **India VIX** — Sidebar shows live VIX level, daily change, and volatility bucket (Low/Medium/High) with actionable captions.
-- **Portfolio news badges** — 📌 highlights headlines matching your holdings
+- **Portfolio news badges** — highlights headlines matching your holdings
 - **Historical sentiment archive** — SmartScore time series + CSV export per ticker
 - **Public changelog** — Sidebar shows what's new; feature requests via email
 - **Zero API keys** — Works out of the box
-- **Free & open-source** — MIT license
+- **Free & open-source** — AGPL v3 license
 - **Legal disclaimer** — No SEBI registration, not financial advice, use at your own risk
 
 ---
@@ -394,7 +266,7 @@ These features require additional CLI tools on your machine:
 
 - **FII/DII data** — `pip install nsepython` (lazy-loaded, app works without it)
 
-Items with a ⚡ badge in the UI indicate active local-only sources.
+Items with a lightning badge in the UI indicate active local-only sources.
 
 ---
 
@@ -477,7 +349,7 @@ nse-sentiment-analyzer/
 ## 🧪 Testing
 
 ```bash
-# Run all tests (140 tests, mocked APIs, no network)
+# Run all tests (135 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # Run with coverage
@@ -494,7 +366,7 @@ python -m pytest tests/test_sentiment.py::TestSentiment::test_bullish_headline -
 
 - **All external APIs are mocked** — tests run offline
 - **Fixtures** in `conftest.py` provide a `tmp_data_dir` for isolated file I/O + a `sample_hist` DataFrame for indicators
-- **140 tests across 12 modules**
+- **135 tests across 12 modules**
 - **Integration tests** verify the full pipeline end-to-end at module boundaries (stock data → sentiment → event classification → SmartScore)
 - **No network calls** — `yfinance`, `feedparser`, `duckduckgo_search`, and `requests` are all patched with `pytest-mock`
 
@@ -598,7 +470,7 @@ This tool provides data-driven sentiment analysis and technical indicators for *
 
 ## 📜 License
 
-MIT &mdash; see [LICENSE](LICENSE).
+**GNU AGPL v3** &mdash; see [LICENSE](LICENSE). This license ensures the code stays open and prevents closed-source monetization.
 
 ---
 
