@@ -8,7 +8,7 @@
 | [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 | [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 | [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-| [![Tests](https://img.shields.io/badge/tests-119%20passing-brightgreen)](#-testing)|
+| [![Tests](https://img.shields.io/badge/tests-137%20passing-brightgreen)](#-testing)|
 | [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 |
 |<p align="center">
@@ -170,6 +170,22 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
+### v2.2.0 — Investonks-inspired: P&amp;L tracking, heatmap, news badges, volume &amp; stagnation flags (June 2026)
+
+**Five new features inspired by competitor analysis (investonks.com):**
+
+**P&amp;L from Entry** — Add entry price when adding a stock to your portfolio. The sidebar shows live P&amp;L (₹ and %) for every holding, green for profit, red for loss.
+
+**Market Heatmap** — Compact 3-column grid in the sidebar showing every portfolio ticker color-coded by daily % change. At-a-glance portfolio health.
+
+**Portfolio News Badges** — News headlines that mention a stock you hold get a 📌 In portfolio badge. You never miss news that affects your money.
+
+**Volume Spike Detection** — Flags holdings trading at abnormal volume (N× their 20-day average). Early warning for accumulation/distribution.
+
+**Stagnation Warnings** — Flags stocks stuck in a tight price range for 10+ days. Useful for capital efficiency — money sitting idle can be deployed elsewhere.
+
+**Technical** — 18 new tests, 137 total. detect_volume_spike/detect_stagnation in indicators.py. save_entry_price/load_entry_prices/calc_portfolio_pnl/find_portfolio_matches in persistence.py. All TDD: RED → GREEN before any implementation.
+
 ### v2.1.3 — Phase 0 moats: Shareable links, changelog, history archive (June 2026)
 
 **Shareable Sentiment Snapshot Links** — Every ticker now has a public URL (`?ticker=RELIANCE`). Send the link on Telegram/WhatsApp/X — recipients see a teaser card with SmartScore, signal, and price, with a "Buy ₹499" CTA to unlock the full analysis.
@@ -269,6 +285,11 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Larger, readable type** — Minimum font raised from 8.8px → 10.4px, with clearer visual hierarchy: Price (2rem) > SmartScore (1.5rem) > Signal
 - **FII/DII institutional flow** — NSE India's official FII/FPI and DII data, shown in Cr with net buying/selling stance
 - **Shareable snapshot links** — Every ticker has a public URL (`?ticker=RELIANCE`) with teaser card + paywall CTA
+- **Portfolio P&amp;L tracking** — Entry price per holding, live P&amp;L (₹ and %) in sidebar
+- **Market heatmap** — Portfolio stocks color-coded by daily % change
+- **Volume spike detection** — Flags abnormal trading volume (N× average)
+- **Stagnation warnings** — Flags stocks stuck in a tight range for 10+ days
+- **Portfolio news badges** — 📌 highlights headlines matching your holdings
 - **Historical sentiment archive** — SmartScore time series + CSV export per ticker
 - **Public changelog** — Sidebar shows what's new; feature requests via email
 - **Zero API keys** — Works out of the box
@@ -365,6 +386,8 @@ nse-sentiment-analyzer/
     ├── test_public_teaser.py      # Shareable snapshot public card
     ├── test_changelog.py          # CHANGELOG.md infrastructure
     ├── test_history_export.py     # Sentiment archive CSV export
+    ├── test_market_indicators.py  # Volume spike + stagnation detection
+    ├── test_entry_prices.py       # Portfolio P&L, entry prices, news matching
 ```
 
 ### Adding a New News Source
@@ -393,7 +416,7 @@ nse-sentiment-analyzer/
 ## 🧪 Testing
 
 ```bash
-# Run all tests (119 tests, mocked APIs, no network)
+# Run all tests (137 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # Run with coverage
@@ -410,7 +433,7 @@ python -m pytest tests/test_sentiment.py::TestSentiment::test_bullish_headline -
 
 - **All external APIs are mocked** — tests run offline
 - **Fixtures** in `conftest.py` provide a `tmp_data_dir` for isolated file I/O + a `sample_hist` DataFrame for indicators
-- **119 tests** across 9 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
+- **137 tests** across 11 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
 - **Integration tests** verify the full pipeline end-to-end at module boundaries (stock data → sentiment → event classification → SmartScore)
 - **No network calls** — `yfinance`, `feedparser`, `duckduckgo_search`, `requests`, and `rdt-cli` are all patched with `pytest-mock`
 
