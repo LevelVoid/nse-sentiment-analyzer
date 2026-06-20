@@ -13,6 +13,9 @@
 - New entry price column in add-ticker row (sidebar)
 - Metrics grid on landing page expanded from 4 to 6 columns
 
+### Fixed
+- **Trend sparkline blank on first analysis** — `render_sparkline()` now draws a dashed flat line + dot for single data points instead of returning empty SVG. Users see their SmartScore level immediately on first use.
+
 ## [2.1.3] — 2026-06-20
 
 ### Added

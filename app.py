@@ -13,8 +13,8 @@ from data_fetcher import (
 )
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
-from indicators import get_technical_indicators, detect_volume_spike, detect_stagnation
-from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, calc_portfolio_pnl, find_portfolio_matches
+from indicators import get_technical_indicators
+from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, calc_portfolio_pnl
 from render import render_dashboard, render_public_teaser, get_signal_icon
 from market_data import get_fii_dii_flow
 from aggregate_sentiment import compute_smartscore

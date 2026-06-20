@@ -186,6 +186,8 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 **Technical** — 18 new tests, 137 total. detect_volume_spike/detect_stagnation in indicators.py. save_entry_price/load_entry_prices/calc_portfolio_pnl/find_portfolio_matches in persistence.py. All TDD: RED → GREEN before any implementation.
 
+**Bug fix** — Trend sparkline now shows a flat line + dot for single data points instead of rendering blank. Users see their SmartScore on first analysis.
+
 ### v2.1.3 — Phase 0 moats: Shareable links, changelog, history archive (June 2026)
 
 **Shareable Sentiment Snapshot Links** — Every ticker now has a public URL (`?ticker=RELIANCE`). Send the link on Telegram/WhatsApp/X — recipients see a teaser card with SmartScore, signal, and price, with a "Buy ₹499" CTA to unlock the full analysis.
