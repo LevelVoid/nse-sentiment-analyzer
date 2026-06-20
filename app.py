@@ -6,6 +6,7 @@ Built with Streamlit + yfinance + VADER + custom financial lexicon.
 
 import streamlit as st
 import os
+import re
 import pandas as pd
 from datetime import datetime
 
