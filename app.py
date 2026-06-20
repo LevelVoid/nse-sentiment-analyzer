@@ -521,10 +521,29 @@ with st.expander("🔒 Privacy & Data Policy"):
     """)
     st.caption("Last updated: June 2026")
 
+# ─── DISCLAIMER ───
+with st.expander("⚠️ Disclaimer"):
+    st.markdown("""
+    **Not financial advice.** This tool provides data-driven sentiment analysis and technical indicators for educational and informational purposes only. Nothing on this platform constitutes investment advice, a recommendation, or a solicitation to buy or sell securities.
+
+    **No SEBI registration.** The creator is not a SEBI-registered investment advisor. All trading and investment decisions are solely your responsibility.
+
+    **Data accuracy.** Data is sourced from third-party public APIs (Yahoo Finance, RSS feeds, Reddit) and may be delayed, incomplete, or inaccurate. We do not guarantee the timeliness, accuracy, or completeness of any data displayed.
+
+    **No liability.** Under no circumstances shall the creator be liable for any direct, indirect, incidental, special, or consequential damages arising from your use of this tool, including but not limited to financial losses from trading or investment decisions made based on the data provided.
+
+    **Past performance.** Historical data and past sentiment scores do not guarantee future results.
+
+    **Use at your own risk.** By using this tool, you acknowledge that you understand and accept these terms. If you do not agree, do not use the tool.
+
+    **Contact:** [@sentinelcipher on X/Twitter](https://x.com/sentinelcipher) | darkcharon3301@gmail.com
+    """)
+    st.caption("Last updated: June 2026")
+
 # ─── FOOTER ───
 st.markdown("---")
 st.caption("Built with Streamlit + yfinance + VADER · FinBERT · Bayesian Calibration · Financial Lexicon | Data from Yahoo Finance + RSS News")
-st.caption("📌 Not financial advice. Always do your own research.")
+st.caption("📌 Not financial advice. This tool is for educational purposes only. Trading stocks carries financial risk. Consult a SEBI-registered advisor before making investment decisions.")
 st.markdown(
     '<div style="display:flex;justify-content:center;margin-top:12px">'
     '<a href="https://chai4.me/darkcharon3301" target="_blank" rel="noopener noreferrer" '
