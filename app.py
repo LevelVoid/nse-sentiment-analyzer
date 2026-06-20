@@ -444,15 +444,45 @@ with ticker_col:
         label_visibility="collapsed",
     )
 with btn_col:
-    search_clicked = st.button("🔍", use_container_width=True, help="Search ticker")
+    search_trigger_id = "svgsrch"
+    st.markdown(
+        f"""
+        <div style="width:100%;height:38px;display:flex;align-items:center;justify-content:center;">
+        <button id="{search_trigger_id}"
+                style="width:38px;height:38px;background:rgba(19,21,26,0.6);"
+                "border:1px solid #1e2028;border-radius:8px;cursor:pointer;"
+                "display:flex;align-items:center;justify-content:center;"
+                "color:#e4e6eb;transition:all 0.2s ease;padding:0;"
+                onmouseover="this.style.borderColor='rgba(34,181,115,0.3)';this.style.background='rgba(34,181,115,0.08)'"
+                onmouseout="this.style.borderColor='#1e2028';this.style.background='rgba(19,21,26,0.6)'"
+                title="Search ticker" aria-label="Search ticker">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.3-4.3"/>
+            </svg>
+        </button>
+        </div>
+        <script>
+        document.getElementById('{search_trigger_id}').onclick = function() {{
+            var inp = window.parent.document.querySelector('input[placeholder*="RELIANCE"]');
+            if (!inp) return;
+            // Dispatch React-compatible Enter key event
+            var nativeSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype, 'value'
+            ).set;
+            nativeSetter.call(inp, inp.value);
+            inp.dispatchEvent(new Event('input', {{bubbles: true}}));
+            inp.dispatchEvent(new KeyboardEvent('keydown', {{key:'Enter', keyCode:13, bubbles:true}}));
+        }};
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
 
 ticker_text = ticker_input.strip().upper().replace(".NS", "")
-# Trigger on Enter (via session state) OR button click
-if search_clicked and ticker_text:
-    st.session_state.manual_search = ticker_text
-    st.rerun()
-
-# Resolve final ticker: chip click (quick_action) trumps stale text, button click or Enter works too
+# Resolve final ticker: chip click (quick_action) trumps stale text, Enter key or button click works too
 quick_ticker = st.session_state.pop("quick_ticker", "")
 final_ticker = quick_ticker or ticker_text or st.session_state.pop("manual_search", "")
 
