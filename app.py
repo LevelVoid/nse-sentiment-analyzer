@@ -237,7 +237,7 @@ with st.sidebar:
             cp = sd_cache.get("current_price") if sd_cache else None
 
             # Build display: ticker + current price on line 1, P&L on line 2
-            display_parts = [f"**{t}**"]
+            display_parts = [f"<strong>{t}</strong>"]
             if _is_valid_num(cp):
                 display_parts.append(f'<span style="font-size:0.85rem;">₹{cp:,.2f}</span>')
             elif sd_cache is not None:
