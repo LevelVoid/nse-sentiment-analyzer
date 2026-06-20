@@ -372,6 +372,7 @@ nse-sentiment-analyzer/
 ├── data/                   # Runtime data directory (gitignored)
 │   ├── cache.json          # API response cache (15-min TTL)
 │   ├── portfolio.json      # Saved portfolio tickers
+│   ├── entry_prices.json   # Portfolio entry prices (for P&L tracking)
 │   ├── track_record.json   # Signal accuracy history
 │   ├── source_accuracy.json # Bayesian source weights (learned from votes)
 │   └── sentiment_history.csv # Daily SmartScore history for sparkline
@@ -464,7 +465,7 @@ The app runs at `https://<your-app>.streamlit.app`.
 
 **Notes:**
 - The filesystem is ephemeral on Streamlit Cloud — portfolio, track records, and sentiment history are session-only
-- SmartScore history resets on each deploy — the score works with just today's data; history accumulates over multiple queries within a session
+- SmartScore history resets on each deploy — the sparkline shows your current score as a flat line + dot even on the first analysis
 - RSS + DuckDuckGo + Reddit OAuth work on the cloud
 - `rdt-cli` and `nsepython` are local-only tools (not available on Streamlit Cloud)
 - `yfinance` can be throttled if you run too many tickers in rapid succession
