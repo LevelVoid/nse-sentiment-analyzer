@@ -170,15 +170,31 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
-### v2.3.0 — VWAP, pivot levels, India VIX (June 2026)
+### v2.3.1 — Bug fixes, briefing speed, cleaner UI (June 2026)
 
-**VWAP + Deviation** — Every analysis now shows a VWAP badge beneath the price: green *"🔺 VWAP: ₹101.33 (+0.66% above)"* or red *"🔻 VWAP: ₹101.33 (−1.20% below)"*. Fetches 5-min intraday data for the day. Price above VWAP = bullish intraday bias, below = bearish. Deviation % tells you if momentum is exhausted.
+**Briefing now actually runs** — The portfolio briefing button was silently ignored because stale ticker text in the search input hijacked the if/elif chain. Fixed: briefing clears stale ticker state when triggered.
 
-**Pivot Levels** — R1, Pivot, and S1 levels computed from yesterday's high/low/close using the classic formula `P=(H+L+C)/3`, `R1=2P−L`, `S1=2P−H`. Displayed as a compact 3-column grid inside the Technical Indicators card. Know your intraday entry/exit levels without switching to a charting app.
+**Briefing is 5× faster** — Briefing mode skips news fetching (all 9 RSS feeds + DuckDuckGo + Reddit) since only price data is displayed. Per-ticker time dropped from ~9s to ~1.5s. A 14-stock portfolio briefs in ~6s instead of ~50s.
 
-**India VIX in Sidebar** — VIX level, daily change, and volatility bucket (Low/Medium/High) shown in the sidebar, fetched once per session. Caption tells you what the level means: *"⚠️ High VIX (>20) — sharp reversals likely"* or *"✅ Low VIX (<15) — trending markets favored"*.
+**Fixed: BAJAJ-AUTO, M&M, J&KBANK can now be added to portfolio** — Ticker validation used `str.isalnum()` which rejects hyphens and ampersands. Replaced with `re.match(r'^[A-Z0-9&-]+$')`.
 
-**13 new tests** — Full TDD: RED → GREEN before implementation. 143 total.
+**Fixed: bottom "Briefing" button was decorative** — The bottom card's ⚡ Briefing button had no `on_click` handler. Clicking it did nothing. Now wired to trigger the briefing.
+
+**Fixed: stale vote indicator** — After searching RELIANCE then voting on HDFCBANK, searching RELIANCE again showed HDFCBANK's vote status. Now checks ticker match before displaying vote feedback.
+
+**Fixed: 30+ regulator aliases removed from news matching** — RBI, SEBI, ED, CBI, NCLT, DGCA, TRAI, FDA etc. were mapped to tickers (RBI→SBIN, DGCA→INDIGO...), causing every regulatory news article to produce false-positive matches. Removed. Company name aliases (SBI→SBIN, STATE BANK→SBIN) are unaffected.
+
+**Fixed: RSI division by zero** — When 14 consecutive upward days produce zero losses, RSI could display "inf". Now safely clamped to 100.
+
+**Fixed: empty news blocking recovery for 15 minutes** — Empty news results (all feeds down) were cached with the standard 15-minute TTL. Now only positive results are cached; empty feeds are retried on the next search.
+
+**Fixed: 5 data corruption bugs in file persistence** — All file opens now use `encoding="utf-8"` (was crashing on Windows with ₹/Unicode). Duplicate CSV column headers in `sentiment_history.csv` removed. Thread-safe locking added for concurrent briefing saves.
+
+**UI refinements** — Dashboard portfolio/track-record cards moved below analysis results (after institutional flow). Emojis replaced with Lucide SVGs in card titles and footer. ATP parse failures now show a clear warning instead of silent failure. Briefing buttons disable while running to prevent double-trigger.
+
+**Performance** — Portfolio briefing uses `analyze_ticker(ticker, quick=True)` which skips news fetching (5 parallel workers → ~1.5s/ticker). Full analysis (for individual ticker search) is unchanged.
+
+**Tech debt** — Added `import re`, replaced `str.isalnum()` with regex, swapped `str()` + concatenation with f-strings in bottom card section. 143 tests passing.
 
 ### v2.2.2 — Smarter trend, clearer portfolio sidebar (June 2026)
 

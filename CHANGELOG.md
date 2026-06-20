@@ -1,13 +1,31 @@
 # Changelog
 
-## [2.2.2] — 2026-06-20
+## [2.3.1] — 2026-06-20
+
+### Added
+- **Lucide SVGs in card titles and footer** — Replaced emojis with Lucide folder, bar-chart, check, x, and mail icons in the bottom dashboard cards
+- **ATP parse failure feedback** — Non-numeric entry prices now show a warning instead of silently adding the stock without a price
+- **Briefing button loading state** — Both sidebar and bottom briefing buttons disable while running to prevent double-trigger
+- **Thread-safe file locking** — `threading.Lock` added to `save_sentiment_history` and `update_source_accuracy` to prevent data loss during concurrent portfolio briefing
 
 ### Changed
-- **SmartScore trend accuracy improved** — The SmartScore now accounts for event-adjusted headline signals (earnings, deals, regulatory actions) when measuring market breadth. This makes the composite trend number and component bars more reliable when event-heavy news is in play.
-- **Sidebar portfolio UX redesigned** — Clearer section labels, current price shown inline with every holding, and a heatmap legend (green/red/grey color key) so you know what each colour means at a glance.
+- **Briefing is 5× faster** — `analyze_ticker()` now accepts `quick=True` for briefing mode, skipping all news fetching (9 RSS feeds + DuckDuckGo + Reddit). Per-ticker: ~9s → ~1.5s. Workers increased from 3 to 5.
+- **Portfolio/Track Record cards moved to bottom** — Dashboard cards now appear after analysis results (below institutional flow) instead of above the ticker input
+- **Ticker validation now accepts hyphens and ampersands** — `str.isalnum()` replaced with `re.match(r'^[A-Z0-9&-]+$')`. BAJAJ-AUTO, M&M, J&KBANK etc. can now be added.
 
 ### Fixed
-- **Sidebar ticker names no longer show stray asterisks** — Bold ticker names in the portfolio list were rendering as `**RELIANCE**` instead of **RELIANCE**. Now rendering correctly.
+- **Briefing not running** — Stale ticker text in the search input hijacked the if/elif chain, causing the analysis block to run instead of briefing. Briefing now clears stale ticker state.
+- **Bottom "Briefing" button was dead** — ⚡ Briefing button had no `if` condition. Clicking it did nothing. Now wired to `st.session_state.run_briefing`.
+- **Stale vote indicator** — `elif` for vote status didn't check `last_rec["ticker"] == final_ticker`, showing the wrong ticker's vote. Fixed.
+- **30+ regulator aliases removed from news matching** — RBI→SBIN, SEBI→SBIN, DGCA→INDIGO, TRAI→BHARTIARTL, FDA→SUNPHARMA etc. caused false-positive news matches. Removed.
+- **RSI division by zero** — `gain / loss` when `loss = 0` produced `inf`. Now clamped to 100.
+- **Empty news caching** — Empty results (all feeds down) were cached for 15 minutes, blocking recovery. Now only non-empty results are cached.
+- **Missing `encoding="utf-8"` on all file I/O** — Every `open()` call in `persistence.py` now uses `encoding="utf-8"`. Was crashing on Windows with ₹/Unicode characters.
+- **Duplicate CSV column headers** — `fieldnames = ["date", "ticker"] + HISTORY_FIELDS` doubled date/ticker columns since `HISTORY_FIELDS` already included them. Fixed.
+- **Portfolio badge substring match** — `"SBIN" in "SBINVIT SURGES"` returned True. Now uses word-boundary regex.
+- **Missing `import re`** — `re.match()` and `re.search()` were used without importing `re`. Added.
+- **NaN avg_vol** — `float(pd.NA)` propagated NaN to volume spike detection. Now guarded with `pd.isna()`.
+- **Empty portfolio Back button** — Briefing with no portfolio showed a warning with no way to navigate back. Added "← Back" button.
 
 ## [2.2.1] — 2026-06-20
 
