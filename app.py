@@ -185,8 +185,8 @@ with st.sidebar:
         new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
                               max_chars=15, key="portfolio_add")
     with add_c2:
-        ep_input = st.text_input("Buy Price", placeholder="₹2,800", label_visibility="collapsed",
-                                 max_chars=10, key="entry_price_add", help="Optional: your buy price for P&L tracking")
+        ep_input = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
+                                 max_chars=10, key="entry_price_add", help="Optional: your average trade price for P&L tracking")
     with add_c3:
         if st.button("➕", use_container_width=True, key="add_portfolio_btn", help="Add to portfolio") and new_t.strip():
             t = new_t.strip().upper().replace(".NS", "")
@@ -207,11 +207,11 @@ with st.sidebar:
 
     # ponytail: hint to set entry prices for better P&L
     if portfolio and not entry_prices:
-        st.caption("💡 Add a buy price above to track your P&L")
+        st.caption("💡 Set an ATP above to track your P&L")
     elif entry_prices:
         missing_ep = [t for t in portfolio if t not in entry_prices]
         if missing_ep:
-            st.caption(f"💡 Set buy price for {', '.join(missing_ep[:3])}{'…' if len(missing_ep) > 3 else ''}")
+            st.caption(f"💡 Set ATP for {', '.join(missing_ep[:3])}{'…' if len(missing_ep) > 3 else ''}")
 
     if portfolio:
         # ─── Market Heatmap (compact 3-col grid) ───
@@ -252,15 +252,15 @@ with st.sidebar:
                     f'{sign}{pnl["pnl_pct"]:.1f}%</span>'
                 )
                 display_parts.append(
-                    f'<span style="font-size:0.7rem;color:#6b7280;">Buy: ₹{ep:,.0f}</span>'
+                    f'<span style="font-size:0.7rem;color:#6b7280;">ATP: ₹{ep:,.0f}</span>'
                 )
             elif ep:
                 display_parts.append(
-                    f'<span style="font-size:0.75rem;color:#6b7280;">Buy: ₹{ep:,.0f}</span>'
+                    f'<span style="font-size:0.75rem;color:#6b7280;">ATP: ₹{ep:,.0f}</span>'
                 )
             elif cp:
                 display_parts.append(
-                    f'<span style="font-size:0.7rem;color:#6b7280;">No buy price set</span>'
+                    f'<span style="font-size:0.7rem;color:#6b7280;">No ATP set</span>'
                 )
 
             c1.markdown(
