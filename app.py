@@ -230,9 +230,9 @@ with st.sidebar:
         except FileNotFoundError:
             st.caption("Changelog coming soon")
     st.markdown(
-        '<div style="text-align:center;font-size:0.8rem;">'
-        '<a href="https://forms.gle/YOUR_FORM_ID" target="_blank" '
-        'style="color:#6b7280;text-decoration:none;">💡 Request a feature</a></div>',
+        '<div style="text-align:center;font-size:0.8rem;color:#6b7280;">'
+        '💡 Feature requests: <a href="mailto:ashayk003@gmail.com" '
+        'style="color:#22b573;text-decoration:none;">ashayk003@gmail.com</a></div>',
         unsafe_allow_html=True,
     )
 
