@@ -366,20 +366,28 @@ st.markdown(f"""
         </div>
     </div>
     <div>
-        <button onclick="document.querySelector('[data-testid=\\'stSidebarCollapsedControl\\']')?.click()"
-                style="background:#1a1d26;border:1px solid #2a2e3a;color:#f0f2f5;border-radius:8px;
-                       padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;">
-            ☰ Reopen Sidebar
-        </button>
+        <button onclick="var e=document.querySelector('[data-testid*=Collapsed]')||document.querySelector('[data-testid*=Sidebar] button');if(e&&e.offsetParent===null)e.click()" style="background:#1a1d26;border:1px solid #2a2e3a;color:#f0f2f5;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;">☰ Reopen Sidebar</button>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ─── Fallback sidebar recovery in main page (when native sidebar is gone) ───
-if st.session_state.get("_sidebar_recovery", False):
+st.markdown("""
+<div style="display:flex;gap:8px;margin-bottom:1.5rem;">
+    <a href="#" onclick="var e=document.querySelector('[data-testid*=Collapsed]')||document.querySelector('[data-testid*=Sidebar] button');if(e&&e.offsetParent===null)e.click();return false" style="flex:1;background:#1a1d26;border:1px solid #2a2e3a;color:#f0f2f5;border-radius:8px;padding:0.4rem 0.8rem;text-align:center;text-decoration:none;font-size:0.85rem;">☰ Reopen Sidebar</a>
+    <a href="/" onclick="fetch(window.location.href,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'dummy=1'}).then(function(){window.location.reload()});return false" style="flex:1;background:#1a1d26;border:1px solid #2a2e3a;color:#f0f2f5;border-radius:8px;padding:0.4rem 0.8rem;text-align:center;text-decoration:none;font-size:0.85rem;">🔄 Hard Refresh</a>
+    <a href="?reset=1" style="flex:1;background:#1a1d26;border:1px solid #2a2e3a;color:#f0f2f5;border-radius:8px;padding:0.4rem 0.8rem;text-align:center;text-decoration:none;font-size:0.85rem;">🔄 Reset Session</a>
+</div>
+""", unsafe_allow_html=True)
+
+# ─── Sidebar recovery panel in main page ───
+if st.session_state.get("_sidebar_recovery", False) or st.query_params.get("reset", "") == "1":
+    if st.query_params.get("reset", "") == "1":
+        st.cache_data.clear()
+        st.query_params.clear()
+        st.session_state._sidebar_recovery = True
     with st.container():
         st.markdown("---")
-        st.markdown("##### 📁 Sidebar Controls")
+        st.markdown("##### 📁 Sidebar Controls (Fallback Panel)")
         portfolio_fb = load_portfolio()
         entry_prices_fb = load_entry_prices()
 
