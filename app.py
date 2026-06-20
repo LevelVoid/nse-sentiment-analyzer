@@ -436,7 +436,7 @@ if final_ticker and final_ticker != "":
                 recs.append(entry)
             save_track_record(recs)
         # Stash source breakdown for vote-based calibration
-        st.session_state._last_source_breakdown = result.get("source_breakdown", [])
+        st.session_state._last_source_breakdown = result.get("source_breakdown", []) if result else []
     if result:
         stock_data = result["stock_data"]
         news_items = result["news_items"]
