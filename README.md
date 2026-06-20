@@ -8,7 +8,7 @@
 | [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 | [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 | [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-| [![Tests](https://img.shields.io/badge/tests-109%20passing-brightgreen)](#-testing)|
+| [![Tests](https://img.shields.io/badge/tests-119%20passing-brightgreen)](#-testing)|
 | [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 |
 |<p align="center">
@@ -170,24 +170,17 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 
 ## 🆕 What's New
 
-### v2.1 — Moat Build: 504 Aliases, 18 Event Types, Bayesian Benchmark UI (June 2026)
+### v2.1.3 — Phase 0 moats: Shareable links, changelog, history archive (June 2026)
 
-**Alias Map: 72 → 504 entries.** Every major NSE stock now has 2-3 common name/abbreviation aliases. Headline matching recall is dramatically higher — "HUL", "L&T", "SBI CARD", "JINDAL STAINLESS", "RBI", "SEBI", "CBI" all map to the right ticker. Organised by sector with regulatory body coverage spanning 18 Indian agencies (ED, CBI, NCLT, SAT, RERA, NPCI, DGFT, FSSAI, CCI, SFIO, DRI, PERDA, etc.).
+**Shareable Sentiment Snapshot Links** — Every ticker now has a public URL (`?ticker=RELIANCE`). Send the link on Telegram/WhatsApp/X — recipients see a teaser card with SmartScore, signal, and price, with a "Buy ₹499" CTA to unlock the full analysis.
 
-**Event Classifier: 13 → 18 event types.**
-- New positive: `RATING_UPGRADE` (credit upgrades), `JV_MOU` (joint ventures, MoUs, strategic partnerships), `FUNDRAISE` (QIP, FPO, rights issue)
-- New negative: `CONTRACT_LOSS` (lost/terminated orders), `DIVESTMENT` (promoter stake sale, exit)
-- Enhanced LITIGATION: SFIO, DRI, NIA, asset freeze, director disqualification
-- Enhanced REGULATORY: PERDA/PFRDA, RERA, NCLT/NCLAT, SAT, DGCA, TRAI, CERC, DGFT, FSSAI
+**Public changelog** — CHANGELOG.md + sidebar expander so users can see what's new.
 
-**Bayesian Calibration now visible in the dashboard.** The Source Calibration card shows per-source Beta(α,β) distributions with accuracy %, total votes, and a 95% credibility interval. Users can see which sources earn their trust — Economic Times vs Moneycontrol vs LiveMint — all tuned by your 👍/👎 votes. This is the first published Beta-benchmark for Indian financial news source accuracy.
+**Historical Sentiment Archive** — Sentiment History expander in every dashboard: line chart + CSV export. After 6 months of daily usage, this becomes the largest free NSE sentiment time series.
 
-**NSE_TICKERS: 85 → 270 stocks.** Full Nifty 200+ coverage plus sector depth in banking, IT, pharma, auto, FMCG, energy, metals, cement, capital goods, chemicals, infra, media, logistics, and textiles.
+**Legal disclaimer** — Expanded ⚠️ Disclaimer expander covering not financial advice, no SEBI registration, data accuracy, no liability, past performance, and use-at-your-own-risk. Footer strengthened with explicit SEBI-registered advisor consultation warning.
 
-**Other improvements:**
-- Event classifier ~80 lines richer with LITIGATION + REGULATORY body coverage
-- All 109 tests pass — zero regressions from expansion
-- Ticker alias matching now covers 504 common name forms and 20+ regulatory agencies
+- 119 tests passing (+10 new: public teaser, changelog, history CSV export)
 
 ### v2.1.2 — Bug fix: ETF NaN prices + audit pass (June 2026)
 
@@ -211,6 +204,25 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 **UX improvements:**
 - Dashboard iframe height now uses a properly measured formula (`2200 + n_news*120`, capped at 6000) — each section measured in pixels from rendered CSS. The auto-height postMessage script refines after load as a secondary adjustment
 - Added mobile-responsive CSS breakpoints — buttons and inputs scale on screens under 640px
+
+### v2.1 — Moat Build: 504 Aliases, 18 Event Types, Bayesian Benchmark UI (June 2026)
+
+**Alias Map: 72 → 504 entries.** Every major NSE stock now has 2-3 common name/abbreviation aliases. Headline matching recall is dramatically higher — \"HUL\", \"L&T\", \"SBI CARD\", \"JINDAL STAINLESS\", \"RBI\", \"SEBI\", \"CBI\" all map to the right ticker. Organised by sector with regulatory body coverage spanning 18 Indian agencies (ED, CBI, NCLT, SAT, RERA, NPCI, DGFT, FSSAI, CCI, SFIO, DRI, PERDA, etc.).
+
+**Event Classifier: 13 → 18 event types.**
+- New positive: `RATING_UPGRADE` (credit upgrades), `JV_MOU` (joint ventures, MoUs, strategic partnerships), `FUNDRAISE` (QIP, FPO, rights issue)
+- New negative: `CONTRACT_LOSS` (lost/terminated orders), `DIVESTMENT` (promoter stake sale, exit)
+- Enhanced LITIGATION: SFIO, DRI, NIA, asset freeze, director disqualification
+- Enhanced REGULATORY: PERDA/PFRDA, RERA, NCLT/NCLAT, SAT, DGCA, TRAI, CERC, DGFT, FSSAI
+
+**Bayesian Calibration now visible in the dashboard.** The Source Calibration card shows per-source Beta(α,β) distributions with accuracy %, total votes, and a 95% credibility interval. Users can see which sources earn their trust — Economic Times vs Moneycontrol vs LiveMint — all tuned by your 👍/👎 votes. This is the first published Beta-benchmark for Indian financial news source accuracy.
+
+**NSE_TICKERS: 85 → 270 stocks.** Full Nifty 200+ coverage plus sector depth in banking, IT, pharma, auto, FMCG, energy, metals, cement, capital goods, chemicals, infra, media, logistics, and textiles.
+
+**Other improvements:**
+- Event classifier ~80 lines richer with LITIGATION + REGULATORY body coverage
+- All 109 tests pass — zero regressions from expansion
+- Ticker alias matching now covers 504 common name forms and 20+ regulatory agencies
 
 ### v2.0 — Bayesian Calibration + Optional FinBERT (June 2026)
 
@@ -256,8 +268,12 @@ blended = Σ(source_weight × source_avg_compound) / Σ(source_weight)
 - **Guided empty state** — Centered launchpad with popular ticker chips replaces the old instruction wall
 - **Larger, readable type** — Minimum font raised from 8.8px → 10.4px, with clearer visual hierarchy: Price (2rem) > SmartScore (1.5rem) > Signal
 - **FII/DII institutional flow** — NSE India's official FII/FPI and DII data, shown in Cr with net buying/selling stance
+- **Shareable snapshot links** — Every ticker has a public URL (`?ticker=RELIANCE`) with teaser card + paywall CTA
+- **Historical sentiment archive** — SmartScore time series + CSV export per ticker
+- **Public changelog** — Sidebar shows what's new; feature requests via email
 - **Zero API keys** — Works out of the box
 - **Free & open-source** — MIT license
+- **Legal disclaimer** — No SEBI registration, not financial advice, use at your own risk
 
 ---
 
@@ -345,7 +361,10 @@ nse-sentiment-analyzer/
     ├── test_render.py
     ├── test_sentiment.py
     ├── test_event_classifier.py   # 18 event types, VADER blending
-    └── test_aggregate_sentiment.py # EWMA, breadth, volume, sparkline
+    ├── test_aggregate_sentiment.py # EWMA, breadth, volume, sparkline
+    ├── test_public_teaser.py      # Shareable snapshot public card
+    ├── test_changelog.py          # CHANGELOG.md infrastructure
+    ├── test_history_export.py     # Sentiment archive CSV export
 ```
 
 ### Adding a New News Source
@@ -374,7 +393,7 @@ nse-sentiment-analyzer/
 ## 🧪 Testing
 
 ```bash
-# Run all tests (109 tests, mocked APIs, no network)
+# Run all tests (119 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # Run with coverage
@@ -391,7 +410,7 @@ python -m pytest tests/test_sentiment.py::TestSentiment::test_bullish_headline -
 
 - **All external APIs are mocked** — tests run offline
 - **Fixtures** in `conftest.py` provide a `tmp_data_dir` for isolated file I/O + a `sample_hist` DataFrame for indicators
-- **109 tests** across 8 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
+- **119 tests** across 9 modules (sentiment, indicators, data_fetcher, persistence, render, event_classifier, aggregate_sentiment, plus integration tests for `analyze_ticker`)
 - **Integration tests** verify the full pipeline end-to-end at module boundaries (stock data → sentiment → event classification → SmartScore)
 - **No network calls** — `yfinance`, `feedparser`, `duckduckgo_search`, `requests`, and `rdt-cli` are all patched with `pytest-mock`
 
@@ -448,6 +467,16 @@ Or click the "Cache: … entries" button in the app sidebar.
 | Streamlit Cloud "Module not found" | Missing dependency | Verify it's in `requirements.txt` |
 | Duplicate track records | Repeated searches of the same ticker created extra entries | Fixed: dedup updates the latest unvoted entry per ticker. Update to latest version |
 
+### Legal Disclaimer
+
+This tool provides data-driven sentiment analysis and technical indicators for **educational and informational purposes only**. Nothing on this platform constitutes investment advice, a recommendation, or a solicitation to buy or sell securities.
+
+- **Not SEBI registered.** The creator is not a SEBI-registered investment advisor.
+- **Data may be inaccurate.** Data comes from third-party public APIs and may be delayed or incomplete.
+- **No liability.** The creator is not liable for any financial losses arising from use of this tool.
+- **Past performance ≠ future results.** Historical sentiment scores do not guarantee future outcomes.
+- **Consult a professional.** Always consult a SEBI-registered financial advisor before making investment decisions.
+
 ### Getting Help
 
 - Open a [GitHub Issue](https://github.com/AshayK003/nse-sentiment-analyzer/issues)
@@ -472,7 +501,7 @@ Or click the "Cache: … entries" button in the app sidebar.
 1. **Open an issue** describing the change (bug → reproduction steps; feature → use case)
 2. **Fork and branch** from `master`
 3. **Write tests first** for any new logic
-4. **Run the full suite** — `python -m pytest tests/ -v -q` should pass
+4. **Run the full suite** — `python -m pytest tests/ -q` should pass
 5. **Keep diffs small** — one logical change per PR
 6. **Commit messages** — concise, prefixed by type: `fix:`, `feat:`, `test:`, `docs:`, `refactor:`
 
