@@ -231,8 +231,8 @@ with st.sidebar:
             st.caption("Changelog coming soon")
     st.markdown(
         '<div style="text-align:center;font-size:0.8rem;color:#6b7280;">'
-        '💡 Feature requests: <a href="mailto:ashayk003@gmail.com" '
-        'style="color:#22b573;text-decoration:none;">ashayk003@gmail.com</a></div>',
+        '💡 Feature requests: <a href="mailto:darkcharon3301@gmail.com" '
+        'style="color:#22b573;text-decoration:none;">darkcharon3301@gmail.com</a></div>',
         unsafe_allow_html=True,
     )
 
