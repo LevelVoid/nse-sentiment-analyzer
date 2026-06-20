@@ -206,11 +206,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     low_52 = stock.get("52w_low")
     proximity_msg = ""
     proximity_class = ""
-    if isinstance(high_52, (int, float)) and high_52 > 0:
+    if _is_valid_num(price_now) and _is_valid_num(high_52) and high_52 > 0:
         pct_of_high = (price_now / high_52) * 100
         proximity_msg = f"{pct_of_high:.0f}% of 52W High"
         proximity_class = "high" if pct_of_high > 90 else "mid" if pct_of_high > 70 else "low"
-    elif isinstance(low_52, (int, float)) and low_52 > 0:
+    elif _is_valid_num(price_now) and _is_valid_num(low_52) and low_52 > 0:
         pct_above_low = ((price_now - low_52) / low_52) * 100
         proximity_msg = f"{pct_above_low:.0f}% above 52W Low"
         proximity_class = "low" if pct_above_low < 10 else "mid"
