@@ -14,8 +14,8 @@ from data_fetcher import (
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
-from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, update_source_accuracy
-from render import render_dashboard, get_signal_icon
+from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy
+from render import render_dashboard, render_public_teaser, get_signal_icon
 from market_data import get_fii_dii_flow
 from aggregate_sentiment import compute_smartscore
 
@@ -218,6 +218,24 @@ with st.sidebar:
     st.metric("Total Scans", total)
     st.caption("👍 = signal was right, 👎 = wrong")
 
+    # ─── Changelog & Feedback ───
+    with st.expander("📝 What's New"):
+        try:
+            with open("CHANGELOG.md") as f:
+                lines = f.readlines()
+            # Show last 3 version entries (~30 lines)
+            st.markdown("".join(lines[:40]), unsafe_allow_html=True)
+            if len(lines) > 40:
+                st.caption("... see CHANGELOG.md for full history")
+        except FileNotFoundError:
+            st.caption("Changelog coming soon")
+    st.markdown(
+        '<div style="text-align:center;font-size:0.8rem;">'
+        '<a href="https://forms.gle/YOUR_FORM_ID" target="_blank" '
+        'style="color:#6b7280;text-decoration:none;">💡 Request a feature</a></div>',
+        unsafe_allow_html=True,
+    )
+
 # ─── Main UI ───
 
 # ─── Premium header ───
@@ -236,6 +254,29 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ─── Ticker Input — single text field + search button ───
+# ─── Shareable snapshot link: ?ticker=X bypasses normal input ───
+query_ticker = st.query_params.get("ticker", "")
+if query_ticker:
+    query_ticker = query_ticker.strip().upper().replace(".NS", "")
+    if query_ticker:
+        final_ticker = query_ticker
+        company_name = NSE_TICKERS.get(final_ticker, final_ticker)
+        with st.spinner(f"Loading analysis for {final_ticker}..."):
+            result = analyze_ticker(final_ticker, company_name)
+        if result:
+            html = render_public_teaser(result, final_ticker, company_name)
+            st.markdown(html, unsafe_allow_html=True)
+            st.markdown(
+                '<div style="text-align:center;margin-top:1rem;">'
+                '<a href="/" style="color:#22b573;font-size:0.9rem;text-decoration:none;">'
+                '\u2190 Back to full app</a></div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.error(f"No data found for **{final_ticker}**")
+        # Hide everything else when showing a teaser
+        st.stop()
+
 ticker_col, btn_col = st.columns([4, 1])
 with ticker_col:
     ticker_input = st.text_input(
@@ -352,6 +393,35 @@ if final_ticker and final_ticker != "":
                     st.rerun()
         elif last_rec and last_rec.get("vote") is not None:
             st.caption(f"You marked this signal as {'✅ accurate' if last_rec['vote'] else '❌ inaccurate'}")
+
+        # Shareable link
+        share_url = f"https://nse-sentiment-analyzer.streamlit.app/?ticker={final_ticker}"
+        st.markdown(
+            f'<div style="text-align:right;margin-top:0.5rem;">'
+            f'<a href="{share_url}" target="_blank" style="color:#6b7280;font-size:0.8rem;text-decoration:none;">'
+            f'\U0001f517 Share snapshot</a></div>',
+            unsafe_allow_html=True,
+        )
+
+        # ─── Historical Sentiment Archive ───
+        history = load_sentiment_history(final_ticker)
+        if history:
+            with st.expander("📈 Sentiment History"):
+                import pandas as pd
+                df = pd.DataFrame(history)
+                if "smartscore" in df.columns:
+                    df["smartscore"] = pd.to_numeric(df["smartscore"], errors="coerce")
+                    df = df.dropna(subset=["smartscore"])
+                    if not df.empty:
+                        st.line_chart(df.set_index("date")["smartscore"])
+                csv_data = history_to_csv(final_ticker, history)
+                st.download_button(
+                    label="\U0001f4e5 Export CSV",
+                    data=csv_data,
+                    file_name=f"{final_ticker}_sentiment_history.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
 
     else:
         st.error(f"Could not find data for **{final_ticker}**. "

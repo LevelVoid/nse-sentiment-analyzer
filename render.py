@@ -75,6 +75,41 @@ def _is_valid_num(val):
     return False
 
 
+def render_public_teaser(result, ticker, company_name):
+    """Lightweight public HTML card for shareable snapshot links.
+
+    Shows: stock name, price, SmartScore, signal, and a purchase CTA.
+    Does NOT include news, technicals, or full dashboard content.
+    """
+    sd = result["stock_data"]
+    price = f"\u20b9{sd['current_price']:,.2f}" if _is_valid_num(sd.get('current_price')) else "N/A"
+    score = result.get("smartscore", "\u2014")
+    signal = result.get("signal", "N/A")
+    emoji = result.get("smartscore_emoji", get_signal_icon(result.get("signal_emoji", "")))
+    name = company_name or sd.get("name", ticker)
+
+    # ponytail: one compact card, no templating engine needed
+    return f"""<div style="background:#13151a;border:1px solid #1e2028;border-radius:16px;
+padding:1.5rem;font-family:Inter,-apple-system,sans-serif;max-width:400px;color:#e4e6eb;">
+<div style="font-size:0.85rem;color:#6b7280;margin-bottom:0.25rem;">{name}</div>
+<div style="font-size:1.1rem;font-weight:600;margin-bottom:0.75rem;">{ticker} &middot; {price}</div>
+<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
+  <span style="font-size:2rem;font-weight:800;background:linear-gradient(135deg,#22b573,#0d9488);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{score}</span>
+  <span style="font-size:1rem;">{emoji} {signal}</span>
+</div>
+<div style="text-align:center;">
+  <a href="https://nse-sentiment-analyzer.streamlit.app"
+     style="display:inline-block;background:linear-gradient(135deg,#22b573,#0d9488);
+     color:#fff;padding:0.6rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;">
+    &#x1f512; Buy Full Analysis &#x20b9;499
+  </a>
+</div>
+<div style="margin-top:0.75rem;font-size:0.75rem;color:#6b7280;text-align:center;">
+  Live SmartScore &middot; Multi-source sentiment &middot; Technical indicators
+</div>
+</div>"""
+
 def fmt_price(val):
     if _is_valid_num(val):
         return f"\u20b9{val:,.2f}"

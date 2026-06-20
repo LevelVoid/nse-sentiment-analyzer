@@ -146,7 +146,7 @@ def load_sentiment_history(ticker, days=10):
 
 
 def save_sentiment_history(ticker, row_data):
-    """Append or update today's sentiment history entry for a ticker.
+    """Append or update today's aggregated sentiment history entry for a ticker.
 
     row_data: dict with keys matching HISTORY_FIELDS (excluding date/ticker).
     If an entry already exists for this ticker today, it's updated in-place.
@@ -174,19 +174,40 @@ def save_sentiment_history(ticker, row_data):
     new_row = {"date": today, "ticker": ticker}
     new_row.update(row_data)
 
-    # Ensure all fields exist (fill missing with defaults)
-    for f in HISTORY_FIELDS:
-        new_row.setdefault(f, "")
-
     existing.append(new_row)
-
     try:
+        fieldnames = ["date", "ticker"] + HISTORY_FIELDS
         with open(HISTORY_FILE, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=HISTORY_FIELDS)
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(existing)
-    except (OSError, PermissionError):
-        pass  # Read-only filesystem on Streamlit Cloud
+    except (IOError, OSError):
+        pass  # Read-only filesystem
+
+
+def history_to_csv(ticker, records):
+    """Convert sentiment history records to CSV string, filtered by ticker.
+
+    Returns a CSV string with header row. If records is empty, returns
+    just the header row. Only includes rows matching the given ticker.
+    """
+    import csv
+    import io
+
+    # Filter to matching ticker
+    filtered = [r for r in records if r.get("ticker") == ticker]
+
+    # Determine field names from data, or fall back to known fields
+    if filtered:
+        fieldnames = list(filtered[0].keys())
+    else:
+        fieldnames = ["date", "ticker", "smartscore", "avg_compound", "headline_count"]
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(filtered)
+    return buf.getvalue()
 
 
 # ─── Bayesian Source Calibration ───
