@@ -704,10 +704,9 @@ if final_ticker and final_ticker != "":
                                 st.warning(f"Could not parse ATP — stock added without entry price")
                         st.session_state._skip_reanalysis = True
                         st.rerun()
-            with st.container():
-                _render_portfolio_list(portfolio, eprices, key_prefix="btm",
-                                       brief_btn_label="⚡ Briefing",
-                                       heatmap_css="btm-heat")
+            _render_portfolio_list(portfolio, eprices, key_prefix="btm",
+                                   brief_btn_label="⚡ Briefing",
+                                   heatmap_css="btm-heat")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with bc2:
@@ -718,8 +717,7 @@ if final_ticker and final_ticker != "":
                 acc = sum(1 for r in voted if r["vote"] is True)
                 st.metric("Accuracy", f"{acc/len(voted)*100:.0f}%", help=f"{acc}/{len(voted)} correct")
             st.metric("Total Scans", len(recs))
-            st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong</div></div>', unsafe_allow_html=True)
 
         # ─── Historical Sentiment Archive ───
         history = load_sentiment_history(final_ticker)
