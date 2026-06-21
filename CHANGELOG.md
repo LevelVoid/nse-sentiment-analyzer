@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.4.2] — 2026-06-21
+
+### Fixed
+- **Shareable snapshot links now work** — `?ticker=NIFTYBEES` URLs crashed with a `TypeError` because the rendering pipeline wasn't setting up technical indicators and other supporting data for snapshot-only visits. Now they load the same full dashboard as a normal search.
+- **`get_cached_history` import was inline-only** — Couldn't be reached from the snapshot code path without a separate inline import. Promoted to module-level import so all paths can use it.
+
+### Cleaned
+- **Function-level imports moved to module level** — `sentiment.py` was importing from `persistence` inside a function body (leftover from an old circular-dependency scare). `intraday.py` had `import yfinance` inside two separate functions. Both now import at the top of the file — cleaner, faster, and more predictable.
+- **PEP 8 spacing** — Trimmed extra blank lines between functions in `render.py`.
+
 ## [2.4.1] — 2026-06-21
 
 ### Security
