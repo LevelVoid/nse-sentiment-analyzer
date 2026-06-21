@@ -876,9 +876,9 @@ st.markdown(f"""
 **Limitations you should know:**
 - **Price data** — Yahoo Finance free tier has 15-20 min delay. Not suitable for intraday trading without real-time feeds.
 - **NSE intraday (VWAP)** — yfinance intraday history for Indian stocks is spotty; many tickers return incomplete data.
-- **Sentiment model** — VADER is a general-purpose model, not trained on Indian financial news. Hinglish headlines, company abbreviations, and rupee amounts reduce accuracy.
+- **Sentiment model** — VADER is a general-purpose model, not trained on Indian financial news. However, we've expanded it with a 90-term Indian financial lexicon covering common abbreviations (NPA, PAT, EBITDA, AUM), Hinglish terms (tezi, mandi, gira), and Indian financial context (credit growth, asset quality, divestment). Accuracy is improved over vanilla VADER but still below a finance-tuned model.
 - **SmartScore** — This is a custom composite metric. It has not been backtested or validated against actual returns. A score of 52 vs 48 is not a meaningful difference.
-- **Event classifier** — Keyword-based rules can misclassify headlines (e.g., "SEBI clears merger" flagged as penalty).
+- **Event classifier** — Keyword-based rules can sometimes misclassify headlines. "SEBI clears merger" is now correctly classified as regulatory approval (positive) rather than penalty.
 - **News sources** — RSS headlines are often trailing the market move. DuckDuckGo fallback (used when RSS returns little) is noisy and unreliable.
 
 **No liability.** Under no circumstances shall the creator be liable for any direct, indirect, incidental, special, or consequential damages arising from your use of this tool, including but not limited to financial losses from trading or investment decisions made based on the data provided.

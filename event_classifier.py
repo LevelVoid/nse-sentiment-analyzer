@@ -79,6 +79,13 @@ EVENT_MAP = [
 
     # ── New positive events ──────────────
 
+    ("REGULATORY_APPROVAL", 0.15, [
+        r"\bSEBI\s+(?:approves?|clears?|allows?|okays?)\b",
+        r"\bRBI\s+(?:approves?|clears?|allows?)\b",
+        r"\bCCI\s+(?:approves?|clears?|allows?|okays?)\b",
+        r"\bNCLT\s+(?:approves?|clears?|allows?)\b",
+        r"\bgets\s+(?:SEBI|RBI|regulatory)\s+(?:approval|clearance|nod)\b",
+    ]),
     ("RATING_UPGRADE", 0.20, [
         r"\bupgrad(?:e|es|ed)\s+(?:credit\s+)?(?:rating|outlook)\b",
         r"\brating\s+(?:upgraded|upgrade)\b",

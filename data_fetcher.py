@@ -797,6 +797,8 @@ INDIA_RSS_FEEDS = [
     ("Economic Times Markets", "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms"),
     ("Economic Times Company", "https://economictimes.indiatimes.com/news/company/rssfeeds/2143429.cms"),
     ("LiveMint Markets", "https://www.livemint.com/rss/markets"),
+    ("LiveMint Companies", "https://www.livemint.com/rss/companies"),
+    ("LiveMint Industry", "https://www.livemint.com/rss/industry"),
     ("NDTV Profit", "https://feeds.feedburner.com/ndtvprofit-latest"),
 ]
 
@@ -808,6 +810,8 @@ SOURCE_LABELS = {
     "economic times markets": "Economic Times",
     "economic times company": "Economic Times",
     "livemint markets": "LiveMint",
+    "livemint companies": "LiveMint",
+    "livemint industry": "LiveMint",
     "ndtv profit": "NDTV Profit",
     "duckduckgo": "DuckDuckGo",
 }

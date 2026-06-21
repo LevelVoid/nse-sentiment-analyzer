@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.5.0] — 2026-06-21
+
+### Added
+- **Indian financial lexicon expanded to 90+ terms** — Added 35 new entries covering:
+  - Indian banking metrics: NPA, GNPA, NNPA, AUM, NIM, credit growth, asset quality
+  - Profitability shorthand: PAT, EBITDA, ROE, ROCE
+  - Hinglish terms: tezi (bullish), mandi (bearish), gira, chada
+  - General financial context: robust, stellar, headwinds, tailwinds, profit booking
+  - VADER now correctly catches abbreviations and Indian-English terms it previously missed.
+- **REGULATORY_APPROVAL event type** — "SEBI clears merger", "RBI approves", "CCI okays" are now classified as positive events (base +0.15) instead of falling through to LITIGATION. Catches 5 regulatory bodies across 5 patterns.
+- **LiveMint Companies and Industry RSS feeds** — Two additional source feeds from livemint.com to improve news coverage depth.
+
+### Changed
+- **Disclaimer updated** — Sentiment model and event classifier limitations now reflect the expanded lexicon and REGULATORY_APPROVAL fix. "SEBI clears merger" example updated from "flagged as penalty" to "correctly classified as regulatory approval".
+
 ## [2.4.2] — 2026-06-21
 
 ### Fixed
