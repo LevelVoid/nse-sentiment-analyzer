@@ -372,57 +372,8 @@ def _render_portfolio_list(portfolio, entry_prices, key_prefix="side",
 
 # ─── Sidebar ───
 with st.sidebar:
-    st.header("📁 My Portfolio")
     portfolio = load_portfolio()
     entry_prices = load_entry_prices()
-
-    # ─── Add ticker + optional entry price ───
-    st.markdown("<div style='font-size:0.85rem;font-weight:600;color:#8891a0;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;'>Add Stock</div>", unsafe_allow_html=True)
-    add_c1, add_c2, add_c3 = st.columns([2, 1, 1])
-    with add_c1:
-        new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
-                              max_chars=15, key="portfolio_add")
-    with add_c2:
-        ep_input = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
-                                 max_chars=10, key="entry_price_add", help="Optional: your average trade price for P&L tracking")
-    with add_c3:
-        if st.button("➕", use_container_width=True, key="add_portfolio_btn", help="Add to portfolio") and new_t.strip():
-            t = new_t.strip().upper().replace(".NS", "")
-            if not re.match(r'^[A-Z0-9&-]+$', t):
-                st.warning("Invalid ticker format")
-            elif t in portfolio:
-                st.warning(f"{t} already in portfolio")
-            else:
-                portfolio.append(t)
-                save_portfolio(portfolio)
-                if ep_input.strip():
-                    try:
-                        save_entry_price(t, float(ep_input.strip().replace(",", "")))
-                    except ValueError:
-                        st.warning(f"Could not parse ATP '{ep_input.strip()}' — stock added without entry price")
-                st.session_state._skip_reanalysis = True
-                st.rerun()
-
-    # ponytail: hint to set entry prices for better P&L
-    if portfolio and not entry_prices:
-        st.markdown(
-            '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
-            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'
-            ' Set an ATP above to track your P&amp;L</span>',
-            unsafe_allow_html=True,
-        )
-    elif entry_prices:
-        missing_ep = [t for t in portfolio if t not in entry_prices]
-        if missing_ep:
-            st.markdown(
-                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
-                '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'
-                f" Set ATP for {', '.join(missing_ep[:3])}{'…' if len(missing_ep) > 3 else ''}</span>",
-                unsafe_allow_html=True,
-            )
-
-    if portfolio:
-        _render_portfolio_list(portfolio, entry_prices, key_prefix="side")
 
     # ─── India VIX ───
     st.markdown("---")
@@ -448,30 +399,6 @@ with st.sidebar:
                 ' Low VIX (&lt;15) — trending markets favored.</span>',
                 unsafe_allow_html=True,
             )
-
-    # ─── Track Record Stats ───
-    st.markdown("---")
-    st.markdown(
-        '<div style="display:flex;align-items:center;gap:0.5rem;font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;">'
-        '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'
-        ' Track Record</div>',
-        unsafe_allow_html=True,
-    )
-    records = load_track_record()
-    total = len(records)
-    voted = [r for r in records if r.get("vote") is not None]
-    accurate = sum(1 for r in voted if r["vote"] is True)
-    if voted:
-        st.metric("Accuracy", f"{accurate/len(voted)*100:.0f}%", help=f"{accurate}/{len(voted)} signals rated")
-    st.metric("Total Scans", total)
-    st.markdown(
-        '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
-        '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'
-        ' = signal was right'
-        '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:8px;"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z"/><path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/></svg>'
-        ' = wrong</span>',
-        unsafe_allow_html=True,
-    )
 
     # ─── Changelog & Feedback ───
     _FILE_TEXT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
@@ -752,6 +679,32 @@ if final_ticker and final_ticker != "":
         with bc1:
             st.markdown(f'<div class="btm-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="btm-title">{_FOLDER} Portfolio</div>', unsafe_allow_html=True)
+            # ─── Add Stock form ───
+            ac1, ac2, ac3 = st.columns([2, 1, 0.6])
+            with ac1:
+                new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
+                                      max_chars=15, key="btm_add_ticker")
+            with ac2:
+                ep_input = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
+                                         max_chars=10, key="btm_add_atp",
+                                         help="Optional: average trade price for P&L tracking")
+            with ac3:
+                if st.button("➕", use_container_width=True, key="btm_add_btn", help="Add to portfolio") and new_t.strip():
+                    t = new_t.strip().upper().replace(".NS", "")
+                    if not re.match(r'^[A-Z0-9&-]+$', t):
+                        st.warning("Invalid ticker format")
+                    elif t in portfolio:
+                        st.warning(f"{t} already in portfolio")
+                    else:
+                        portfolio.append(t)
+                        save_portfolio(portfolio)
+                        if ep_input.strip():
+                            try:
+                                save_entry_price(t, float(ep_input.strip().replace(",", "")))
+                            except ValueError:
+                                st.warning(f"Could not parse ATP — stock added without entry price")
+                        st.session_state._skip_reanalysis = True
+                        st.rerun()
             with st.container():
                 _render_portfolio_list(portfolio, eprices, key_prefix="btm",
                                        brief_btn_label="⚡ Briefing",
@@ -800,7 +753,7 @@ elif st.session_state.get("run_briefing"):
     # ─── PORTFOLIO BRIEFING MODE ───
     portfolio = load_portfolio()
     if not portfolio:
-        st.warning("No tickers in your portfolio. Add some from the sidebar.")
+        st.warning("No tickers in your portfolio. Add some above.")
     else:
         _SATELLITE = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 16-4 4"/><path d="m12 20 4-4"/></svg>'
         st.markdown(f'<div style="display:flex;align-items:center;gap:0.5rem;font-size:1.25rem;font-weight:600;">{_SATELLITE} Portfolio Briefing — {len(portfolio)} stocks</div>', unsafe_allow_html=True)
@@ -874,7 +827,7 @@ else:
         st.markdown(
             f"<div style='text-align:center;color:#6b7280;font-size:0.9rem'>"
             f"📁 Portfolio: {', '.join(portfolio[:8])}{'…' if len(portfolio) > 8 else ''}"
-            f" — check the sidebar for details</div>",
+            f" — manage below</div>",
             unsafe_allow_html=True,
         )
 
