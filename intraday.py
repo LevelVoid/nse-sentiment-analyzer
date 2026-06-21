@@ -4,6 +4,8 @@ All functions are pure-data: they take inputs, return dicts, and have zero
 Streamlit dependencies. Designed to be testable with mocked yfinance calls.
 """
 
+import yfinance as yf
+
 
 def compute_vwap(ticker):
     """Compute VWAP + deviation from intraday 5-min data.
@@ -18,7 +20,6 @@ def compute_vwap(ticker):
     Returns:
         dict with keys: vwap (float|None), price (float|None), deviation_pct (float|None)
     """
-    import yfinance as yf
 
     # Indices (^ prefix) don't get .NS suffix; stocks do
     symbol = f"{ticker}.NS" if not ticker.startswith("^") else ticker
@@ -105,7 +106,6 @@ def get_vix():
             change (float) - point change from previous day
             level (str) - 'Low' (<15), 'Medium' (15-20), 'High' (>20), or 'N/A'
     """
-    import yfinance as yf
 
     try:
         data = yf.download("^INDIAVIX", period="5d", progress=False, auto_adjust=True)

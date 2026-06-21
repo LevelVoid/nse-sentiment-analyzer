@@ -20,7 +20,7 @@ CONTACT = {
 }
 
 from data_fetcher import (
-    NSE_TICKERS, get_stock_info, search_news,
+    NSE_TICKERS, get_stock_info, search_news, get_cached_history,
 )
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
@@ -475,13 +475,18 @@ if query_ticker:
                 '\u2190 Back to main app</a></div>',
                 unsafe_allow_html=True,
             )
+            # Compute supporting data like the normal search path
+            ti = get_technical_indicators(final_ticker)
+            hist_cache = get_cached_history(final_ticker)
+            _hist = hist_cache.tail(5) if hist_cache is not None and len(hist_cache) >= 1 else None
+            result["pivot_levels"] = compute_pivot_levels(_hist)
+            records = load_track_record()
+            fii_data = get_fii_dii_flow()
             html = render_dashboard(
                 result, final_ticker, company_name,
-                technical_indicators=result.get("technical_indicators"),
-                vwap_data=result.get("vwap"),
-                pivot_levels=result.get("pivot_levels"),
-                fii_data=result.get("fii_dii"),
-                records=result.get("records"),
+                technical_indicators=ti,
+                track_record=records,
+                fii_dii_data=fii_data,
             )
             st.components.v1.html(html, height=result.get("_height", 3000), scrolling=False)
         else:

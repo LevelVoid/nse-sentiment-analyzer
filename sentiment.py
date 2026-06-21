@@ -5,6 +5,7 @@ VADER + custom financial lexicon tuned for Indian markets.
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import streamlit as st
+from persistence import load_source_accuracy, SOURCE_WEIGHTS_PRIOR
 
 
 # ─── Financial sentiment augmentations ───
@@ -59,9 +60,8 @@ FINANCIAL_BOOSTERS = {
 
 def get_source_weights():
     """Return learned source weights from Bayesian calibration.
-    Falls back to persistence.SOURCE_WEIGHTS_PRIOR defaults if calibration file missing or empty."""
+    Falls back to SOURCE_WEIGHTS_PRIOR defaults if calibration file missing or empty."""
     try:
-        from persistence import load_source_accuracy, SOURCE_WEIGHTS_PRIOR
         acc = load_source_accuracy()
         if acc:
             return {
@@ -70,7 +70,6 @@ def get_source_weights():
             }
         return dict(SOURCE_WEIGHTS_PRIOR)
     except Exception:
-        from persistence import SOURCE_WEIGHTS_PRIOR
         return dict(SOURCE_WEIGHTS_PRIOR)
 
 

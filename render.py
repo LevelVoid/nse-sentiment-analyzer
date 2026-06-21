@@ -76,8 +76,6 @@ def _is_valid_num(val):
     return False
 
 
-
-
 def fmt_price(val):
     if _is_valid_num(val):
         return f"\u20b9{val:,.2f}"
