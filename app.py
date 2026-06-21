@@ -868,6 +868,14 @@ st.markdown(f"""
 
 **Data accuracy.** Data is sourced from third-party public APIs (Yahoo Finance, RSS feeds) and may be delayed, incomplete, or inaccurate. We do not guarantee the timeliness, accuracy, or completeness of any data displayed.
 
+**Limitations you should know:**
+- **Price data** — Yahoo Finance free tier has 15-20 min delay. Not suitable for intraday trading without real-time feeds.
+- **NSE intraday (VWAP)** — yfinance intraday history for Indian stocks is spotty; many tickers return incomplete data.
+- **Sentiment model** — VADER is a general-purpose model, not trained on Indian financial news. Hinglish headlines, company abbreviations, and rupee amounts reduce accuracy.
+- **SmartScore** — This is a custom composite metric. It has not been backtested or validated against actual returns. A score of 52 vs 48 is not a meaningful difference.
+- **Event classifier** — Keyword-based rules can misclassify headlines (e.g., "SEBI clears merger" flagged as penalty).
+- **News sources** — RSS headlines are often trailing the market move. DuckDuckGo fallback (used when RSS returns little) is noisy and unreliable.
+
 **No liability.** Under no circumstances shall the creator be liable for any direct, indirect, incidental, special, or consequential damages arising from your use of this tool, including but not limited to financial losses from trading or investment decisions made based on the data provided.
 
 **Past performance.** Historical data and past sentiment scores do not guarantee future results.
