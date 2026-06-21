@@ -735,7 +735,12 @@ if final_ticker and final_ticker != "":
                 df["smartscore"] = pd.to_numeric(df["smartscore"], errors="coerce")
                 df = df.dropna(subset=["smartscore"])
                 if not df.empty:
-                    st.line_chart(df.set_index("date")["smartscore"])
+                    df = df.copy()
+                    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+                    df = df.dropna(subset=["date"])
+                    if not df.empty:
+                        chart_df = df.set_index("date")[["smartscore"]]
+                        st.line_chart(chart_df, y="smartscore", use_container_width=True)
             csv_data = history_to_csv(final_ticker, history)
             st.download_button(
                 label="Export CSV",
