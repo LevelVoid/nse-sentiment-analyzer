@@ -120,6 +120,15 @@ st.markdown("""
         /* Footer Chai4Me badge */
         a[aria-label*="Support"] {padding: 6px 16px !important;}
         a[aria-label*="Support"] img {height: 24px !important;}
+
+        /* Bottom cards (Portfolio + Track Record) */
+        .btm-card{background:#15181f;border:1px solid #2a2e3a;border-radius:12px;padding:1rem;height:100%}
+        .btm-title{display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;font-weight:600;color:#f0f2f5;margin-bottom:0.6rem}
+        .btm-muted{color:#8891a0;font-size:0.75rem;line-height:1.4}
+        .btm-link{color:#22b573;text-decoration:none}
+        .btm-heat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin:4px 0}
+        .btm-heat-item{background:#1a1a2e;border-radius:5px;padding:2px 6px;text-align:center;font-size:0.65rem}
+        .btm-heat-tick{font-weight:600;color:#e4e6eb}
     }
 </style>""", unsafe_allow_html=True)
 
@@ -661,17 +670,6 @@ if final_ticker and final_ticker != "":
         _BAR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'
         _CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
         _X = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-        _MAIL = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
-
-        st.markdown("""<style>
-.btm-card{background:#15181f;border:1px solid #2a2e3a;border-radius:12px;padding:1rem;height:100%}
-.btm-title{display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;font-weight:600;color:#f0f2f5;margin-bottom:0.6rem}
-.btm-muted{color:#8891a0;font-size:0.75rem;line-height:1.4}
-.btm-link{color:#22b573;text-decoration:none}
-.btm-heat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin:4px 0}
-.btm-heat-item{background:#1a1a2e;border-radius:5px;padding:2px 6px;text-align:center;font-size:0.65rem}
-.btm-heat-tick{font-weight:600;color:#e4e6eb}
-</style>""", unsafe_allow_html=True)
 
         bc1, bc2 = st.columns([1.6, 1])
         eprices = load_entry_prices()
