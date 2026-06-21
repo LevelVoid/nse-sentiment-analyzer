@@ -1,10 +1,30 @@
 [theme]
 primaryColor = "#22b573"
 backgroundColor = "#0a0b0f"
-secondaryBackgroundColor = "#13151a"
-textColor = "#f1f3f5"
+secondaryBackgroundColor = "#15181f"
+textColor = "#f0f2f5"
 font = "sans serif"
 
-[client]
-showSidebarNavigation = false
-toolbarMode = "minimal"
+[server]
+maxUploadSize = 200
+maxMessageSize = 200
+enableCORS = true
+enableXsrfProtection = true
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+# One-time cache invalidation per session — avoids unbounded memory growth
+# when many tickers are scanned in a single session
+magicEnabled = false
+
+[global]
+# Limit the number of sessions cached in memory
+# Prevents RAM exhaustion under multi-user load
+maxCacheSize = 250
+
+# Raise DataFrame serialization limit to handle sparkline history data
+# without crashing on large histories
+dataFrameSerializationWarningLimit = 200

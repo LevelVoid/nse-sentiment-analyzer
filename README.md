@@ -10,6 +10,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
 [![Tests](https://img.shields.io/badge/tests-135%20passing-brightgreen)](#-testing)
 [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
+[![Streamlit Limits](https://img.shields.io/badge/resource%20limits-500%20cache%2C%206%2Fmin%20throttle-blueviolet)](.streamlit/config.toml)
 
 [Launch App](https://nse-sentiment-analyzer.streamlit.app) &nbsp;·&nbsp; [Report Bug](https://github.com/AshayK003/nse-sentiment-analyzer/issues) &nbsp;·&nbsp; [Request Feature](mailto:darkcharon3301@gmail.com)
 
@@ -47,6 +48,7 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 - **Portfolio mode** — track holdings with P&L, heatmap, volume spike detection, and one-click portfolio briefing
 - **FII/DII institutional flow** — NSE India official FII/FPI and DII data
 - **VWAP + Pivot levels** — intraday fair value and classic support/resistance from yesterday's HLC
+- **Resource protections** — per-session rate limiter (6 searches/min) and auto-pruning cache (500-entry cap) prevent quota exhaustion and memory leaks under multi-user load. Configured in `.streamlit/config.toml`.
 
 **All data sources are free and public. Zero API keys required. No registration.**
 

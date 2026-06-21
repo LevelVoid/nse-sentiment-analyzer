@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.4.0] — 2026-06-21
+
+### Added
+- **Rate limiter** — Per-session throttle (6 searches/minute) prevents rapid-fire clicking from burning through shared yfinance quota under multi-user load. Warning message shows cooldown remaining.
+- **Cache pruning** — `cache.json` capped at 500 entries. Oldest entries evict automatically when limit exceeded, preventing unbounded file growth on multi-tenant Streamlit Cloud.
+- **Streamlit config** — `.streamlit/config.toml` with `maxCacheSize=250`, CORS, XSRF, and dark theme baked into the Streamlit Cloud build settings.
+
+### Changed
+- **VWAP skipped during rate-limit cooldown** — `compute_vwap()` fires a separate `yf.download()` call. Now it's gated behind the same rate-limit cooldown as stock data fetches. Reduces yfinance pressure when already rate-limited.
+
+### Cleaned
+- Removed 7 dead variables in `app.py` — `stock_data`, `headline_scores`, `signal`, `avg_compound`, `signal_emoji`, `source_stats`, `confidence`. These were orphaned when the old inline rendering was extracted to `render_dashboard()`.
+- Removed unused `import os` from `data_fetcher.py`.
+
 ## [2.3.1] — 2026-06-20
 
 ### Added

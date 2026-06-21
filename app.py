@@ -7,6 +7,7 @@ Built with Streamlit + yfinance + VADER + custom financial lexicon.
 import streamlit as st
 import os
 import re
+import time
 import pandas as pd
 from datetime import datetime
 
@@ -123,6 +124,38 @@ st.markdown("""
 </style>""", unsafe_allow_html=True)
 
 
+# ─── Rate limiter: prevents rapid-fire searches that waste yfinance quota ───
+# Tracks search timestamps per session. Max 6 searches per 60 seconds.
+# Resets naturally when session expires (app sleep / inactivity).
+_MAX_SEARCHES = 6
+_SEARCH_WINDOW = 60  # seconds
+
+
+def _check_rate_limit():
+    """Return True if the user may proceed, False if rate-limited.
+
+    Maintains a rolling window of search timestamps in session_state.
+    If the user exceeds _MAX_SEARCHES in _SEARCH_WINDOW seconds,
+    shows a warning and returns False.
+    """
+    now = time.time()
+    timestamps = st.session_state.setdefault("_search_timestamps", [])
+
+    # Prune entries outside the window
+    cutoff = now - _SEARCH_WINDOW
+    timestamps[:] = [t for t in timestamps if t > cutoff]
+
+    if len(timestamps) >= _MAX_SEARCHES:
+        oldest = timestamps[0]
+        wait_sec = int(_SEARCH_WINDOW - (now - oldest))
+        st.warning(
+            f"⏳ You've made {_MAX_SEARCHES} searches in the last minute. "
+            f"Please wait {wait_sec}s before searching again. "
+            "This limit protects shared API resources for all users."
+        )
+        return False
+
+    return True
 
 
 def analyze_ticker(ticker, company_name, quick=False):
@@ -209,8 +242,9 @@ def analyze_ticker(ticker, company_name, quick=False):
     # Use weighted signal as the primary (and only) signal
     weighted_signal, blended_compound, weighted_emoji, source_breakdown = get_weighted_signal(headline_scores)
 
-    # Intraday tools
-    vwap_data = compute_vwap(ticker)
+    # Intraday tools — skip if yfinance is rate-limited to avoid extra API pressure
+    from data_fetcher import _check_rate_limited
+    vwap_data = None if _check_rate_limited() else compute_vwap(ticker)
 
     return {
         "stock_data": stock_data,
@@ -568,6 +602,10 @@ if final_ticker and final_ticker != "":
     final_ticker = final_ticker.replace(".NS", "")
     company_name = NSE_TICKERS.get(final_ticker, final_ticker)
 
+    # Rate limiter: block if too many searches recently
+    if not _check_rate_limit():
+        st.stop()
+
     # ponytail: skip re-analysis when user voted/edited portfolio (instant re-render from cache)
     if (st.session_state.get("_skip_reanalysis")
             and st.session_state.get("_last_ticker") == final_ticker
@@ -575,6 +613,8 @@ if final_ticker and final_ticker != "":
         st.session_state._skip_reanalysis = False
         result = st.session_state._last_result
     else:
+        # Record this search for rate limiting
+        st.session_state.setdefault("_search_timestamps", []).append(time.time())
         with st.spinner(f"Fetching data for {final_ticker}..."):
             result = analyze_ticker(final_ticker, company_name)
         if result:
@@ -610,16 +650,9 @@ if final_ticker and final_ticker != "":
         # Stash source breakdown for vote-based calibration
         st.session_state._last_source_breakdown = result.get("source_breakdown", []) if result else []
     if result:
-        stock_data = result["stock_data"]
         news_items = result["news_items"]
-        headline_scores = result["headline_scores"]
-        signal = result["signal"]
-        avg_compound = result["avg_compound"]
-        signal_emoji = result["signal_emoji"]
-        source_stats = result.get("source_stats", {})
-        confidence = abs(avg_compound)
 
-        # ─── PRICE CARD ───
+        # ─── Technical indicators ───
         # Compute technical indicators
         ti = get_technical_indicators(final_ticker)
         # Compute pivot levels from cached OHLCV (avoids separate yfinance call)

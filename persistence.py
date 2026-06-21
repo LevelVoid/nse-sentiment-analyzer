@@ -19,6 +19,7 @@ HISTORY_FILE = DATA_DIR / "sentiment_history.csv"
 ENTRY_PRICES_FILE = DATA_DIR / "entry_prices.json"
 
 CACHE_TTL = 15 * 60  # 15 minutes
+MAX_CACHE_ENTRIES = 500  # drop oldest entries when exceeding this (prevents unbounded growth under multi-user load)
 
 # Thread lock for CSV read-modify-write (portfolio briefing can call concurrently)
 _history_lock = threading.Lock()
@@ -115,7 +116,13 @@ def load_cache():
 
 
 def save_cache(cache):
-    """Write cache to disk + sync in-memory copy."""
+    """Write cache to disk + sync in-memory copy.
+    Prunes oldest entries if cache exceeds MAX_CACHE_ENTRIES."""
+    # Prune: keep only the newest N entries by cached_at timestamp
+    if len(cache) > MAX_CACHE_ENTRIES:
+        sorted_keys = sorted(cache, key=lambda k: cache[k].get("cached_at", ""))
+        for key in sorted_keys[:len(cache) - MAX_CACHE_ENTRIES]:
+            del cache[key]
     st.session_state._cache_data = cache
     try:
         st.session_state._cache_mtime = CACHE_FILE.stat().st_mtime
