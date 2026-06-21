@@ -684,7 +684,7 @@ if final_ticker and final_ticker != "":
                 new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
                                       max_chars=15, key="btm_add_ticker")
             with ac2:
-                ep_input = st.text_input("ATP", placeholder="₹2,800", label_visibility="collapsed",
+                ep_input = st.text_input("ATP", placeholder="ATP", label_visibility="collapsed",
                                          max_chars=10, key="btm_add_atp",
                                          help="Optional: average trade price for P&L tracking")
             with ac3:
