@@ -3,17 +3,24 @@
 ## [2.5.0] — 2026-06-21
 
 ### Added
-- **Indian financial lexicon expanded to 90+ terms** — Added 35 new entries covering:
-  - Indian banking metrics: NPA, GNPA, NNPA, AUM, NIM, credit growth, asset quality
-  - Profitability shorthand: PAT, EBITDA, ROE, ROCE
-  - Hinglish terms: tezi (bullish), mandi (bearish), gira, chada
-  - General financial context: robust, stellar, headwinds, tailwinds, profit booking
-  - VADER now correctly catches abbreviations and Indian-English terms it previously missed.
+- **Indian financial lexicon expanded to 123 terms** — Added 53 new entries across 10 categories:
+  - IPO/capital markets: oversubscribed, undersubscribed, listing
+  - Banking/NPA: slippage, provisioning, moratorium, recapitalization, infusion, pledged, unpledged
+  - Fund flows: inflow, outflow, buying, selling
+  - Results: doubled, tripled, multibagger, topline, bottomline
+  - Corporate governance: mismanagement, compliance, scrutiny
+  - Corporate action: buyout, merger, acquisition, delisting
+  - Macro: depreciation, appreciation, deficit
+  - Hinglish: tej, mand, gire, giri, chade, chadi
+  - Fixed wrong-direction VADER scores: "profit warning" now correctly negative (+0.128 → -0.103), "overweight" now correctly positive (-0.361 → +0.361)
 - **REGULATORY_APPROVAL event type** — "SEBI clears merger", "RBI approves", "CCI okays" are now classified as positive events (base +0.15) instead of falling through to LITIGATION. Catches 5 regulatory bodies across 5 patterns.
 - **LiveMint Companies and Industry RSS feeds** — Two additional source feeds from livemint.com to improve news coverage depth.
 
 ### Changed
 - **Disclaimer updated** — Sentiment model and event classifier limitations now reflect the expanded lexicon and REGULATORY_APPROVAL fix. "SEBI clears merger" example updated from "flagged as penalty" to "correctly classified as regulatory approval".
+- **License changed from MIT to AGPL v3** — Prevents closed-source monetization while allowing open sharing.
+- **Landing page** — Metrics updated: 9+ data sources, 19 event types, 135 tests, AGPL v3 license. Lexicon count updated throughout docs.
+- **README** — Lexicon count synced to 125-term across overview and architecture diagram.
 
 ## [2.4.2] — 2026-06-21
 
