@@ -44,7 +44,7 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 - **Event-aware scoring** — headlines classified by 19 event types (earnings, order wins, litigation, regulatory approvals, buybacks, etc.) with signed sentiment bias. Correctly scores "SEBI penalty" as negative and "SEBI clears merger" as positive — something VADER alone misses.
 - **SmartScore composite (0–100)** — combines recency-weighted EWMA (36h half-life), event-adjusted sentiment, headline breadth, and news volume into a single calibrated score
 - **Self-calibrating source weights** — each source's confidence weight learns from your 👍/👎 votes via Bayesian Beta-Binomial inference. After ~10–50 votes, weights reflect your actual accuracy experience.
-- **Enhanced VADER + 90-term Indian financial lexicon** — includes Indian banking metrics (NPA, GNPA, NIM, credit growth), profitability shorthand (PAT, EBITDA, ROE), Hinglish terms (tezi, mandi), and general financial context not in vanilla VADER. Optionally swap to FinBERT via `USE_FINBERT=true`.
+- **Enhanced VADER + 70-term Indian financial lexicon** — includes Indian banking metrics (NPA, GNPA, NIM, credit growth), profitability shorthand (PAT, EBITDA, ROE), Hinglish terms (tezi, mandi), and general financial context not in vanilla VADER. Optionally swap to FinBERT via `USE_FINBERT=true`.
 - **Technical indicators** — RSI(14), SMA crossover (50/200), MACD from 1-year OHLCV history
 - **Portfolio mode** — track holdings with P&L, heatmap, volume spike detection, and one-click portfolio briefing
 - **FII/DII institutional flow** — NSE India official FII/FPI and DII data
@@ -68,11 +68,11 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 │  └───────────────────────┬───────────────────────────────┘  │
 │                          │                                    │
 │  ┌───────────────────────▼───────────────────────────────┐  │
-│  │  sentiment.py         VADER + 38-term financial lexicon│  │
+│  │  sentiment.py         VADER + 70-term Indian financial│  │
 │  │                       FinBERT integration (optional)  │  │
 │  │                       Source-weighted blending        │  │
 │  │  ┌─────────────────────────────────────────────────┐ │  │
-│  │  │  event_classifier.py    18 event types           │ │  │
+│  │  │  event_classifier.py    19 event types           │ │  │
 │  │  │                        Signed bias per event     │ │  │
 │  │  └─────────────────────────────────────────────────┘ │  │
 │  │  ┌─────────────────────────────────────────────────┐ │  │
@@ -105,7 +105,7 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 ### Data Flow
 
 1. **Input** — User types a ticker (or clicks a chip: RELIANCE, HDFCBANK, TCS, INFY, SBIN)
-2. **Fetch** — `data_fetcher.get_stock_info()` grabs live data from yfinance. `search_news()` fetches RSS from 5 sources in parallel, falls back to DuckDuckGo if fewer than 3 articles
+2. **Fetch** — `data_fetcher.get_stock_info()` grabs live data from yfinance. `search_news()` fetches RSS from 9+ sources in parallel, falls back to DuckDuckGo if fewer than 3 articles
 3. **Analyze** — `sentiment.py` scores each headline via VADER + financial lexicon, applies event-classifier corrections, then blends results using Bayesian source weights
 4. **Aggregate** — `aggregate_sentiment.compute_smartscore()` produces the 0–100 SmartScore from EWMA, event-adjusted sentiment, breadth, and volume
 5. **Indicators** — `indicators.py` computes RSI, SMA crossover, and MACD from 1-year OHLCV
@@ -197,7 +197,7 @@ nse-sentiment-analyzer/
 ├── app.py                  # Streamlit entry point, UI state machine
 ├── data_fetcher.py         # yfinance, RSS (feedparser), DuckDuckGo search
 ├── sentiment.py            # VADER + financial lexicon, FinBERT, source weights
-├── event_classifier.py     # 18 event types with signed sentiment bias
+├── event_classifier.py     # 19 event types with signed sentiment bias
 ├── aggregate_sentiment.py  # SmartScore 0–100 (EWMA, breadth, volume, events)
 ├── indicators.py           # RSI(14), SMA crossover, MACD
 ├── intraday.py             # VWAP, pivot levels, India VIX
