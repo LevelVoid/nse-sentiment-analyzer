@@ -489,7 +489,9 @@ with st.sidebar:
         '<div style="text-align:center;font-size:0.8rem;color:#6b7280;">'
         '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'
         ' Feature requests: <a href="mailto:darkcharon3301@gmail.com" '
-        'style="color:#22b573;text-decoration:none;">darkcharon3301@gmail.com</a></div>',
+        'style="color:#22b573;text-decoration:none;">darkcharon3301@gmail.com</a> · '
+        '<a href="https://x.com/sentinelcipher" '
+        'style="color:#22b573;text-decoration:none;">@sentinelcipher</a></div>',
         unsafe_allow_html=True,
     )
 
@@ -765,7 +767,7 @@ if final_ticker and final_ticker != "":
                 acc = sum(1 for r in voted if r["vote"] is True)
                 st.metric("Accuracy", f"{acc/len(voted)*100:.0f}%", help=f"{acc}/{len(voted)} correct")
             st.metric("Total Scans", len(recs))
-            st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong · <a href="mailto:darkcharon3301@gmail.com" class="btm-link">{_MAIL} feature request</a></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ─── Historical Sentiment Archive ───
@@ -920,6 +922,14 @@ st.markdown('</details>', unsafe_allow_html=True)
 # ─── FOOTER ───
 st.markdown("---")
 st.caption("Built with Streamlit + yfinance + VADER · FinBERT · Bayesian Calibration · Financial Lexicon | Data from Yahoo Finance + RSS News")
+st.markdown(
+    '<div style="text-align:center;font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem;">'
+    'Feature requests: <a href="mailto:darkcharon3301@gmail.com" '
+    'style="color:#22b573;text-decoration:none;">darkcharon3301@gmail.com</a> · '
+    '<a href="https://x.com/sentinelcipher" '
+    'style="color:#22b573;text-decoration:none;">@sentinelcipher</a></div>',
+    unsafe_allow_html=True,
+)
 st.markdown(
     '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'
