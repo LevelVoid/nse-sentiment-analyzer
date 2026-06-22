@@ -698,7 +698,10 @@ with btn_col:
         </div>
         <script>
         document.getElementById('{search_trigger_id}').onclick = function() {{
-            var inp = window.parent.document.querySelector('input[placeholder*="RELIANCE"]');
+            // ponytail: try multiple selectors — Streamlit versions differ in DOM structure
+            var inp = window.parent.document.querySelector('input[placeholder*="RELIANCE"]')
+                   || window.parent.document.querySelector('input[data-baseweb="input"]')
+                   || window.parent.document.querySelector('section[data-testid="stTextInput"] input');
             if (!inp) return;
             // Dispatch React-compatible Enter key event
             var nativeSetter = Object.getOwnPropertyDescriptor(
@@ -801,6 +804,8 @@ if final_ticker and final_ticker != "":
                 )
 
         n_news = len(news_items)
+        # ponytail: height is a safe default; the auto-height script in render.py
+        # adjusts via postMessage once the iframe loads
         dash_height = min(2600 + n_news * 120, 6500)
         ohlcv_json = _ohlcv_to_json(hist_cache)
         st.components.v1.html(

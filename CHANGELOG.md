@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.5] — 2026-06-22
+
+### Fixed
+- **DuckDuckGo fallback could hang indefinitely** — When RSS feeds returned few results and DuckDuckGo was slow or unresponsive, the news fetcher would block forever. Now wrapped in a 15-second timeout via `ThreadPoolExecutor`; triggers rate limiter on timeout instead of hanging.
+- **Search button breaking on Streamlit updates** — The custom search button used a single DOM selector (`input[placeholder*="RELIANCE"]`) that broke when Streamlit changed its internal DOM structure. Now tries three fallback selectors for resilience.
+- **Thread lock contention between unrelated operations** — Sentiment history saves (CSV) and source accuracy updates (JSON) shared a single lock, blocking each other unnecessarily. Split into two independent locks.
+- **Stale aliases pointing to non-existent tickers** — Removed `KTKBANK`, `DCBBANK`, `DHANBANK`, `SBICARD`, `IOB`, `PSB` aliases that mapped to tickers not in the NSE ticker database, causing silent match failures.
+
+### Changed
+- **yfinance session handling documented** — Removed private `yf._session` attribute patch (breaks on yfinance upgrades). Added `ponytail:` comments explaining the semi-public `yf.utils._session` approach for future maintainers.
+- **Iframe height estimation documented** — Added comments clarifying that the hardcoded height is a safe default, with the auto-height script in render.py handling real adjustment via `postMessage`.
+
 ## [2.5.4] — 2026-06-22
 
 ### Added

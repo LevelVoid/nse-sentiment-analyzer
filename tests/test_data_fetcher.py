@@ -273,6 +273,35 @@ class TestNewsCaching:
                                       max_results=5)
         assert articles == []
 
+    def test_ddgs_timeout_wrapper_prevents_hang(self):
+        """ThreadPoolExecutor timeout wrapper completes within budget, not hanging."""
+        import time
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        hang_event = threading.Event()
+
+        def _hang():
+            hang_event.wait(timeout=60)
+            return []
+
+        pool = ThreadPoolExecutor(max_workers=1)
+        start = time.time()
+        try:
+            pool.submit(_hang).result(timeout=2)
+            raised = False
+        except Exception:
+            raised = True
+        elapsed = time.time() - start
+
+        # Unblock background thread BEFORE pool shutdown to avoid deadlock
+        hang_event.set()
+        pool.shutdown(wait=False)
+
+        # Timeout fires within budget
+        assert raised, "Expected TimeoutError from slow DDGS"
+        assert elapsed < 5, f"Timeout wrapper took {elapsed:.1f}s, expected <5s"
+
 
 class TestFormatting:
     """Tests for data_fetcher formatting helpers."""

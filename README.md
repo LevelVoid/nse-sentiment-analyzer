@@ -8,7 +8,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-[![Tests](https://img.shields.io/badge/tests-137%20passing-brightgreen)](#-testing)
+[![Tests](https://img.shields.io/badge/tests-138%20passing-brightgreen)](#-testing)
 [![Security](https://img.shields.io/badge/security-XSS%20escaped-2ea44f)](#)
 [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 [![Streamlit Limits](https://img.shields.io/badge/resource%20limits-500%20cache%2C%206%2Fmin%20throttle-blueviolet)](.streamlit/config.toml)
@@ -236,7 +236,7 @@ nse-sentiment-analyzer/
     └── test_history_export.py     # CSV export
 ```
 
-**10 source modules**, **14 test files**, **137 tests**.
+**10 source modules**, **14 test files**, **138 tests**.
 
 ---
 
@@ -268,7 +268,7 @@ nse-sentiment-analyzer/
 ## Testing
 
 ```bash
-# Full suite (137 tests, mocked APIs, no network)
+# Full suite (138 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # With coverage

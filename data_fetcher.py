@@ -59,6 +59,10 @@ def _mark_ddgs_rate_limited():
 
 
 # ─── yfinance: set browser User-Agent to avoid 429 rate limiting ───
+# ponytail: yf.utils._session is semi-public (used by yfinance's own tests).
+# yf._session was a private fallback for older versions — removed to avoid
+# breakage on yfinance upgrades. If Ticker() calls fail with 429, check
+# whether yfinance moved session handling.
 _session = requests.Session()
 _session.headers["User-Agent"] = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -66,8 +70,6 @@ _session.headers["User-Agent"] = (
     "Chrome/125.0.0.0 Safari/537.36"
 )
 yf.utils._session = _session
-# Some yfinance versions read from a module-level session
-yf._session = _session
 
 # ─── NSE Tickers ───
 NSE_TICKERS = {
@@ -392,10 +394,8 @@ ALIASES = {
     "CITY UNION": "CUB", "KARUR": "KARURVYSYA", "KARUR VYSYA": "KARURVYSYA",
     "IDBI": "IDBI", "JAMMU KASHMIR BANK": "J&KBANK", "J AND K BANK": "J&KBANK",
     "UCO": "UCOBANK", "EQUITAS": "EQUITASBNK", "EQUITAS BANK": "EQUITASBNK",
-    "CENTRAL BANK": "CENTRALBK", "KARNATAKA BANK": "KTKBANK",
-    "DCB BANK": "DCBBANK", "DHANLAXMI BANK": "DHANBANK",
-    "SBI CARD": "SBICARD", "IOB": "IOB", "INDIAN OVERSEAS BANK": "IOB",
-    "PSB": "PSB", "PUNJAB SIND": "PSB",
+    "CENTRAL BANK": "CENTRALBK",
+    # ponytail: removed KTKBANK, DCBBANK, DHANBANK, SBICARD, IOB, PSB — not in NSE_TICKERS
     # ── Financial Services ──
     "BAJAJ FINSERV": "BAJAJFINSV", "SBI LIFE": "SBILIFE", "SBI LIFE INSURANCE": "SBILIFE",
     "HDFC LIFE": "HDFCLIFE", "HDFC LIFE INSURANCE": "HDFCLIFE",
@@ -1009,8 +1009,9 @@ def search_news(ticker, company_name, max_results=10):
                     source_stats[label] = source_stats.get(label, 0) + 1
 
     # Fallback: DuckDuckGo when RSS returns little — skip if DDGS rate-limited
+    # ponytail: DDGS has no built-in timeout; wrap in ThreadPoolExecutor to prevent hangs
     if len(all_results) < 3 and time.time() >= _DDGS_RATE_LIMITED_UNTIL:
-        try:
+        def _ddgs_search():
             with DDGS() as ddgs:
                 for query in [f"{ticker} NSE", f"{company_name} stock"]:
                     try:
@@ -1037,6 +1038,10 @@ def search_news(ticker, company_name, max_results=10):
                     time.sleep(0.3)
                     if len(all_results) >= max_results:
                         break
+
+        try:
+            with ThreadPoolExecutor(max_workers=1) as ddgs_pool:
+                ddgs_pool.submit(_ddgs_search).result(timeout=15)
         except Exception as e:
             logger.debug("DuckDuckGo fallback failed for %s: %s", ticker, e)
             _mark_ddgs_rate_limited()

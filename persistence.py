@@ -26,8 +26,9 @@ ENTRY_PRICES_FILE = DATA_DIR / "entry_prices.json"
 CACHE_TTL = 15 * 60  # 15 minutes
 MAX_CACHE_ENTRIES = 500  # drop oldest entries when exceeding this (prevents unbounded growth under multi-user load)
 
-# Thread lock for CSV read-modify-write (portfolio briefing can call concurrently)
+# Thread locks — separate for CSV history and source accuracy (different files, no reason to serialize)
 _history_lock = threading.Lock()
+_accuracy_lock = threading.Lock()
 
 
 # ─── Helpers ───
@@ -290,7 +291,7 @@ def update_source_accuracy(source, was_correct):
     Called after each user vote. Creates entry with prior if new source.
     Thread-safe via _history_lock.
     """
-    with _history_lock:
+    with _accuracy_lock:
         acc = load_source_accuracy()
         if source not in acc:
             prior_w = SOURCE_WEIGHTS_PRIOR.get(source, 0.5)
