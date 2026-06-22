@@ -4,6 +4,7 @@ Enter any NSE ticker → get live price + news sentiment score + signal.
 Built with Streamlit + yfinance + VADER + custom financial lexicon.
 """
 
+import json
 import logging
 import streamlit as st
 import os
@@ -14,7 +15,24 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# ─── Contact / feature request info (single source of truth) ───
+
+def _ohlcv_to_json(hist):
+    """Convert yfinance OHLCV DataFrame to JSON for TradingView Lightweight Charts."""
+    if hist is None or hist.empty:
+        return "[]"
+    records = []
+    for idx, row in hist.iterrows():
+        ts = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
+        o = float(row.get("Open", 0) or 0)
+        h = float(row.get("High", 0) or 0)
+        l = float(row.get("Low", 0) or 0)
+        c = float(row.get("Close", 0) or 0)
+        v = int(row.get("Volume", 0) or 0)
+        records.append({"time": ts, "open": o, "high": h, "low": l, "close": c, "volume": v})
+    return json.dumps(records)
+
+
+# ─── Contact / feature request info
 CONTACT = {
     "email": "darkcharon3301@gmail.com",
     "x_url": "https://x.com/sentinelcipher",
@@ -632,11 +650,13 @@ if query_ticker:
             result["pivot_levels"] = compute_pivot_levels(_hist)
             records = load_track_record()
             fii_data = get_fii_dii_flow()
+            ohlcv_json = _ohlcv_to_json(hist_cache)
             html = render_dashboard(
                 result, final_ticker, company_name,
                 technical_indicators=ti,
                 track_record=records,
                 fii_dii_data=fii_data,
+                ohlcv_json=ohlcv_json,
             )
             st.components.v1.html(html, height=result.get("_height", 3000), scrolling=False)
         else:
@@ -765,7 +785,7 @@ if final_ticker and final_ticker != "":
 
         # Render premium HTML dashboard — estimate height dynamically
         # Section heights (desktop):
-        #   price(280) + sentiment+smartscore(450) + dist(130) + stats(200)
+        #   price(280) + chart(420) + sentiment+smartscore(450) + dist(130) + stats(200)
         #   + techs(290) + track(180) + fiidii(200) + cal(270) + buffer(200)
         # Each news item ≈ 120px (title + meta + body text wrapping)
         # ─── Annotate news with portfolio match badges ───
@@ -778,12 +798,14 @@ if final_ticker and final_ticker != "":
                 )
 
         n_news = len(news_items)
-        dash_height = min(2200 + n_news * 120, 6000)
+        dash_height = min(2600 + n_news * 120, 6500)
+        ohlcv_json = _ohlcv_to_json(hist_cache)
         st.components.v1.html(
             render_dashboard(result, final_ticker, company_name,
                              technical_indicators=ti,
                              track_record=records,
-                             fii_dii_data=fii_data),
+                             fii_dii_data=fii_data,
+                             ohlcv_json=ohlcv_json),
             height=dash_height,
             scrolling=False,
         )

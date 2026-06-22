@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.3] — 2026-06-22
+
+### Added
+- **Interactive price chart (1Y candlestick + volume)** — TradingView Lightweight Charts integration. Candlestick chart with green/red volume bars, 50-day SMA overlay, crosshair, zoom/pan. Zero Python dependencies — loads ~40KB JS from CDN. Chart sits between the price card and sentiment card in the dashboard.
+
 ## [2.5.2] — 2026-06-22
 
 ### Fixed

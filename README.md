@@ -40,6 +40,7 @@
 Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 
 - **Live market data** — price, change %, volume, PE ratio via Yahoo Finance
+- **Interactive price chart** — 1-year candlestick chart with volume bars and 50-day SMA overlay, powered by TradingView Lightweight Charts. Zoom, pan, crosshair on hover. Zero Python dependencies.
 - **Multi-source news sentiment** — RSS feeds from Moneycontrol, Economic Times, LiveMint (Markets + Companies + Industry), NDTV Profit, Google News, with DuckDuckGo fallback
 - **Event-aware scoring** — headlines classified by 19 event types (earnings, order wins, litigation, regulatory approvals, buybacks, etc.) with signed sentiment bias. Correctly scores "SEBI penalty" as negative and "SEBI clears merger" as positive — something VADER alone misses.
 - **SmartScore composite (0–100)** — combines recency-weighted EWMA (36h half-life), event-adjusted sentiment, headline breadth, and news volume into a single calibrated score
@@ -204,7 +205,7 @@ nse-sentiment-analyzer/
 ├── intraday.py             # VWAP, pivot levels, India VIX
 ├── market_data.py          # FII/DII flow (optional, uses nsepython)
 ├── persistence.py          # JSON file I/O, Bayesian source accuracy
-├── render.py               # Dark-themed HTML/CSS dashboard generator
+├── render.py               # Dark-themed HTML/CSS dashboard + TradingView chart
 ├── requirements.txt
 ├── pyproject.toml          # Pytest config, coverage, markers
 ├── CHANGELOG.md            # Version history

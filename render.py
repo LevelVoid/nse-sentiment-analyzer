@@ -213,7 +213,7 @@ def _render_pivot_html(pivot_data):
 
 
 def render_dashboard(result, ticker, company_name, technical_indicators=None,
-                     track_record=None, fii_dii_data=None):
+                     track_record=None, fii_dii_data=None, ohlcv_json=None):
     """Return a complete premium HTML dashboard as a string."""
     stock = result["stock_data"]
     news_items = result["news_items"]
@@ -599,6 +599,59 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 (function(){{var o=document.referrer?new URL(document.referrer).origin:'*';function h(){{var d=document.body.scrollHeight;parent.postMessage({{type:'streamlit:setFrameHeight',height:d}},o);}}window.addEventListener('load',h);window.addEventListener('resize',h);}})();
 </script>"""
 
+    # ─── TradingView Lightweight Charts — candlestick + volume ───
+    if ohlcv_json and ohlcv_json != "[]":
+        _chart_script = f"""<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" nonce="{_nonce}"></script>
+<script nonce="{_nonce}">
+(function(){{
+  var data = {ohlcv_json};
+  if (!data || !data.length) return;
+  var container = document.getElementById('tvchart');
+  if (!container) return;
+  var chart = LightweightCharts.createChart(container, {{
+    width: container.clientWidth,
+    height: container.clientHeight || 380,
+    layout: {{ background: {{ color: '#15181f' }}, textColor: '#8891a0' }},
+    grid: {{ vertLines: {{ color: 'rgba(42,46,58,0.4)' }}, horzLines: {{ color: 'rgba(42,46,58,0.4)' }} }},
+    crosshair: {{ mode: LightweightCharts.CrosshairMode.Normal }},
+    rightPriceScale: {{ borderColor: '#2a2e3a' }},
+    timeScale: {{ borderColor: '#2a2e3a', timeVisible: false }},
+  }});
+  var candleSeries = chart.addCandlestickSeries({{
+    upColor: '#22b573', downColor: '#f85149',
+    borderUpColor: '#22b573', borderDownColor: '#f85149',
+    wickUpColor: '#22b573', wickDownColor: '#f85149',
+  }});
+  candleSeries.setData(data);
+  var volumeSeries = chart.addHistogramSeries({{
+    color: 'rgba(34,181,115,0.3)',
+    priceFormat: {{ type: 'volume' }},
+    priceScaleId: '',
+  }});
+  volumeSeries.setData(data.map(function(d){{
+    return {{ time: d.time, value: d.volume, color: d.close >= d.open ? 'rgba(34,181,115,0.3)' : 'rgba(248,81,73,0.3)' }};
+  }}));
+  // 50-day SMA
+  if (data.length >= 50) {{
+    var sma = [];
+    for (var i = 49; i < data.length; i++) {{
+      var sum = 0;
+      for (var j = i - 49; j <= i; j++) sum += data[j].close;
+      sma.push({{ time: data[i].time, value: sum / 50 }});
+    }}
+    var smaSeries = chart.addLineSeries({{
+      color: 'rgba(96,165,250,0.6)', lineWidth: 1,
+      priceLineVisible: false, lastValueVisible: false,
+    }});
+    smaSeries.setData(sma);
+  }}
+  chart.timeScale().fitContent();
+  new ResizeObserver(function(){{ chart.applyOptions({{ width: container.clientWidth }}); }}).observe(container);
+}})();
+</script>"""
+    else:
+        _chart_script = ""
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -860,6 +913,17 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         .sentiment-row {{ grid-template-columns: 1fr; text-align: center; }}
         .card {{ padding: 0.85rem; }}
     }}
+
+    /* Price chart */
+    .chart-container {{
+        width: 100%; height: 380px;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 0.25rem;
+    }}
+    @media (max-width: 640px) {{
+        .chart-container {{ height: 280px; }}
+    }}
 </style>
 </head>
 <body>
@@ -898,6 +962,12 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
                 <div class="value" style="font-size:1rem">{pe_str}</div>
             </div>
         </div>
+    </div>
+
+    <!-- ═══ PRICE CHART ═══ -->
+    <div class="card">
+        <div class="card-title">{_ICON["bar_chart"]} Price Chart (1Y)</div>
+        <div id="tvchart" class="chart-container"></div>
     </div>
 
     <!-- ═══ SENTIMENT CARD ═══ -->
@@ -963,6 +1033,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 {fii_html}
 
 </div>
+{_chart_script}
 {auto_height_script}
 </body>
 </html>"""
