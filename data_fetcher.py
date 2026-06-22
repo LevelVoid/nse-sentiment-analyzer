@@ -738,6 +738,33 @@ def get_stock_info(ticker):
                 except Exception:
                     continue
 
+        # ── Phase 2c: targeted sector/industry fetch ──
+        #    yfinance .info is flaky for Indian stocks — sometimes returns
+        #    partial dicts or None. Retry specifically for sector/industry.
+        _sec = info.get("sector") if info else None
+        _ind = info.get("industry") if info else None
+        if (not _sec or _sec == "N/A") or (not _ind or _ind == "N/A"):
+            for suffix in suffixes:
+                try:
+                    stock = yf.Ticker(f"{ticker}{suffix}")
+                    raw = stock.info
+                    if raw and isinstance(raw, dict):
+                        if not _sec or _sec == "N/A":
+                            _sec = raw.get("sector")
+                        if not _ind or _ind == "N/A":
+                            _ind = raw.get("industry")
+                        if _sec and _sec != "N/A" and _ind and _ind != "N/A":
+                            break
+                except Exception:
+                    continue
+            # Patch into info dict (create one if it was None)
+            if info is None:
+                info = {}
+            if _sec and _sec != "N/A":
+                info["sector"] = _sec
+            if _ind and _ind != "N/A":
+                info["industry"] = _ind
+
         # ── Build result dict ──
         if hist is not None and not hist.empty:
             with _hist_cache_lock:
