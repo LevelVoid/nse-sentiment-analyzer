@@ -13,8 +13,11 @@ Interpretation:
     <50  → negative or weak sentiment tone
 """
 
+import logging
 import math
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 # ─── SmartScore weights ───
 W_RECENCY = 0.45

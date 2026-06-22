@@ -3,9 +3,12 @@ Sentiment analysis for NSE Stock Sentiment Analyzer.
 VADER + custom financial lexicon tuned for Indian markets.
 """
 
+import logging
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import streamlit as st
 from persistence import load_source_accuracy, SOURCE_WEIGHTS_PRIOR
+
+logger = logging.getLogger(__name__)
 
 
 # ─── Financial sentiment augmentations ───
@@ -46,9 +49,18 @@ FINANCIAL_BOOSTERS = {
     "breakdown": -1.5,
     "resistance": -0.3,
     "support": 0.3,
-    "all-time high": 2.0,
-    "52-week high": 1.5,
-    "52-week low": -1.5,
+    # NOTE: VADER scores single tokens only — bigram keys are documentation.
+    # Meaningful decomposed entries below. See sentiment.py SKILL for rationale.
+    "booking": -0.5,       # ← "profit booking" (decomposed)
+    "warning": -1.5,       # ← "profit warning" (decomposed; "profit" already +1.0)
+    "covering": 1.0,       # ← "short covering" (decomposed)
+    "phase": -0.3,         # ← "bear phase" (decomposed; "bear" not in VADER)
+    "circuit": -0.3,       # ← "upper/lower circuit" (decomposed)
+    "trading": 0.0,        # ← "insider trading" neutral on its own
+    "insider": -1.5,       # ← "insider trading" (decomposed)
+    "running": -1.0,       # ← "front running" (decomposed)
+    "open": 0.3,           # ← "open offer" (decomposed)
+    "margin": -1.0,        # ← "margin call" (decomposed)
     # ── Indian financial context ──
     "npa": -2.0,
     "npas": -2.0,
@@ -62,9 +74,8 @@ FINANCIAL_BOOSTERS = {
     "roce": 1.0,
     "divestment": -1.0,
     "disinvestment": -1.0,
-    "credit growth": 1.0,
-    "deposit growth": 1.0,
-    "asset quality": 1.0,
+    "growth": 0.5,          # ← "credit growth", "deposit growth" (decomposed)
+    "asset": 0.3,           # ← "asset quality" (decomposed)
     # ── Hinglish / Indian English ──
     "mandi": -1.5,
     "tezi": 1.5,
@@ -90,15 +101,13 @@ FINANCIAL_BOOSTERS = {
     "listing": 0.5,
     # ── Banking / NPAs / credit ──
     "slippage": -1.5,
-    "write-off": -1.5,
-    "write off": -1.5,
     "provisioning": -0.8,
     "moratorium": -1.0,
     "recapitalization": 1.2,
     "infusion": 1.5,
     "pledged": -1.0,
     "unpledged": 1.0,
-    "margin call": -2.0,
+    "call": -0.5,           # ← "margin call" (decomposed; "margin" already above)
     # ── Fund flows ──
     "inflow": 1.0,
     "outflow": -1.0,
@@ -110,21 +119,11 @@ FINANCIAL_BOOSTERS = {
     "multibagger": 1.5,
     "topline": 0.5,
     "bottomline": 1.0,
-    "profit warning": -2.0,
     # ── Market action ──
-    "sell-off": -2.0,
-    "sell off": -2.0,
-    "short covering": 1.5,
-    "short selling": -1.0,
-    "risk-on": 1.0,
-    "risk-off": -1.0,
-    "upper circuit": 1.5,
-    "lower circuit": -2.0,
-    "circuit breaker": -0.5,
-    "bear phase": -1.5,
+    "sell": -2.0,          # ← covers "sell-off", "sell off"
+    "risk": 0.0,           # ← "risk-on"/"risk-off" neutral as standalone
+    "bear": -1.5,          # ← "bear phase" (decomposed; not in VADER)
     # ── Corporate governance ──
-    "insider trading": -2.5,
-    "front running": -2.0,
     "mismanagement": -2.0,
     "compliance": 0.5,
     "scrutiny": -1.0,
@@ -133,7 +132,6 @@ FINANCIAL_BOOSTERS = {
     "merger": 0.5,
     "acquisition": 0.5,
     "delisting": -0.5,
-    "open offer": 0.5,
     # ── Macro & economy ──
     "depreciation": -1.0,
     "appreciation": 1.0,

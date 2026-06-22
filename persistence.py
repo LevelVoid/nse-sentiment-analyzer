@@ -3,11 +3,16 @@ Data persistence for NSE Sentiment Analyzer.
 Portfolio, track record, and cache — with Streamlit Cloud-safe fallback.
 """
 
+import csv
+import io
 import json
+import logging
 import threading
 import streamlit as st
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -169,8 +174,6 @@ def load_sentiment_history(ticker, days=10):
     Returns list of dicts sorted by date ascending (oldest first).
     Returns [] if file missing or ticker not found.
     """
-    import csv
-
     records = []
     try:
         with open(HISTORY_FILE, newline="", encoding="utf-8") as f:
@@ -193,8 +196,6 @@ def save_sentiment_history(ticker, row_data):
     Silently handles read-only filesystem (Streamlit Cloud).
     Thread-safe via _history_lock.
     """
-    import csv
-
     today = datetime.now().strftime("%Y-%m-%d")
 
     with _history_lock:
@@ -234,9 +235,6 @@ def history_to_csv(ticker, records):
     Returns a CSV string with header row. If records is empty, returns
     just the header row. Only includes rows matching the given ticker.
     """
-    import csv
-    import io
-
     # Filter to matching ticker
     filtered = [r for r in records if r.get("ticker") == ticker]
 

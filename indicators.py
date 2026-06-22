@@ -3,9 +3,17 @@ Technical indicators for NSE Sentiment Analyzer.
 RSI(14), SMA 50/200, MACD(12,26,9) from 1yr daily data.
 """
 
+import logging
 import yfinance as yf
 import pandas as pd
 import time
+
+logger = logging.getLogger(__name__)
+
+
+def _wilders_smooth(series, period=14):
+    """Wilder's smoothing (exponential moving alpha=1/period)."""
+    return series.ewm(alpha=1/period, adjust=False).mean()
 
 
 def detect_volume_spike(current_vol, avg_vol, threshold=2.0):
@@ -105,19 +113,16 @@ def get_technical_indicators(ticker, hist=None):
                 (low - prev_close).abs(),
             ], axis=1).max(axis=1)
             # Wilder's smoothing (period=14)
-            def wilders_smooth(series, period=14):
-                smoothed = series.ewm(alpha=1/period, adjust=False).mean()
-                return smoothed
-            atr = wilders_smooth(tr)
-            s_plus_dm = wilders_smooth(plus_dm)
-            s_minus_dm = wilders_smooth(minus_dm)
+            atr = _wilders_smooth(tr)
+            s_plus_dm = _wilders_smooth(plus_dm)
+            s_minus_dm = _wilders_smooth(minus_dm)
             # +DI, -DI
             plus_di = 100 * s_plus_dm / atr
             minus_di = 100 * s_minus_dm / atr
             # DX
             dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, float('nan'))
             # ADX = smoothed DX
-            adx_val = wilders_smooth(dx)
+            adx_val = _wilders_smooth(dx)
             adx = float(adx_val.iloc[-1]) if not pd.isna(adx_val.iloc[-1]) else None
 
         # Volume spike — 50-day average volume

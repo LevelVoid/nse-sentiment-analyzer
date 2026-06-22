@@ -5,9 +5,12 @@ rendered via st.components.v1.html().
 """
 
 import html
+import logging
 import math
 import secrets
 import itertools
+
+logger = logging.getLogger(__name__)
 
 # ─── Bayesian source calibration ───
 # Shows per-source Beta distributions from user voting data.
@@ -600,7 +603,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'nonce-{_nonce}'; style-src 'unsafe-inline'; font-src fonts.gstatic.com fonts.googleapis.com; img-src *; connect-src *;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'nonce-{_nonce}'; style-src 'unsafe-inline'; font-src fonts.gstatic.com fonts.googleapis.com; img-src *; connect-src 'self' https://query1.finance.yahoo.com https://query2.finance.yahoo.com https://news.google.com https://www.moneycontrol.com https://economictimes.indiatimes.com https://www.livemint.com https://feeds.feedburner.com;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

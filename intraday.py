@@ -4,7 +4,10 @@ All functions are pure-data: they take inputs, return dicts, and have zero
 Streamlit dependencies. Designed to be testable with mocked yfinance calls.
 """
 
+import logging
 import yfinance as yf
+
+logger = logging.getLogger(__name__)
 
 
 def compute_vwap(ticker):

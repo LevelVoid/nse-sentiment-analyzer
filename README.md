@@ -8,7 +8,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/AshayK003/nse-sentiment-analyzer?style=flat&logo=github)](https://github.com/AshayK003/nse-sentiment-analyzer)
-[![Tests](https://img.shields.io/badge/tests-135%20passing-brightgreen)](#-testing)
+[![Tests](https://img.shields.io/badge/tests-137%20passing-brightgreen)](#-testing)
 [![Security](https://img.shields.io/badge/security-XSS%20escaped-2ea44f)](#)
 [![UI: Dark Theme](https://img.shields.io/badge/UI-Dark%20Theme-13151a?logo=css3&logoColor=white)](https://nse-sentiment-analyzer.streamlit.app)
 [![Streamlit Limits](https://img.shields.io/badge/resource%20limits-500%20cache%2C%206%2Fmin%20throttle-blueviolet)](.streamlit/config.toml)
@@ -49,8 +49,9 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 - **Portfolio mode** — track holdings with P&L, heatmap, volume spike detection, and one-click portfolio briefing
 - **FII/DII institutional flow** — NSE India official FII/FPI and DII data
 - **VWAP + Pivot levels** — intraday fair value and classic support/resistance from yesterday's HLC
-- **Resource protections** — per-session rate limiter (6 searches/min), auto-pruning cache (500-entry cap), DDGS fallback cooldown, and thread-safe rate-limit tracking prevent quota exhaustion and race conditions under multi-user load. Configured in `.streamlit/config.toml`.
-- **XSS-safe rendering** — all user data (ticker names, company names) is HTML-escaped via `html.escape()` with single-quote support. Shareable `?ticker=` URLs are validated before API calls.
+- **Resource protections** — per-session rate limiter (6 searches/min), auto-pruning cache (500-entry cap), DDGS fallback cooldown, and thread-safe rate-limit tracking (including DDGS) prevent quota exhaustion and race conditions under multi-user load. Configured in `.streamlit/config.toml`.
+- **XSS-safe rendering** — all user data (ticker names, company names) is HTML-escaped via `html.escape()` with single-quote support. Shareable `?ticker=` URLs are validated before API calls. RSS feed URLs are checked for `http://`/`https://` scheme.
+- **CSP hardened** — Content Security Policy `connect-src` restricted to known API domains (Yahoo Finance, Google News, Moneycontrol, Economic Times, LiveMint, NDTV Profit). No wildcard.
 
 **All data sources are free and public. Zero API keys required. No registration.**
 
@@ -234,7 +235,7 @@ nse-sentiment-analyzer/
     └── test_history_export.py     # CSV export
 ```
 
-**13 source modules**, **13 test files**, **135 tests**.
+**10 source modules**, **14 test files**, **137 tests**.
 
 ---
 
@@ -266,7 +267,7 @@ nse-sentiment-analyzer/
 ## Testing
 
 ```bash
-# Full suite (135 tests, mocked APIs, no network)
+# Full suite (137 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # With coverage

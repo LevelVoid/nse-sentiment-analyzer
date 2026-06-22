@@ -9,7 +9,7 @@ catches the regulatory action and applies a negative bias.
 Design:
   - EVENT_MAP ordered by specificity (most specific patterns first).
   - First match wins when multiple events match the same headline.
-  - \b word boundaries throughout to avoid partial-word matches.
+  - \\b word boundaries throughout to avoid partial-word matches.
   - .*? between verbs and nouns to handle real-world word order.
 
 Usage:
@@ -20,7 +20,10 @@ Usage:
     # → blends VADER score with event knowledge
 """
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 # Each event entry: (type, base_sentiment, [patterns...])
 # base_sentiment ∈ [-1, 1] — what VADER *should* give for this event type

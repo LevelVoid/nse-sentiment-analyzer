@@ -4,12 +4,15 @@ Enter any NSE ticker → get live price + news sentiment score + signal.
 Built with Streamlit + yfinance + VADER + custom financial lexicon.
 """
 
+import logging
 import streamlit as st
 import os
 import re
 import time
 import pandas as pd
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 # ─── Contact / feature request info (single source of truth) ───
 CONTACT = {
@@ -387,6 +390,153 @@ def _render_portfolio_list(portfolio, entry_prices, key_prefix="side",
         st.rerun()
 
 
+def _render_briefing(portfolio):
+    """Render the portfolio briefing mode — parallel price-only analysis."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    _SATELLITE = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 16-4 4"/><path d="m12 20 4-4"/></svg>'
+    st.markdown(f'<div style="display:flex;align-items:center;gap:0.5rem;font-size:1.25rem;font-weight:600;">{_SATELLITE} Portfolio Briefing — {len(portfolio)} stocks</div>', unsafe_allow_html=True)
+    st.caption("Live prices · signals from previous analysis (news skipped for speed)")
+    results = []
+    progress = st.progress(0, text="Starting...")
+    with ThreadPoolExecutor(max_workers=min(len(portfolio), 5)) as pool:
+        futures = {pool.submit(analyze_ticker, t, NSE_TICKERS.get(t, t), True): t for t in portfolio}
+        for i, future in enumerate(as_completed(futures)):
+            t = futures[future]
+            progress.progress((i + 1) / len(portfolio), text=f"Analyzing {t} ({i+1}/{len(portfolio)})...")
+            r = future.result()
+            if r:
+                results.append((t, r))
+    progress.empty()
+
+    if results:
+        st.success(f"Briefed {len(results)} stocks")
+        for t, r in results:
+            sd = r["stock_data"]
+            change_str = f"{'+' if sd['change'] >= 0 else ''}{sd['change']:.2f}" if isinstance(sd['change'], (int, float)) else "N/A"
+            with st.container(border=True):
+                cols = st.columns([1, 1, 1])
+                price_str = f"₹{sd['current_price']:,.2f}" if isinstance(sd['current_price'], (int, float)) else "N/A"
+                cols[0].markdown(f"**{t}** — {price_str}")
+                cols[0].caption(f"{sd['name'][:40]}")
+                cols[1].markdown(f"Change: {change_str}")
+                cols[2].markdown(f"""<span style="display:inline-flex;align-items:center;gap:4px">{get_signal_icon(r.get('signal_emoji', ''))} <span style="font-weight:600">{r['signal'].rstrip(' 🟢🔴⚪')}</span></span>""", unsafe_allow_html=True)
+
+    if st.button("← Back to Single View"):
+        st.session_state.run_briefing = False
+        st.rerun()
+
+
+def _render_empty_state():
+    """Render the empty-state guided launchpad with popular ticker chips."""
+    st.markdown(f"""
+    <div style="text-align:center;padding:3rem 1rem 1rem">
+        <div style="font-size:1.5rem;font-weight:700;color:#f0f2f5;margin-bottom:0.5rem">
+            Enter a ticker to begin
+        </div>
+        <div style="color:#6b7280;font-size:0.95rem;max-width:400px;margin:0 auto">
+            Search any NSE symbol above or try a popular one below
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div style='text-align:center;padding:0.5rem 0 1.5rem'>", unsafe_allow_html=True)
+    popular = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "SBIN"]
+    chip_cols = st.columns(3)
+    for i, t in enumerate(popular):
+        if chip_cols[i % 3].button(t, key=f"chip_{t}", use_container_width=True, type="secondary"):
+            st.session_state.quick_ticker = t
+            st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    portfolio = load_portfolio()
+    if portfolio:
+        st.markdown(
+            f"<div style='text-align:center;color:#6b7280;font-size:0.9rem'>"
+            f"📁 Portfolio: {', '.join(portfolio[:8])}{'…' if len(portfolio) > 8 else ''}"
+            f" — manage below</div>",
+            unsafe_allow_html=True,
+        )
+
+
+def _render_bottom_cards(portfolio, final_ticker):
+    """Render the bottom Portfolio + Track Record cards section."""
+    _FOLDER = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
+    _BAR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'
+    _CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    _X = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+
+    bc1, bc2 = st.columns([1.6, 1])
+    eprices = load_entry_prices()
+
+    with bc1:
+        st.markdown(f'<div class="btm-card"><div class="btm-title">{_FOLDER} Portfolio</div>', unsafe_allow_html=True)
+        ac1, ac2, ac3 = st.columns([2, 1, 0.6])
+        with ac1:
+            new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
+                                  max_chars=15, key="btm_add_ticker")
+        with ac2:
+            ep_input = st.text_input("ATP", placeholder="ATP", label_visibility="collapsed",
+                                     max_chars=10, key="btm_add_atp",
+                                     help="Optional: average trade price for P&L tracking")
+        with ac3:
+            if st.button("➕", use_container_width=True, key="btm_add_btn", help="Add to portfolio") and new_t.strip():
+                t = new_t.strip().upper().replace(".NS", "")
+                if not re.match(r'^[A-Z0-9&-]+$', t):
+                    st.warning("Invalid ticker format")
+                elif t in portfolio:
+                    st.warning(f"{t} already in portfolio")
+                else:
+                    portfolio.append(t)
+                    save_portfolio(portfolio)
+                    if ep_input.strip():
+                        try:
+                            save_entry_price(t, float(ep_input.strip().replace(",", "")))
+                        except ValueError:
+                            st.warning("Could not parse ATP — stock added without entry price")
+                    st.session_state._skip_reanalysis = True
+                    st.rerun()
+        _render_portfolio_list(portfolio, eprices, key_prefix="btm",
+                               brief_btn_label="⚡ Briefing",
+                               heatmap_css="btm-heat")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with bc2:
+        st.markdown(f'<div class="btm-card"><div class="btm-title">{_BAR} Track Record</div>', unsafe_allow_html=True)
+        recs = load_track_record()
+        voted = [r for r in recs if r.get("vote") is not None]
+        if voted:
+            acc = sum(1 for r in voted if r["vote"] is True)
+            st.metric("Accuracy", f"{acc/len(voted)*100:.0f}%", help=f"{acc}/{len(voted)} correct")
+        st.metric("Total Scans", len(recs))
+        st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong</div></div>', unsafe_allow_html=True)
+
+    # ─── Historical Sentiment Archive ───
+    history = load_sentiment_history(final_ticker)
+    if history:
+        _TREND_UP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
+        st.markdown(f'<details class="hermes-expander"><summary>{_CARET}{_TREND_UP} Sentiment History</summary>', unsafe_allow_html=True)
+        df = pd.DataFrame(history)
+        if "smartscore" in df.columns:
+            df["smartscore"] = pd.to_numeric(df["smartscore"], errors="coerce")
+            df = df.dropna(subset=["smartscore"])
+            if not df.empty:
+                df = df.copy()
+                df["date"] = pd.to_datetime(df["date"], errors="coerce")
+                df = df.dropna(subset=["date"])
+                if not df.empty:
+                    chart_df = df.set_index("date")[["smartscore"]]
+                    st.line_chart(chart_df, y="smartscore", use_container_width=True)
+        csv_data = history_to_csv(final_ticker, history)
+        st.download_button(
+            label="Export CSV",
+            data=csv_data,
+            file_name=f"{final_ticker}_sentiment_history.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+        st.markdown('</details>', unsafe_allow_html=True)
+
+
 # ─── Sidebar ───
 with st.sidebar:
     portfolio = load_portfolio()
@@ -677,84 +827,8 @@ if final_ticker and final_ticker != "":
             unsafe_allow_html=True,
         )
 
-        # ─── Bottom section: Portfolio + Track Record cards (after analysis results) ───
-        # Lucide SVGs used in markdown (safe) — button labels use plain text
-        _FOLDER = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
-        _BAR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'
-        _CHECK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
-        _X = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-
-        bc1, bc2 = st.columns([1.6, 1])
-        eprices = load_entry_prices()
-
-        with bc1:
-            st.markdown(f'<div class="btm-card"><div class="btm-title">{_FOLDER} Portfolio</div>', unsafe_allow_html=True)
-            # ─── Add Stock form ───
-            ac1, ac2, ac3 = st.columns([2, 1, 0.6])
-            with ac1:
-                new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
-                                      max_chars=15, key="btm_add_ticker")
-            with ac2:
-                ep_input = st.text_input("ATP", placeholder="ATP", label_visibility="collapsed",
-                                         max_chars=10, key="btm_add_atp",
-                                         help="Optional: average trade price for P&L tracking")
-            with ac3:
-                if st.button("➕", use_container_width=True, key="btm_add_btn", help="Add to portfolio") and new_t.strip():
-                    t = new_t.strip().upper().replace(".NS", "")
-                    if not re.match(r'^[A-Z0-9&-]+$', t):
-                        st.warning("Invalid ticker format")
-                    elif t in portfolio:
-                        st.warning(f"{t} already in portfolio")
-                    else:
-                        portfolio.append(t)
-                        save_portfolio(portfolio)
-                        if ep_input.strip():
-                            try:
-                                save_entry_price(t, float(ep_input.strip().replace(",", "")))
-                            except ValueError:
-                                st.warning(f"Could not parse ATP — stock added without entry price")
-                        st.session_state._skip_reanalysis = True
-                        st.rerun()
-            _render_portfolio_list(portfolio, eprices, key_prefix="btm",
-                                   brief_btn_label="⚡ Briefing",
-                                   heatmap_css="btm-heat")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with bc2:
-            st.markdown(f'<div class="btm-card"><div class="btm-title">{_BAR} Track Record</div>', unsafe_allow_html=True)
-            recs = load_track_record()
-            voted = [r for r in recs if r.get("vote") is not None]
-            if voted:
-                acc = sum(1 for r in voted if r["vote"] is True)
-                st.metric("Accuracy", f"{acc/len(voted)*100:.0f}%", help=f"{acc}/{len(voted)} correct")
-            st.metric("Total Scans", len(recs))
-            st.markdown(f'<div class="btm-muted">{_CHECK} right · {_X} wrong</div></div>', unsafe_allow_html=True)
-
-        # ─── Historical Sentiment Archive ───
-        history = load_sentiment_history(final_ticker)
-        if history:
-            _TREND_UP = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
-            st.markdown(f'<details class="hermes-expander"><summary>{_CARET}{_TREND_UP} Sentiment History</summary>', unsafe_allow_html=True)
-            df = pd.DataFrame(history)
-            if "smartscore" in df.columns:
-                df["smartscore"] = pd.to_numeric(df["smartscore"], errors="coerce")
-                df = df.dropna(subset=["smartscore"])
-                if not df.empty:
-                    df = df.copy()
-                    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-                    df = df.dropna(subset=["date"])
-                    if not df.empty:
-                        chart_df = df.set_index("date")[["smartscore"]]
-                        st.line_chart(chart_df, y="smartscore", use_container_width=True)
-            csv_data = history_to_csv(final_ticker, history)
-            st.download_button(
-                label="Export CSV",
-                data=csv_data,
-                file_name=f"{final_ticker}_sentiment_history.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
-            st.markdown('</details>', unsafe_allow_html=True)
+        # ─── Bottom section: Portfolio + Track Record cards ───
+        _render_bottom_cards(portfolio, final_ticker)
 
     else:
         st.error(f"Could not find data for **{final_ticker}**. "
@@ -767,40 +841,7 @@ elif st.session_state.get("run_briefing"):
     if not portfolio:
         st.warning("No tickers in your portfolio. Add some above.")
     else:
-        _SATELLITE = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 16-4 4"/><path d="m12 20 4-4"/></svg>'
-        st.markdown(f'<div style="display:flex;align-items:center;gap:0.5rem;font-size:1.25rem;font-weight:600;">{_SATELLITE} Portfolio Briefing — {len(portfolio)} stocks</div>', unsafe_allow_html=True)
-        st.caption("Live prices · signals from previous analysis (news skipped for speed)")
-        results = []
-        progress = st.progress(0, text="Starting...")
-        # ponytail: parallel portfolio briefing with ThreadPoolExecutor;
-        # 5 parallel workers for price-only briefing (lightweight, no news fetching)
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        with ThreadPoolExecutor(max_workers=min(len(portfolio), 5)) as pool:
-            futures = {pool.submit(analyze_ticker, t, NSE_TICKERS.get(t, t), True): t for t in portfolio}
-            for i, future in enumerate(as_completed(futures)):
-                t = futures[future]
-                progress.progress((i + 1) / len(portfolio), text=f"Analyzing {t} ({i+1}/{len(portfolio)})...")
-                r = future.result()
-                if r:
-                    results.append((t, r))
-        progress.empty()
-
-        if results:
-            st.success(f"Briefed {len(results)} stocks")
-            for t, r in results:
-                sd = r["stock_data"]
-                change_str = f"{'+' if sd['change'] >= 0 else ''}{sd['change']:.2f}" if isinstance(sd['change'], (int, float)) else "N/A"
-                with st.container(border=True):
-                    cols = st.columns([1, 1, 1])
-                    price_str = f"₹{sd['current_price']:,.2f}" if isinstance(sd['current_price'], (int, float)) else "N/A"
-                    cols[0].markdown(f"**{t}** — {price_str}")
-                    cols[0].caption(f"{sd['name'][:40]}")
-                    cols[1].markdown(f"Change: {change_str}")
-                    cols[2].markdown(f"""<span style="display:inline-flex;align-items:center;gap:4px">{get_signal_icon(r.get('signal_emoji', ''))} <span style="font-weight:600">{r['signal'].rstrip(' 🟢🔴⚪')}</span></span>""", unsafe_allow_html=True)
-
-        if st.button("← Back to Single View"):
-            st.session_state.run_briefing = False
-            st.rerun()
+        _render_briefing(portfolio)
 
     # Back button for empty portfolio case too
     if not portfolio:
@@ -812,36 +853,7 @@ elif st.session_state.get("run_briefing"):
 
 else:
     # ─── Empty state: guided launchpad ───
-    st.markdown(f"""
-    <div style="text-align:center;padding:3rem 1rem 1rem">
-        <div style="font-size:1.5rem;font-weight:700;color:#f0f2f5;margin-bottom:0.5rem">
-            Enter a ticker to begin
-        </div>
-        <div style="color:#6b7280;font-size:0.95rem;max-width:400px;margin:0 auto">
-            Search any NSE symbol above or try a popular one below
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Quick-action chips for popular tickers — 3 per row; wraps nicely on all screens
-    st.markdown("<div style='text-align:center;padding:0.5rem 0 1.5rem'>", unsafe_allow_html=True)
-    popular = ["RELIANCE", "HDFCBANK", "TCS", "INFY", "SBIN"]
-    chip_cols = st.columns(3)
-    for i, t in enumerate(popular):
-        if chip_cols[i % 3].button(t, key=f"chip_{t}", use_container_width=True, type="secondary"):
-            st.session_state.quick_ticker = t
-            st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Portfolio shortcut
-    portfolio = load_portfolio()
-    if portfolio:
-        st.markdown(
-            f"<div style='text-align:center;color:#6b7280;font-size:0.9rem'>"
-            f"📁 Portfolio: {', '.join(portfolio[:8])}{'…' if len(portfolio) > 8 else ''}"
-            f" — manage below</div>",
-            unsafe_allow_html=True,
-        )
+    _render_empty_state()
 
 # ─── PRIVACY POLICY ───
 with st.expander("🔒 Privacy & Data Policy"):

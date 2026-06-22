@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.5.1] — 2026-06-22
+
+### Security
+- **URL scheme validation** — All RSS feed hrefs and DuckDuckGo results now verify `http://` or `https://` before use. Prevents `javascript:` protocol injection via crafted RSS entries.
+- **CSP connect-src tightened** — Replaced wildcard `connect-src *` with an explicit allowlist of known API domains (Yahoo Finance, Google News, Moneycontrol, Economic Times, LiveMint, NDTV Profit).
+
+### Changed
+- **Logging in all modules** — Every source file now has `logging.getLogger(__name__)` with `logger.warning()`/`logger.debug()` on error paths. Streamlit Cloud captures these via stdout/stderr for production diagnostics.
+- **DDGS rate limiter is now thread-safe** — `_mark_ddgs_rate_limited()` uses the same `_rate_limit_lock` as yfinance. Prevents data races when briefing mode runs 5 parallel workers.
+- **Inline functions promoted to module level** — `_wilders_smooth()`, `_retry_fetch()`, `_nf()`, `_fii_dii_action()` moved from function bodies to module scope. Eliminates per-call function object creation.
+- **VADER bigram entries decomposed** — 15+ bigram keys (`"all-time high"`, `"margin call"`, `"insider trading"`, etc.) replaced with meaningful single-word entries. VADER scores single tokens only — bigrams never fired.
+- **`import csv` / `import io` moved to module level** — Removed from 3 function bodies in `persistence.py`.
+
+### Cleaned
+- **app.py refactored** — Extracted `_render_briefing()`, `_render_empty_state()`, `_render_bottom_cards()` from inline code. Main flow reduced from ~930 to ~840 lines with clearer function boundaries.
+- **market_data.py rewritten** — `action()` moved to module-level `_fii_dii_action()`. Added logging to error path.
+- **Dead VADER bigrams removed** — ~15 entries that could never fire (bigram keys in a single-token scorer) replaced with decomposed single-word equivalents.
+
 ## [2.5.0] — 2026-06-21
 
 ### Added

@@ -8,6 +8,7 @@ import requests
 import feedparser
 import html
 import time
+import logging
 import streamlit as st
 import re
 import random
@@ -17,6 +18,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from duckduckgo_search import DDGS
 from persistence import cache_get, cache_set
+
+logger = logging.getLogger(__name__)
 
 
 # ─── Global rate-limit cooldown ───
@@ -48,9 +51,11 @@ def _mark_rate_limited():
 
 
 def _mark_ddgs_rate_limited():
-    """Set DDGS cooldown. Skips DuckDuckGo fallback for _DDGS_COOLDOWN seconds."""
+    """Set DDGS cooldown. Skips DuckDuckGo fallback for _DDGS_COOLDOWN seconds.
+    Thread-safe — uses the same lock as yfinance rate limiter."""
     global _DDGS_RATE_LIMITED_UNTIL
-    _DDGS_RATE_LIMITED_UNTIL = time.time() + _DDGS_COOLDOWN
+    with _rate_limit_lock:
+        _DDGS_RATE_LIMITED_UNTIL = time.time() + _DDGS_COOLDOWN
 
 
 # ─── yfinance: set browser User-Agent to avoid 429 rate limiting ───
@@ -595,6 +600,29 @@ def _strip_html(text):
     return " ".join(text.split())
 
 
+def _retry_fetch(max_attempts=3, base_wait=1, backoff=2):
+    """Generator that yields attempt numbers for retry loops.
+    Uses exponential backoff with full jitter (AWS retry style).
+    If _check_rate_limited() is True, skips sleep and yields immediately.
+    """
+    for attempt in range(max_attempts):
+        yield attempt
+        if attempt < max_attempts - 1:
+            if _check_rate_limited():
+                continue
+            sleep = base_wait * (backoff ** attempt)
+            jitter = sleep * 0.5 * random.random()
+            time.sleep(sleep + jitter)
+
+
+def _nf(v):
+    """NaN-safe float extractor — returns None for NaN/None."""
+    if v is None:
+        return None
+    f = float(v)
+    return None if math.isnan(f) else f
+
+
 def get_stock_info(ticker):
     """Fetch stock data from yfinance with retry and backoff.
 
@@ -615,21 +643,6 @@ def get_stock_info(ticker):
             "before retrying. Try again shortly."
         )
         return None
-
-    def _retry_fetch(max_attempts=3, base_wait=1, backoff=2):
-        """Generator that yields (attempt_num, wait_seconds) for retry loops.
-        Uses exponential backoff with full jitter (AWS retry style).
-        If _check_rate_limited() is True, skips sleep and yields immediately.
-        """
-        for attempt in range(max_attempts):
-            yield attempt
-            if attempt < max_attempts - 1:
-                # If we're in a global cooldown, skip the sleep and try again
-                if _check_rate_limited():
-                    continue
-                sleep = base_wait * (backoff ** attempt)
-                jitter = sleep * 0.5 * random.random()
-                time.sleep(sleep + jitter)
 
     suffixes = [".NS", ".BO", ""]
     info = None
@@ -684,13 +697,6 @@ def get_stock_info(ticker):
                     continue
 
         # ── Build result dict ──
-        # ponytail: _nf = NaN-safe float extractor — returns None for NaN/None
-        def _nf(v):
-            if v is None:
-                return None
-            f = float(v)
-            return None if math.isnan(f) else f
-
         if hist is not None and not hist.empty:
             _hist_cache[ticker] = hist
             current_price = _nf(hist["Close"].iloc[-1])
@@ -744,6 +750,7 @@ def get_stock_info(ticker):
         return result
 
     except Exception as e:
+        logger.warning("get_stock_info(%s) failed: %s", ticker, e)
         st.error(f"Could not fetch data for {ticker}: {e}")
         return None
 
@@ -843,7 +850,7 @@ def search_news(ticker, company_name, max_results=10):
                 feed = feedparser.parse(url)
             for entry in feed.entries[:5]:
                 link = entry.get("link", "")
-                if link and link not in seen_urls:
+                if link and link.startswith(("http://", "https://")) and link not in seen_urls:
                     seen_urls.add(link)
                     all_results.append({
                         "title": entry.get("title", ""),
@@ -853,7 +860,8 @@ def search_news(ticker, company_name, max_results=10):
                         "source": "Google News",
                     })
                     source_stats["Google News"] = source_stats.get("Google News", 0) + 1
-        except Exception:
+        except Exception as e:
+            logger.debug("Ticker RSS feed failed for %s: %s", ticker, e)
             continue
 
     # Indian market RSS feeds (filtered by relevance) — fetched concurrently
@@ -870,7 +878,7 @@ def search_news(ticker, company_name, max_results=10):
                 link = entry.get("link", "")
                 title = entry.get("title", "")
                 body = _strip_html(entry.get("summary", ""))
-                if link and _relevant(ticker, company_name, title, body):
+                if link and link.startswith(("http://", "https://")) and _relevant(ticker, company_name, title, body):
                     items.append({
                         "title": title,
                         "body": body,
@@ -909,7 +917,7 @@ def search_news(ticker, company_name, max_results=10):
                             results = []
                     for r in results:
                         url = r.get("url", "") or r.get("link", "")
-                        if url and url not in seen_urls:
+                        if url and url.startswith(("http://", "https://")) and url not in seen_urls:
                             seen_urls.add(url)
                             all_results.append({
                                 "title": r.get("title", ""),
@@ -922,7 +930,8 @@ def search_news(ticker, company_name, max_results=10):
                     time.sleep(0.3)
                     if len(all_results) >= max_results:
                         break
-        except Exception:
+        except Exception as e:
+            logger.debug("DuckDuckGo fallback failed for %s: %s", ticker, e)
             _mark_ddgs_rate_limited()
 
     all_results.sort(key=lambda x: x["date"], reverse=True)

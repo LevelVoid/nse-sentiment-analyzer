@@ -2,7 +2,19 @@
 FII/DII institutional flow fetched via nsepython.
 """
 
+import logging
 import streamlit as st
+
+logger = logging.getLogger(__name__)
+
+
+def _fii_dii_action(net):
+    """Classify FII/DII net flow as Buying/Selling/Flat (threshold ±200 Cr)."""
+    if net > 200:
+        return "Buying"
+    elif net < -200:
+        return "Selling"
+    return "Flat"
 
 
 @st.cache_data(ttl=3600)
@@ -33,21 +45,14 @@ def get_fii_dii_flow():
         dii_net = float(dii_row["netValue"].iloc[0]) if not dii_row.empty else 0.0
         date = str(fii_row["date"].iloc[0]) if not fii_row.empty else str(dii_row["date"].iloc[0]) if not dii_row.empty else ""
 
-        def action(net):
-            if net > 200:
-                return "Buying"
-            elif net < -200:
-                return "Selling"
-            else:
-                return "Flat"
-
         return {
             "fii_net": fii_net,
             "dii_net": dii_net,
             "date": date,
             "combined_net": fii_net + dii_net,
-            "fii_action": action(fii_net),
-            "dii_action": action(dii_net),
+            "fii_action": _fii_dii_action(fii_net),
+            "dii_action": _fii_dii_action(dii_net),
         }
-    except Exception:
+    except Exception as e:
+        logger.debug("get_fii_dii_flow() failed: %s", e)
         return None
