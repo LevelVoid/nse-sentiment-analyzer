@@ -15,7 +15,7 @@
 
 ### Added
 - **Interactive price chart (1Y candlestick + volume)** — TradingView Lightweight Charts integration. Candlestick chart with green/red volume bars, 50-day SMA overlay, crosshair, zoom/pan. Zero Python dependencies — loads ~40KB JS from CDN. Chart sits between the price card and sentiment card in the dashboard.
-- **Chart timeframe selector** — 15m / 1H / 4H / 1D / 1W / 1Y pill buttons above the chart. Intraday data (15m, 1h) fetched from yfinance on-demand and cached. 4H resamples from 1h data, 1W resamples from daily. SMA recalculates per timeframe. Active button highlighted in blue.
+- **Chart overlays** — Bollinger Bands (20-period, 2 std dev, purple dashed) and 200-day SMA (gold dashed) computed from cached OHLCV data. Visual legend below chart title identifies all three overlays (SMA50, SMA200, Bollinger).
 
 ## [2.5.2] — 2026-06-22
 

@@ -599,12 +599,39 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 (function(){{var o=document.referrer?new URL(document.referrer).origin:'*';function h(){{var d=document.body.scrollHeight;parent.postMessage({{type:'streamlit:setFrameHeight',height:d}},o);}}window.addEventListener('load',h);window.addEventListener('resize',h);}})();
 </script>"""
 
-    # ─── TradingView Lightweight Charts — candlestick + volume (1Y default) ───
+    # ─── TradingView Lightweight Charts — candlestick + volume + overlays ───
     if ohlcv_json and ohlcv_json != "[]":
+        # Compute overlay data (Bollinger Bands + SMA200) from ohlcv_json
+        import json as _json
+        import math as _math
+        _ohlc = _json.loads(ohlcv_json) if isinstance(ohlcv_json, str) else ohlcv_json
+        _bb_upper, _bb_lower, _sma200 = "[]", "[]", "[]"
+        if len(_ohlc) >= 20:
+            _closes = [d["close"] for d in _ohlc]
+            _bb_u, _bb_l = [], []
+            for i in range(19, len(_closes)):
+                _window = _closes[i-19:i+1]
+                _mean = sum(_window) / 20
+                _var = sum((x - _mean) ** 2 for x in _window) / 20
+                _std = _math.sqrt(_var)
+                _bb_u.append({"time": _ohlc[i]["time"], "value": round(_mean + 2 * _std, 2)})
+                _bb_l.append({"time": _ohlc[i]["time"], "value": round(_mean - 2 * _std, 2)})
+            _bb_upper = _json.dumps(_bb_u)
+            _bb_lower = _json.dumps(_bb_l)
+        if len(_ohlc) >= 200:
+            _closes_200 = [d["close"] for d in _ohlc]
+            _sma = []
+            for i in range(199, len(_closes_200)):
+                _sma.append({"time": _ohlc[i]["time"], "value": round(sum(_closes_200[i-199:i+1]) / 200, 2)})
+            _sma200 = _json.dumps(_sma)
+
         _chart_script = f"""<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" nonce="{_nonce}"></script>
 <script nonce="{_nonce}">
 (function(){{
   var data = {ohlcv_json};
+  var bbUpperData = {_bb_upper};
+  var bbLowerData = {_bb_lower};
+  var sma200Data = {_sma200};
   if (!data || !data.length) return;
   var container = document.getElementById('tvchart');
   if (!container) return;
@@ -644,6 +671,30 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
       priceLineVisible: false, lastValueVisible: false,
     }});
     smaSeries.setData(sma);
+  }}
+  // 200-day SMA
+  if (sma200Data.length) {{
+    var sma200Series = chart.addLineSeries({{
+      color: 'rgba(251,191,36,0.5)', lineWidth: 1,
+      priceLineVisible: false, lastValueVisible: false,
+      lineStyle: 2,
+    }});
+    sma200Series.setData(sma200Data);
+  }}
+  // Bollinger Bands (20, 2)
+  if (bbUpperData.length) {{
+    var bbUpperSeries = chart.addLineSeries({{
+      color: 'rgba(168,85,247,0.4)', lineWidth: 1,
+      priceLineVisible: false, lastValueVisible: false,
+      lineStyle: 2,
+    }});
+    bbUpperSeries.setData(bbUpperData);
+    var bbLowerSeries = chart.addLineSeries({{
+      color: 'rgba(168,85,247,0.4)', lineWidth: 1,
+      priceLineVisible: false, lastValueVisible: false,
+      lineStyle: 2,
+    }});
+    bbLowerSeries.setData(bbLowerData);
   }}
   chart.timeScale().fitContent();
   new ResizeObserver(function(){{ chart.applyOptions({{ width: container.clientWidth }}); }}).observe(container);
@@ -1030,6 +1081,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     <!-- ═══ PRICE CHART ═══ -->
     <div class="card">
         <div class="card-title">{_ICON["bar_chart"]} Price Chart (1Y)</div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;font-size:0.72rem;color:#8891a0">
+            <span><span style="display:inline-block;width:12px;height:2px;background:rgba(96,165,250,0.6);vertical-align:middle;margin-right:3px"></span>SMA 50</span>
+            <span><span style="display:inline-block;width:12px;height:2px;background:rgba(251,191,36,0.5);vertical-align:middle;margin-right:3px;border-top:1px dashed rgba(251,191,36,0.5)"></span>SMA 200</span>
+            <span><span style="display:inline-block;width:12px;height:2px;background:rgba(168,85,247,0.4);vertical-align:middle;margin-right:3px;border-top:1px dashed rgba(168,85,247,0.4)"></span>Bollinger (20,2)</span>
+        </div>
         <div id="tvchart" class="chart-container"></div>
     </div>
 
