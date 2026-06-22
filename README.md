@@ -205,7 +205,7 @@ nse-sentiment-analyzer/
 ├── intraday.py             # VWAP, pivot levels, India VIX
 ├── market_data.py          # FII/DII flow (optional, uses nsepython)
 ├── persistence.py          # JSON file I/O, Bayesian source accuracy
-├── render.py               # Dark-themed HTML/CSS dashboard + TradingView chart
+├── render.py               # Dark-themed HTML/CSS dashboard + TradingView chart + a11y
 ├── requirements.txt
 ├── pyproject.toml          # Pytest config, coverage, markers
 ├── CHANGELOG.md            # Version history

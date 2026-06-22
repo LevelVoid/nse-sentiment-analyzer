@@ -721,7 +721,10 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .sentiment-hero.neutral {{ background: linear-gradient(135deg,#8891a0,#6b7280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
     .sentiment-caption {{ font-size: 0.8rem; color: #8891a0; }}
     .confidence-box {{ text-align: center; }}
-    .confidence-num {{ font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
+    .confidence-num {{ font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }}
+    .confidence-num.bullish {{ background: linear-gradient(135deg,#22b573,#0d9488); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
+    .confidence-num.bearish {{ background: linear-gradient(135deg,#f85149,#da3633); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
+    .confidence-num.neutral {{ background: linear-gradient(135deg,#8891a0,#6b7280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
     .confidence-label {{ font-size: 0.75rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.05em; }}
 
     /* Recommendation callout */
@@ -782,9 +785,10 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .ss-spark-label {{ font-size: 0.65rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.06em; }}
 
     /* Distribution bar */
-    .dist-bar {{
-        display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 0.5rem 0;
-    }}
+    .dist-bar {{ display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 0.5rem 0; }}
+    .dist-inline {{ margin-top: 0.5rem; }}
+    .dist-inline .dist-bar {{ margin: 0.3rem 0; }}
+    .dist-inline .dist-labels {{ font-size: 0.8rem; }}
     .dist-bar .pos {{ background: #22b573; }}
     .dist-bar .neg {{ background: #f85149; }}
     .dist-bar .neu {{ background: #4b5563; }}
@@ -829,7 +833,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     /* Technical indicators */
     .ti-preview {{ font-size: 0.85rem; color: #8891a0; margin-bottom: 0.75rem; }}
-    .ti-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }}
+    .ti-grid {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }}
     .ti-item {{ padding: 0.5rem; text-align: center; }}
     .ti-label {{ font-size: 0.78rem; color: #8891a0; text-transform: uppercase; letter-spacing: 0.04em; display: block; }}
     .ti-value {{ font-size: 1rem; font-weight: 700; display: block; margin-top: 0.15rem; }}
@@ -905,6 +909,9 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .fii-sub {{ font-size: 0.78rem; color: #8891a0; margin-top: 0.2rem; }}
 
     /* Responsive */
+    @media (max-width: 768px) {{
+        .ti-grid {{ grid-template-columns: repeat(3, 1fr); }}
+    }}
     @media (max-width: 640px) {{
         .price-grid {{ grid-template-columns: repeat(2, 1fr); }}
         .stats-grid {{ grid-template-columns: repeat(2, 1fr); }}
@@ -923,6 +930,12 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     }}
     @media (max-width: 640px) {{
         .chart-container {{ height: 280px; }}
+    }}
+    /* Accessibility: focus-visible rings */
+    a:focus-visible, button:focus-visible {{
+        outline: 2px solid #60a5fa;
+        outline-offset: 2px;
+        border-radius: 4px;
     }}
 </style>
 </head>
@@ -962,12 +975,9 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
                 <div class="value" style="font-size:1rem">{pe_str}</div>
             </div>
         </div>
-    </div>
-
-    <!-- ═══ PRICE CHART ═══ -->
-    <div class="card">
-        <div class="card-title">{_ICON["bar_chart"]} Price Chart (1Y)</div>
-        <div id="tvchart" class="chart-container"></div>
+        <div style="margin-top:0.75rem;border-top:1px solid #2a2e3a;padding-top:0.75rem">
+            {stats_rows}
+        </div>
     </div>
 
     <!-- ═══ SENTIMENT CARD ═══ -->
@@ -980,41 +990,32 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
                 <div class="rec-callout {sent_class}">{rec_icon} {rec_text} \u2014 {rec_detail}</div>
             </div>
             <div class="confidence-box">
-                <div class="confidence-num">{confidence_pct:.0f}%</div>
+                <div class="confidence-num {sent_class}">{confidence_pct:.0f}%</div>
                 <div class="confidence-label">Weighted Confidence</div>
             </div>
         </div>
         {ss_html}
+        <div class="dist-inline">
+            <div class="dist-bar">
+                <div class="pos" style="width:{pos_pct:.1f}%"></div>
+                <div class="neu" style="width:{neu_pct:.1f}%"></div>
+                <div class="neg" style="width:{neg_pct:.1f}%"></div>
+            </div>
+            <div class="dist-labels">
+                <span class="pos">{_ICON["dot_green"]} Positive: {pos_pct:.0f}%</span>
+                <span class="neu">{_ICON["dot_grey"]} Neutral: {neu_pct:.0f}%</span>
+                <span class="neg">{_ICON["dot_red"]} Negative: {neg_pct:.0f}%</span>
+            </div>
+        </div>
         {badge_section}
         {source_health}
         {session_badge}
-    </div>
-
-    <!-- ═══ SENTIMENT DISTRIBUTION ═══ -->
-    <div class="card">
-        <div class="card-title">{_ICON["bar_chart"]} Sentiment Distribution</div>
-        <div class="dist-bar">
-            <div class="pos" style="width:{pos_pct:.1f}%"></div>
-            <div class="neu" style="width:{neu_pct:.1f}%"></div>
-            <div class="neg" style="width:{neg_pct:.1f}%"></div>
-        </div>
-        <div class="dist-labels">
-            <span class="pos">{_ICON["dot_green"]} Positive: {pos_pct:.0f}%</span>
-            <span class="neu">{_ICON["dot_grey"]} Neutral: {neu_pct:.0f}%</span>
-            <span class="neg">{_ICON["dot_red"]} Negative: {neg_pct:.0f}%</span>
-        </div>
     </div>
 
     <!-- ═══ NEWS HEADLINES ═══ -->
     <div class="card">
         <div class="card-title">{_ICON["file_text"]} Recent News ({len(news_items)} articles)</div>
         {news_html if news_html else '<div class="ss-comp-label" style="padding:0.75rem 0;color:#8891a0">No articles found for this ticker</div>'}
-    </div>
-
-    <!-- ═══ ADDITIONAL STATS ═══ -->
-    <div class="card">
-        <div class="card-title">{_ICON["layout"]} Additional Stats</div>
-        {stats_rows}
     </div>
 
     <!-- ═══ TECHNICAL INDICATORS ═══ -->
@@ -1024,6 +1025,12 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         {ti_rows}
         <div style="margin-top:0.5rem">{cross_50_html}{cross_200_html}</div>
         {_render_pivot_html(pivot_data)}
+    </div>
+
+    <!-- ═══ PRICE CHART ═══ -->
+    <div class="card">
+        <div class="card-title">{_ICON["bar_chart"]} Price Chart (1Y)</div>
+        <div id="tvchart" class="chart-container"></div>
     </div>
 
 {acc_html}

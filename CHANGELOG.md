@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.5.4] — 2026-06-22
+
+### Changed
+- **Dashboard layout restructured** — Price Chart moved after Technical Indicators (was between Price and Sentiment). Users now see all key data (price, sentiment, news, indicators) before the chart. Stats (sector, industry, market cap, 52W range) merged into Price Card, eliminating duplicate P/E display. Sentiment Distribution bar inlined into Sentiment Card (was a standalone card).
+- **Technical Indicators grid** — Fixed 5-item grid from 4 columns to 5 columns (MACD no longer wraps to a lonely second row).
+- **Tablet responsive breakpoint** — Added 768px breakpoint for better tablet layouts (TI grid collapses to 3 columns).
+- **Confidence percentage color** — Now matches signal direction (green for bullish, red for bearish, grey for neutral) instead of always green.
+
+### Fixed
+- **Accessibility: focus-visible rings** — Added visible focus outlines on all interactive elements (links, buttons) for keyboard navigation. WCAG 2.4.7 compliance.
+
 ## [2.5.3] — 2026-06-22
 
 ### Added
