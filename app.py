@@ -579,6 +579,43 @@ def _render_bottom_cards(portfolio, final_ticker):
             unsafe_allow_html=True,
         )
 
+        # Recent history compact table
+        if len(fiidii_hist) >= 2:
+            recent = fiidii_hist[-7:]  # last 7 entries
+            rows = ""
+            for entry in reversed(recent):
+                date = entry.get("date", "")
+                f = entry.get("fii_net", 0)
+                d = entry.get("dii_net", 0)
+                n = f + d
+                fc = "#22c55e" if f >= 0 else "#ef4444"
+                dc = "#22c55e" if d >= 0 else "#ef4444"
+                nc = "#22c55e" if n >= 0 else "#ef4444"
+                rows += (
+                    f'<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;'
+                    f'gap:0.5rem;padding:0.3rem 0;font-size:0.75rem;'
+                    f'border-bottom:1px solid rgba(42,46,58,0.3)">'
+                    f'<span style="color:#8891a0">{date}</span>'
+                    f'<span style="color:{fc};text-align:right">\u20b9{f:+,.0f}</span>'
+                    f'<span style="color:{dc};text-align:right">\u20b9{d:+,.0f}</span>'
+                    f'<span style="color:{nc};text-align:right;font-weight:600">\u20b9{n:+,.0f}</span>'
+                    f'</div>'
+                )
+            if rows:
+                st.markdown(
+                    f'<div style="background:rgba(19,21,26,0.85);backdrop-filter:blur(20px);'
+                    f'-webkit-backdrop-filter:blur(20px);border:1px solid rgba(30,32,40,0.8);'
+                    f'border-radius:12px;padding:0.75rem 1rem;margin:-0.5rem 0 1rem">'
+                    f'<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;'
+                    f'gap:0.5rem;padding:0.3rem 0;font-size:0.7rem;color:#6b7280;'
+                    f'border-bottom:1px solid rgba(42,46,58,0.3)">'
+                    f'<span>Date</span><span style="text-align:right">FII/FPI</span>'
+                    f'<span style="text-align:right">DII</span>'
+                    f'<span style="text-align:right;font-weight:600">Net</span></div>'
+                    f'{rows}</div>',
+                    unsafe_allow_html=True,
+                )
+
     # ─── Sentiment History (collapsed by default) ───
     history = load_sentiment_history(final_ticker)
     if history:
