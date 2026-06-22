@@ -632,11 +632,32 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     priceLineVisible: false, lastValueVisible: false,
   }});
 
-  var tfDays = {{ '1M': 22, '3M': 66, '6M': 132, '1Y': 9999 }};
+  var tfDays = {{ '1D': 22, '1W': 22, '1M': 22, '3M': 66, '6M': 132, '1Y': 9999 }};
 
   function filterData(days) {{
     if (days >= allData.length) return allData;
     return allData.slice(allData.length - days);
+  }}
+
+  function resampleWeekly(daily) {{
+    var weeks = [];
+    var cur = null;
+    for (var i = 0; i < daily.length; i++) {{
+      var d = daily[i];
+      var dt = new Date(d.time + 'T00:00:00');
+      var wk = dt.getFullYear() + '-W' + String(Math.ceil(((dt - new Date(dt.getFullYear(),0,1)) / 86400000 + dt.getDay()+1) / 7)).padStart(2,'0');
+      if (!cur || cur._wk !== wk) {{
+        if (cur) weeks.push(cur);
+        cur = {{ _wk: wk, time: d.time, open: d.open, high: d.high, low: d.low, close: d.close, volume: d.volume }};
+      }} else {{
+        cur.high = Math.max(cur.high, d.high);
+        cur.low = Math.min(cur.low, d.low);
+        cur.close = d.close;
+        cur.volume += d.volume;
+      }}
+    }}
+    if (cur) weeks.push(cur);
+    return weeks;
   }}
 
   function calcSMA(data) {{
@@ -653,11 +674,12 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
   function setTimeframe(tf) {{
     var days = tfDays[tf] || 9999;
     var sliced = filterData(days);
-    candleSeries.setData(sliced);
-    volumeSeries.setData(sliced.map(function(d){{
+    var plotData = tf === '1W' ? resampleWeekly(sliced) : sliced;
+    candleSeries.setData(plotData);
+    volumeSeries.setData(plotData.map(function(d){{
       return {{ time: d.time, value: d.volume, color: d.close >= d.open ? 'rgba(34,181,115,0.3)' : 'rgba(248,81,73,0.3)' }};
     }}));
-    calcSMA(sliced);
+    calcSMA(plotData);
     chart.timeScale().fitContent();
   }}
 
@@ -1070,6 +1092,8 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     <div class="card">
         <div class="card-title">{_ICON["bar_chart"]} Price Chart</div>
         <div class="tf-bar">
+            <button class="tf-btn" data-tf="1D">1D</button>
+            <button class="tf-btn" data-tf="1W">1W</button>
             <button class="tf-btn" data-tf="1M">1M</button>
             <button class="tf-btn" data-tf="3M">3M</button>
             <button class="tf-btn" data-tf="6M">6M</button>
