@@ -89,11 +89,11 @@ details.hermes-expander[open] summary .caret {
 }
 </style>""", unsafe_allow_html=True)
 
-# ─── Streamlit chrome CSS (Inter, hide chrome, widget overrides) ───
+# ─── Streamlit chrome CSS (Geist, hide chrome, widget overrides) ───
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
+    * { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; }
     /* Hide Streamlit chrome */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
