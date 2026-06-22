@@ -56,7 +56,6 @@ FINANCIAL_BOOSTERS = {
     "covering": 1.0,       # ← "short covering" (decomposed)
     "phase": -0.3,         # ← "bear phase" (decomposed; "bear" not in VADER)
     "circuit": -0.3,       # ← "upper/lower circuit" (decomposed)
-    "trading": 0.0,        # ← "insider trading" neutral on its own
     "insider": -1.5,       # ← "insider trading" (decomposed)
     "running": -1.0,       # ← "front running" (decomposed)
     "open": 0.3,           # ← "open offer" (decomposed)

@@ -7,6 +7,7 @@
 - **Duplicate VADER lexicon keys** — Removed duplicate `"growth"` (second definition was `0.5`, overriding intended `1.0`) and duplicate `"sell"` entries. First definition now wins as intended.
 - **Dead VADER bigram entries removed** — `"profit booking"` and `"GDP growth"` were multi-word keys that VADER never scored (single-token scorer only). Decomposed single-word equivalents already exist.
 - **News relevance filtering tightened** — `_relevant()` now uses phrase-level matching (ticker symbol, full company name, alias keys) instead of individual word matching. Previously, words like "bank", "power", "tata", "steel" caused headlines about unrelated companies to pass the filter. E.g., searching HDFCBANK would match any headline mentioning "bank".
+- **Event classifier false positives reduced** — Six broad patterns tightened: `stellar`, `unveils`, `introduces`, `quit`, `penalty`, and `promoted` now require financial context (e.g., "stellar Q4 results" not "stellar cast", "penalty of Rs 5Cr" not "sports penalty"). Reduces misclassification of non-financial headlines.
 
 ### Changed
 - **`_parse_rss_feed()` promoted to module level** — Moved from inside `search_news()` to module scope. Eliminates per-call function object creation during concurrent RSS fetches.

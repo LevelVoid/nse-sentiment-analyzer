@@ -58,13 +58,13 @@ EVENT_MAP = [
         r"\bbeat\s+(?:estimates|expectations)\b",
         r"\bstrong\s+(?:results|quarter|performance|show)\b",
         r"\brecord\s+(?:profit|revenue|income|quarter(?:ly)?)\b",
-        r"\bstellar\b",
+        r"\bstellar\b.*?\b(?:results?|quarter|performance|show|earnings|revenue|quarterly)\b",
         r"\bexceptional\s+(?:results|quarter|performance)\b",
     ]),
     ("PRODUCT_LAUNCH", 0.20, [
         r"\blaunch(?:es|ed)?\s+(?:new|first|india)\b",
-        r"\bunveils?\b",
-        r"\bintroduces?\b",
+        r"\bunveils?\s+.*?\b(?:product|service|platform|app|vehicle|phone|range|plan|strategy)\b",
+        r"\bintroduces?\s+.*?\b(?:product|service|platform|app|vehicle|phone|range|plan)\b",
     ]),
     ("EXPANSION", 0.20, [
         r"\bexpansion\s+(?:plan|drive|into|mode|strategy)\b",
@@ -76,8 +76,8 @@ EVENT_MAP = [
     ]),
     ("MANAGEMENT_POSITIVE", 0.15, [
         r"\bappoints?\b\s+(?:new\s+)?(?:CEO|CFO|MD|chairman|director|president)\b",
-        r"\breappoint",
-        r"\bpromot(?:es?|ed)\b",
+        r"\breappoint(?:s|ed)?\b",
+        r"\bpromot(?:es?|ed)\b.*?\b(?:to|as)\s+(?:CEO|MD|director|chairman|senior|head|VP|CTO|CFO)\b",
     ]),
 
     # ── New positive events ──────────────
@@ -117,7 +117,7 @@ EVENT_MAP = [
         r"\bliquidity\s+(?:crisis|crunch|squeeze|stress)\b",
     ]),
     ("LITIGATION", -0.35, [
-        r"\bpenalty\b|\bpenalize[sd]?\b",
+        r"\b(?:imposes?|levies?|slaps?)\b.*?\bpenalty\b|\bpenalty\s+(?:of|imposed|levied)\b|\bpenalize[sd]?\b",
         r"\bfine[sd]?\b\s+(?:of\s+)?\d+",
         r"\bSEBI\s+(?:probe|investigat|notice|order|directive|slaps?|summon)\b",
         r"\bCBI\s+(?:probe|investigat|files\s+case|raids?|charge)\b",
@@ -189,7 +189,7 @@ EVENT_MAP = [
         r"\bresign(?:s|ed|ation)\b",
         r"\bstep(?:s)?\s+down\b",
         r"\boust(?:er|ed|s)\b",
-        r"\bquit\b",
+        r"\bquit(?:s|ted)?\b\s+(?:as|from)\b",
         r"\bsack(?:ed|s)?\b",
         r"\bfir(?:e|es|ed)\b",
     ]),
