@@ -782,12 +782,32 @@ def _alias_terms(ticker):
 def _relevant(ticker, company_name, title, body):
     """Check if a headline is relevant to the given ticker/company.
 
-    Searches ticker name, company name, AND known aliases.
+    Uses phrase-level matching to avoid false positives:
+    1. Ticker symbol (e.g. 'RELIANCE', 'HDFCBANK') — most reliable
+    2. Full company name as phrase (e.g. 'Reliance Industries')
+    3. Alias keys as phrases (e.g. 'SBI' for SBIN, 'L&T' for LT)
+
+    Individual word matching is avoided — words like 'bank', 'power',
+    'tata', 'steel' are too common and cause irrelevant headlines to pass.
     """
     text = (title + " " + (body or "")).lower()
-    words = set(ticker.lower().split()) | set(company_name.lower().split())
-    words.update(_alias_terms(ticker))
-    return any(re.search(r'\b' + re.escape(w) + r'\b', text) for w in words if len(w) > 2)
+
+    # Tier 1: Ticker symbol
+    if re.search(r'\b' + re.escape(ticker.lower()) + r'\b', text):
+        return True
+
+    # Tier 2: Full company name as phrase
+    if re.search(r'\b' + re.escape(company_name.lower()) + r'\b', text):
+        return True
+
+    # Tier 3: Alias keys as phrases (e.g. 'L&T', 'SBI', 'HDFC')
+    for alias_key, alias_ticker in ALIASES.items():
+        if alias_ticker == ticker:
+            alias_lower = alias_key.lower()
+            if len(alias_lower) > 2 and re.search(r'\b' + re.escape(alias_lower) + r'\b', text):
+                return True
+
+    return False
 
 
 # ─── RSS Feeds ───
