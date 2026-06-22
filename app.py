@@ -543,6 +543,13 @@ def _render_bottom_cards(portfolio, final_ticker):
                 f'</div>'
             )
         st.markdown(card_html, unsafe_allow_html=True)
+        if portfolio:
+            if st.button("Clear all holdings", key="clear_portfolio_main",
+                          type="secondary", use_container_width=True):
+                save_portfolio([])
+                ENTRY_PRICES_FILE.write_text("{}", encoding="utf-8")
+                st.session_state._skip_reanalysis = True
+                st.rerun()
 
     with bc2:
         recs = load_track_record()
