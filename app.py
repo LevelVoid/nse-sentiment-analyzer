@@ -757,7 +757,6 @@ if final_ticker and final_ticker != "":
         # Compute technical indicators
         ti = get_technical_indicators(final_ticker)
         # Compute pivot levels from cached OHLCV (avoids separate yfinance call)
-        from data_fetcher import get_cached_history
         hist_cache = get_cached_history(final_ticker)
         _hist = hist_cache.tail(5) if hist_cache is not None and len(hist_cache) >= 1 else None
         result["pivot_levels"] = compute_pivot_levels(_hist)
@@ -888,7 +887,7 @@ st.markdown(f"""
 **Limitations you should know:**
 - **Price data** — Yahoo Finance free tier has 15-20 min delay. Not suitable for intraday trading without real-time feeds.
 - **NSE intraday (VWAP)** — yfinance intraday history for Indian stocks is spotty; many tickers return incomplete data.
-- **Sentiment model** — VADER is a general-purpose model, not trained on Indian financial news. However, we've expanded it with a 125-term Indian financial lexicon covering common abbreviations (NPA, PAT, EBITDA, AUM, ROE, ROCE), IPO/capital market terms (oversubscribed), banking context (slippage, provisioning, infusion), fund flows (inflow, outflow), Hinglish terms (tezi, mandi, tej, mand), and general financial context. Accuracy is improved over vanilla VADER but still below a finance-tuned model.
+- **Sentiment model** — VADER is a general-purpose model, not trained on Indian financial news. However, we've expanded it with a 123-term Indian financial lexicon covering common abbreviations (NPA, PAT, EBITDA, AUM, ROE, ROCE), IPO/capital market terms (oversubscribed), banking context (slippage, provisioning, infusion), fund flows (inflow, outflow), Hinglish terms (tezi, mandi, tej, mand), and general financial context. Accuracy is improved over vanilla VADER but still below a finance-tuned model.
 - **SmartScore** — This is a custom composite metric. It has not been backtested or validated against actual returns. A score of 52 vs 48 is not a meaningful difference.
 - **Event classifier** — Keyword-based rules can sometimes misclassify headlines. "SEBI clears merger" is now correctly classified as regulatory approval (positive) rather than penalty.
 - **News sources** — RSS headlines are often trailing the market move. DuckDuckGo fallback (used when RSS returns little) is noisy and unreliable.

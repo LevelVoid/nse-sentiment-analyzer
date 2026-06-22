@@ -79,6 +79,11 @@ def _is_valid_num(val):
     return False
 
 
+def _pct(v):
+    """Map a 0-1 ratio to a 0-100 percentage, clamped."""
+    return max(0, min(100, v * 100))
+
+
 def _session_quality_badge():
     """Return a session quality warning badge based on current IST.
     
@@ -185,27 +190,26 @@ def render_sparkline(values, width=160, height=32, color="#22b573"):
 
 
 def _render_pivot_html(pivot_data):
-    """Render pivot levels as a compact 3-column grid. Returns empty string if no data."""
-    if not pivot_data or pivot_data.get("pivot") is None:
+    """Render classic pivot points as an HTML string."""
+    if not pivot_data or not any(pivot_data.get(k) for k in ("pivot", "resistance", "support")):
         return ""
-    return f"""
-    <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid #2a2e3a;">
-        <div style="font-size:0.75rem;color:#8891a0;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em;">Pivot Levels</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
-            <div style="background:#1a1d26;border-radius:6px;padding:4px 8px;text-align:center;">
-                <div style="font-size:0.65rem;color:#ef4444;text-transform:uppercase;">R1</div>
-                <div style="font-size:0.85rem;font-weight:600;">₹{pivot_data['resistance']:,.2f}</div>
-            </div>
-            <div style="background:#1a1d26;border-radius:6px;padding:4px 8px;text-align:center;">
-                <div style="font-size:0.65rem;color:#8891a0;text-transform:uppercase;">Pivot</div>
-                <div style="font-size:0.85rem;font-weight:600;">₹{pivot_data['pivot']:,.2f}</div>
-            </div>
-            <div style="background:#1a1d26;border-radius:6px;padding:4px 8px;text-align:center;">
-                <div style="font-size:0.65rem;color:#22b573;text-transform:uppercase;">S1</div>
-                <div style="font-size:0.85rem;font-weight:600;">₹{pivot_data['support']:,.2f}</div>
-            </div>
-        </div>
-    </div>"""
+    pivot = pivot_data.get("pivot")
+    r1 = pivot_data.get("resistance")
+    s1 = pivot_data.get("support")
+    parts = []
+    if s1 is not None:
+        parts.append(f'<span style="color:#f85149">S1 {fmt_price(s1)}</span>')
+    if pivot is not None:
+        parts.append(f'<span style="color:#8891a0">Pivot {fmt_price(pivot)}</span>')
+    if r1 is not None:
+        parts.append(f'<span style="color:#22b573">R1 {fmt_price(r1)}</span>')
+    if not parts:
+        return ""
+    return (
+        '<div style="margin-top:0.5rem;font-size:0.8rem;color:#8891a0;">'
+        + " · ".join(parts)
+        + "</div>"
+    )
 
 
 def render_dashboard(result, ticker, company_name, technical_indicators=None,
@@ -504,9 +508,6 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         ss_icon = get_signal_icon(result.get("smartscore_emoji", "⚪"))
 
         # Component mini-bars
-        def _pct(v):
-            return max(0, min(100, v * 100))
-
         comp_bars = ""
         comps = [
             ("Recency", ss_components.get("s_recency", 0.5)),

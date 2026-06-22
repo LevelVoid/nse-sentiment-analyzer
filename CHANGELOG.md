@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.5.2] — 2026-06-22
+
+### Fixed
+- **Pivot levels rendering** — Added missing `_render_pivot_html()` function. Pivot/support/resistance values now display correctly in the technical indicators card. Previously crashed with `NameError` on every analysis.
+- **Duplicate VADER lexicon keys** — Removed duplicate `"growth"` (second definition was `0.5`, overriding intended `1.0`) and duplicate `"sell"` entries. First definition now wins as intended.
+- **Dead VADER bigram entries removed** — `"profit booking"` and `"GDP growth"` were multi-word keys that VADER never scored (single-token scorer only). Decomposed single-word equivalents already exist.
+
+### Changed
+- **`_parse_rss_feed()` promoted to module level** — Moved from inside `search_news()` to module scope. Eliminates per-call function object creation during concurrent RSS fetches.
+- **`_pct()` promoted to module level** — Moved from inside `render_dashboard()` to module scope near other helpers.
+- **Thread-safe history cache** — `_hist_cache` dict now protected by `_hist_cache_lock`. Prevents potential data races when briefing mode runs parallel workers writing to the shared cache.
+- **Removed duplicate import** — `get_cached_history` was imported twice in `app.py` (top-level and inside function body). Top-level import kept.
+
 ## [2.5.1] — 2026-06-22
 
 ### Security

@@ -74,7 +74,6 @@ FINANCIAL_BOOSTERS = {
     "roce": 1.0,
     "divestment": -1.0,
     "disinvestment": -1.0,
-    "growth": 0.5,          # ← "credit growth", "deposit growth" (decomposed)
     "asset": 0.3,           # ← "asset quality" (decomposed)
     # ── Hinglish / Indian English ──
     "mandi": -1.5,
@@ -92,7 +91,6 @@ FINANCIAL_BOOSTERS = {
     "tailwinds": 1.5,
     "overbought": -1.0,
     "oversold": 1.0,
-    "profit booking": -0.5,
     "accumulation": 1.0,
     "distribution": -1.0,
     # ── IPO & capital markets ──
@@ -120,7 +118,6 @@ FINANCIAL_BOOSTERS = {
     "topline": 0.5,
     "bottomline": 1.0,
     # ── Market action ──
-    "sell": -2.0,          # ← covers "sell-off", "sell off"
     "risk": 0.0,           # ← "risk-on"/"risk-off" neutral as standalone
     "bear": -1.5,          # ← "bear phase" (decomposed; not in VADER)
     # ── Corporate governance ──
@@ -136,7 +133,7 @@ FINANCIAL_BOOSTERS = {
     "depreciation": -1.0,
     "appreciation": 1.0,
     "deficit": -1.0,
-    "GDP growth": 1.0,
+
     # ── More Hinglish ──
     "gire": -1.5,
     "giri": -1.5,

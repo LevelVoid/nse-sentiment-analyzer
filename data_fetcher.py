@@ -579,6 +579,7 @@ ALIASES = {
 # ponytail: in-memory 1y price history cache, populated by get_stock_info,
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _hist_cache = {}
+_hist_cache_lock = threading.Lock()
 
 
 def get_cached_history(ticker):
@@ -588,7 +589,8 @@ def get_cached_history(ticker):
     get_technical_indicators() and compute_pivot_levels() — avoids duplicate
     API calls that increase rate-limit exposure.
     """
-    return _hist_cache.get(ticker)
+    with _hist_cache_lock:
+        return _hist_cache.get(ticker)
 
 
 def _strip_html(text):
@@ -698,7 +700,8 @@ def get_stock_info(ticker):
 
         # ── Build result dict ──
         if hist is not None and not hist.empty:
-            _hist_cache[ticker] = hist
+            with _hist_cache_lock:
+                _hist_cache[ticker] = hist
             current_price = _nf(hist["Close"].iloc[-1])
             prev_close = _nf(hist["Close"].iloc[-2]) if len(hist) > 1 else current_price
             if current_price is not None and prev_close is not None:
@@ -825,6 +828,32 @@ SOURCE_LABELS = {
 
 
 
+def _parse_rss_feed(source_name, url, ticker, company_name):
+    """Parse one RSS feed in a worker thread — no shared state mutation."""
+    label = SOURCE_LABELS.get(source_name.lower().replace("_", " "), source_name)
+    items = []
+    try:
+        try:
+            feed = feedparser.parse(url, timeout=10)
+        except TypeError:
+            feed = feedparser.parse(url)
+        for entry in feed.entries[:7]:
+            link = entry.get("link", "")
+            title = entry.get("title", "")
+            body = _strip_html(entry.get("summary", ""))
+            if link and link.startswith(("http://", "https://")) and _relevant(ticker, company_name, title, body):
+                items.append({
+                    "title": title,
+                    "body": body,
+                    "date": _parse_date(entry.get("published_parsed")),
+                    "url": link,
+                    "source": label,
+                })
+    except Exception:
+        pass
+    return items, label
+
+
 def search_news(ticker, company_name, max_results=10):
     """Fetch news from RSS feeds (primary), fallback to DuckDuckGo.
     Returns (articles, source_health) where source_health tracks which sources returned results.
@@ -865,33 +894,8 @@ def search_news(ticker, company_name, max_results=10):
             continue
 
     # Indian market RSS feeds (filtered by relevance) — fetched concurrently
-    def _parse_rss_feed(source_name, url):
-        """Parse one RSS feed in a worker thread — no shared state mutation."""
-        label = SOURCE_LABELS.get(source_name.lower().replace("_", " "), source_name)
-        items = []
-        try:
-            try:
-                feed = feedparser.parse(url, timeout=10)
-            except TypeError:
-                feed = feedparser.parse(url)
-            for entry in feed.entries[:7]:
-                link = entry.get("link", "")
-                title = entry.get("title", "")
-                body = _strip_html(entry.get("summary", ""))
-                if link and link.startswith(("http://", "https://")) and _relevant(ticker, company_name, title, body):
-                    items.append({
-                        "title": title,
-                        "body": body,
-                        "date": _parse_date(entry.get("published_parsed")),
-                        "url": link,
-                        "source": label,
-                    })
-        except Exception:
-            pass
-        return items, label
-
     with ThreadPoolExecutor(max_workers=5) as pool:
-        futures = {pool.submit(_parse_rss_feed, name, url): name for name, url in INDIA_RSS_FEEDS}
+        futures = {pool.submit(_parse_rss_feed, name, url, ticker, company_name): name for name, url in INDIA_RSS_FEEDS}
         for future in as_completed(futures):
             items, label = future.result()
             for item in items:
