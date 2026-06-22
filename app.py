@@ -46,7 +46,7 @@ from data_fetcher import (
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
-from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, calc_portfolio_pnl, load_fiidii_history, save_fiidii_snapshot
+from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, calc_portfolio_pnl, load_fiidii_history, save_fiidii_snapshot, ENTRY_PRICES_FILE
 from render import render_dashboard, _is_valid_num
 from market_data import get_fii_dii_flow
 from aggregate_sentiment import compute_smartscore
@@ -540,6 +540,13 @@ def _render_bottom_cards(portfolio, final_ticker):
 
     # ─── Institutional Flow Card ───
     fiidii_hist = load_fiidii_history()
+    if not fiidii_hist:
+        # No saved history yet — try fetching current data to create first snapshot
+        fii_data = get_fii_dii_flow()
+        if fii_data:
+            save_fiidii_snapshot(fii_data)
+            fiidii_hist = load_fiidii_history()
+
     if fiidii_hist:
         _INST = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
         df_fii = pd.DataFrame(fiidii_hist)
@@ -630,8 +637,6 @@ with st.sidebar:
                      use_container_width=True):
             save_portfolio([])
             # Clear entry prices too
-            from persistence import ENTRY_PRICES_FILE
-            import json
             ENTRY_PRICES_FILE.write_text("{}", encoding="utf-8")
             st.session_state._skip_reanalysis = True
             st.rerun()
