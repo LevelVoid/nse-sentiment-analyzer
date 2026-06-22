@@ -583,14 +583,30 @@ _hist_cache_lock = threading.Lock()
 
 
 def get_cached_history(ticker):
-    """Return the in-memory cached 1y price history for a ticker, if available.
+    """Return 1y price history for a ticker, from memory cache or yfinance.
 
-    Populated by get_stock_info() to share the yfinance 1y OHLCV fetch with
-    get_technical_indicators() and compute_pivot_levels() — avoids duplicate
-    API calls that increase rate-limit exposure.
+    Populated by get_stock_info() to share the yfinance 1y OHLCV fetch.
+    Falls back to a direct yfinance call if the in-memory cache is empty
+    (e.g. after a persistence cache hit that skipped the fetch path).
     """
     with _hist_cache_lock:
-        return _hist_cache.get(ticker)
+        cached = _hist_cache.get(ticker)
+    if cached is not None:
+        return cached
+
+    # Fallback: fetch directly from yfinance (cheap — yfinance caches internally)
+    import yfinance as yf
+    for suffix in [".NS", ".BO", ""]:
+        try:
+            stock = yf.Ticker(f"{ticker}{suffix}")
+            hist = stock.history(period="1y")
+            if hist is not None and not hist.empty:
+                with _hist_cache_lock:
+                    _hist_cache[ticker] = hist
+                return hist
+        except Exception:
+            continue
+    return None
 
 
 # ─── Intraday data cache (15m, 1h) ───

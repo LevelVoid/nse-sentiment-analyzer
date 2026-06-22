@@ -21,6 +21,12 @@ def _make_ticker_mock(hist_df):
 class TestTechnicalIndicators:
     """Tests for get_technical_indicators()."""
 
+    def setup_method(self):
+        """Clear in-memory history cache between tests to avoid cross-test contamination."""
+        from data_fetcher import _hist_cache, _hist_cache_lock
+        with _hist_cache_lock:
+            _hist_cache.clear()
+
     def _call(self, mocker, hist_df):
         """Call get_technical_indicators with mocked yfinance and Streamlit cache."""
         # Bypass st.cache_data so it's a pass-through
