@@ -92,8 +92,8 @@ details.hermes-expander[open] summary .caret {
 # ─── Streamlit chrome CSS (Geist, hide chrome, widget overrides) ───
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
-    * { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+    * { font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
     /* Hide Streamlit chrome */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
