@@ -59,7 +59,7 @@ def _mark_ddgs_rate_limited():
 
 
 # ─── yfinance: set browser User-Agent to avoid 429 rate limiting ───
-# ponytail: yf.utils._session is semi-public (used by yfinance's own tests).
+# yf.utils._session is semi-public (used by yfinance's own tests).
 # yf._session was a private fallback for older versions — removed to avoid
 # breakage on yfinance upgrades. If Ticker() calls fail with 429, check
 # whether yfinance moved session handling.
@@ -395,7 +395,7 @@ ALIASES = {
     "IDBI": "IDBI", "JAMMU KASHMIR BANK": "J&KBANK", "J AND K BANK": "J&KBANK",
     "UCO": "UCOBANK", "EQUITAS": "EQUITASBNK", "EQUITAS BANK": "EQUITASBNK",
     "CENTRAL BANK": "CENTRALBK",
-    # ponytail: removed KTKBANK, DCBBANK, DHANBANK, SBICARD, IOB, PSB — not in NSE_TICKERS
+    # Removed KTKBANK, DCBBANK, DHANBANK, SBICARD, IOB, PSB — not in NSE_TICKERS
     # ── Financial Services ──
     "BAJAJ FINSERV": "BAJAJFINSV", "SBI LIFE": "SBILIFE", "SBI LIFE INSURANCE": "SBILIFE",
     "HDFC LIFE": "HDFCLIFE", "HDFC LIFE INSURANCE": "HDFCLIFE",
@@ -576,7 +576,7 @@ ALIASES = {
     "LAKSHMI AI": "PWL", "GROWW": "GROWW",
 }
 
-# ponytail: in-memory 1y price history cache, populated by get_stock_info,
+# In-memory 1y price history cache, populated by get_stock_info,
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _hist_cache = {}
 _hist_cache_lock = threading.Lock()
@@ -719,7 +719,7 @@ def get_stock_info(ticker):
                         name_fallback = info.get("longName", info.get("shortName", ticker))
                         break
                 except Exception as e:
-                    # ponytail: any yfinance error could be rate-limiting
+                    # Any yfinance error could be rate-limiting
                     if "429" in str(e) or "Too Many" in str(e) or "Rate Limit" in str(e):
                         _mark_rate_limited()
                     continue  # retry same suffix with backoff before trying next
@@ -1009,7 +1009,7 @@ def search_news(ticker, company_name, max_results=10):
                     source_stats[label] = source_stats.get(label, 0) + 1
 
     # Fallback: DuckDuckGo when RSS returns little — skip if DDGS rate-limited
-    # ponytail: DDGS has no built-in timeout; wrap in ThreadPoolExecutor to prevent hangs
+    # DDGS has no built-in timeout; wrap in ThreadPoolExecutor to prevent hangs
     if len(all_results) < 3 and time.time() >= _DDGS_RATE_LIMITED_UNTIL:
         def _ddgs_search():
             with DDGS() as ddgs:

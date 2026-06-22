@@ -46,7 +46,7 @@ def get_technical_indicators(ticker, hist=None):
                 if hist is not None and not hist.empty:
                     break
 
-        if hist is None or hist.empty or len(hist) < 26:  # ponytail: 26 = minimum for MACD(12,26,9); RSI(14) works too; SMAs return NaN naturally
+        if hist is None or hist.empty or len(hist) < 26:  # 26 = minimum for MACD(12,26,9); RSI(14) works too; SMAs return NaN naturally
             return None
         close = hist["Close"]
 

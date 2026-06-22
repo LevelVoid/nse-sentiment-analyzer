@@ -871,7 +871,7 @@ with btn_col:
         </div>
         <script>
         document.getElementById('{search_trigger_id}').onclick = function() {{
-            // ponytail: try multiple selectors — Streamlit versions differ in DOM structure
+            // Try multiple selectors — Streamlit versions differ in DOM structure
             var inp = window.parent.document.querySelector('input[placeholder*="RELIANCE"]')
                    || window.parent.document.querySelector('input[data-baseweb="input"]')
                    || window.parent.document.querySelector('section[data-testid="stTextInput"] input');
@@ -910,7 +910,7 @@ if final_ticker and final_ticker != "":
         if not _check_rate_limit():
             st.stop()
 
-    # ponytail: skip re-analysis when user voted/edited portfolio (instant re-render from cache)
+    # Skip re-analysis when user voted/edited portfolio (instant re-render from cache)
     if (st.session_state.get("_skip_reanalysis")
             and st.session_state.get("_last_ticker") == final_ticker
             and st.session_state.get("_last_result")):
@@ -983,7 +983,7 @@ if final_ticker and final_ticker != "":
                 )
 
         n_news = len(news_items)
-        # ponytail: height is a safe default; the auto-height script in render.py
+        # Height is a safe default; the auto-height script in render.py
         # adjusts via postMessage once the iframe loads
         dash_height = min(2600 + n_news * 120, 6500)
         ohlcv_json = _ohlcv_to_json(hist_cache)

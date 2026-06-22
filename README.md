@@ -260,7 +260,7 @@ nse-sentiment-analyzer/
 - **Sync-first** — no async. Parallelism via `concurrent.futures.ThreadPoolExecutor`
 - **Mock all external APIs** in tests — never hit production services
 - **Use `cache_get`/`cache_set`** from `persistence.py` for API response caching
-- **Prefer deletion over abstraction** — this project follows [Ponytail](https://github.com/DietrichGebert/ponytail) (YAGNI as a principle). When in doubt, leave it out.
+- **Prefer deletion over abstraction** — YAGNI as a principle. When in doubt, leave it out.
 - **Lucide SVGs** for all UI icons — no emojis where an SVG serves the same purpose
 
 ---

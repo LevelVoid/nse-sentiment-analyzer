@@ -19,7 +19,7 @@ from persistence import load_source_accuracy
 from indicators import detect_volume_spike
 
 # ─── Inline SVG icons (Lucide, MIT-licensed, stroke-based) ───
-# ponytail: inline SVGs avoid a 100KB+ icon library for ~15 icons
+# Inline SVGs avoid a 100KB+ icon library for ~15 icons
 _ICON = {}
 
 def _svg(path, view_box="0 0 24 24"):
@@ -48,7 +48,7 @@ _ICON["bullish"] = _svg('<circle cx="12" cy="12" r="10" fill="#22b573" stroke="n
 _ICON["bearish"] = _svg('<circle cx="12" cy="12" r="10" fill="#f85149" stroke="none"/><path d="M8 9h8l-4 8z" fill="#f0f0f0" stroke="none"/>')
 _ICON["neutral"] = _svg('<circle cx="12" cy="12" r="10" fill="#8891a0" stroke="none"/><path d="M7 12h10" stroke="#f0f0f0" stroke-width="2.5" stroke-linecap="round" fill="none"/>')
 
-# ponytail: counter for unique sparkline gradient IDs (avoids id() which can collide across renders)
+# Counter for unique sparkline gradient IDs (avoids id() which can collide across renders)
 _sparkline_counter = itertools.count()
 
 
@@ -592,7 +592,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     # Session quality badge
     session_badge = _session_quality_badge()
 
-    # ponytail: random CSP nonce for the auto-height script blocks
+    # Random CSP nonce for the auto-height script blocks
     # any injected inline scripts from RSS content
     _nonce = secrets.token_urlsafe(16)
     auto_height_script = f"""<script nonce="{_nonce}">
