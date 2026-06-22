@@ -40,7 +40,7 @@ CONTACT = {
     "email": "darkcharon3301@gmail.com",
     "x_url": "https://x.com/sentinelcipher",
     "x_handle": "@sentinelcipher",
-    "chai_url": "https://chai4.me/darkcharon3301",
+    "chai_url": "https://chai4.me/ashaykushwaha003",
 }
 
 from data_fetcher import (
