@@ -593,6 +593,46 @@ def get_cached_history(ticker):
         return _hist_cache.get(ticker)
 
 
+# ─── Intraday data cache (15m, 1h) ───
+_intraday_cache = {}  # { ticker: { "15m": DataFrame, "1h": DataFrame } }
+
+
+def get_intraday_data(ticker):
+    """Fetch 15-minute and 1-hour intraday OHLCV for a ticker.
+
+    Uses yfinance with period/interval limits:
+      - 15m: period=60d, interval=15m (yfinance max for sub-hour)
+      - 1h:  period=730d, interval=1h
+
+    Returns dict: { "15m": DataFrame|None, "1h": DataFrame|None }
+    Cached in-memory per ticker to avoid duplicate calls.
+    """
+    if ticker in _intraday_cache:
+        return _intraday_cache[ticker]
+
+    import yfinance as yf
+    result = {"15m": None, "1h": None}
+
+    try:
+        stock = yf.Ticker(ticker)
+        df_15m = stock.history(period="60d", interval="15m")
+        if df_15m is not None and not df_15m.empty:
+            result["15m"] = df_15m
+    except Exception:
+        pass
+
+    try:
+        stock = yf.Ticker(ticker)
+        df_1h = stock.history(period="730d", interval="1h")
+        if df_1h is not None and not df_1h.empty:
+            result["1h"] = df_1h
+    except Exception:
+        pass
+
+    _intraday_cache[ticker] = result
+    return result
+
+
 def _strip_html(text):
     """Strip HTML tags + unescape entities for clean text analysis & display."""
     if not text:

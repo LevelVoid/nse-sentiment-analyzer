@@ -213,7 +213,8 @@ def _render_pivot_html(pivot_data):
 
 
 def render_dashboard(result, ticker, company_name, technical_indicators=None,
-                     track_record=None, fii_dii_data=None, ohlcv_json=None):
+                     track_record=None, fii_dii_data=None, ohlcv_json=None,
+                     intraday_15m_json=None, intraday_1h_json=None):
     """Return a complete premium HTML dashboard as a string."""
     stock = result["stock_data"]
     news_items = result["news_items"]
@@ -599,13 +600,15 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 (function(){{var o=document.referrer?new URL(document.referrer).origin:'*';function h(){{var d=document.body.scrollHeight;parent.postMessage({{type:'streamlit:setFrameHeight',height:d}},o);}}window.addEventListener('load',h);window.addEventListener('resize',h);}})();
 </script>"""
 
-    # ─── TradingView Lightweight Charts — candlestick + volume + timeframes ───
+    # ─── TradingView Lightweight Charts — candlestick + volume + intraday timeframes ───
     if ohlcv_json and ohlcv_json != "[]":
         _chart_script = f"""<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" nonce="{_nonce}"></script>
 <script nonce="{_nonce}">
 (function(){{
-  var allData = {ohlcv_json};
-  if (!allData || !allData.length) return;
+  var dailyData = {ohlcv_json};
+  var data15m = {intraday_15m_json or '[]'};
+  var data1h = {intraday_1h_json or '[]'};
+  if (!dailyData || !dailyData.length) return;
   var container = document.getElementById('tvchart');
   if (!container) return;
   var chart = LightweightCharts.createChart(container, {{
@@ -615,7 +618,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     grid: {{ vertLines: {{ color: 'rgba(42,46,58,0.4)' }}, horzLines: {{ color: 'rgba(42,46,58,0.4)' }} }},
     crosshair: {{ mode: LightweightCharts.CrosshairMode.Normal }},
     rightPriceScale: {{ borderColor: '#2a2e3a' }},
-    timeScale: {{ borderColor: '#2a2e3a', timeVisible: false }},
+    timeScale: {{ borderColor: '#2a2e3a', timeVisible: true, secondsVisible: false }},
   }});
   var candleSeries = chart.addCandlestickSeries({{
     upColor: '#22b573', downColor: '#f85149',
@@ -632,11 +635,23 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     priceLineVisible: false, lastValueVisible: false,
   }});
 
-  var tfDays = {{ '1D': 22, '1W': 22, '1M': 22, '3M': 66, '6M': 132, '1Y': 9999 }};
-
-  function filterData(days) {{
-    if (days >= allData.length) return allData;
-    return allData.slice(allData.length - days);
+  function resample4h(h1) {{
+    var blocks = [];
+    var cur = null;
+    for (var i = 0; i < h1.length; i++) {{
+      var d = h1[i];
+      var blockIdx = Math.floor(i / 4);
+      if (!cur || blocks.length <= blockIdx) {{
+        cur = {{ time: d.time, open: d.open, high: d.high, low: d.low, close: d.close, volume: d.volume }};
+        blocks.push(cur);
+      }} else {{
+        cur.high = Math.max(cur.high, d.high);
+        cur.low = Math.min(cur.low, d.low);
+        cur.close = d.close;
+        cur.volume += d.volume;
+      }}
+    }}
+    return blocks;
   }}
 
   function resampleWeekly(daily) {{
@@ -671,13 +686,28 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     smaSeries.setData(sma);
   }}
 
+  function volColors(d) {{
+    return d.close >= d.open ? 'rgba(34,181,115,0.3)' : 'rgba(248,81,73,0.3)';
+  }}
+
   function setTimeframe(tf) {{
-    var days = tfDays[tf] || 9999;
-    var sliced = filterData(days);
-    var plotData = tf === '1W' ? resampleWeekly(sliced) : sliced;
+    var plotData;
+    if (tf === '15m') {{
+      plotData = data15m.length ? data15m : dailyData.slice(-22);
+    }} else if (tf === '1h') {{
+      plotData = data1h.length ? data1h : dailyData.slice(-66);
+    }} else if (tf === '4h') {{
+      plotData = data1h.length ? resample4h(data1h) : dailyData.slice(-66);
+    }} else if (tf === '1D') {{
+      plotData = dailyData.slice(-22);
+    }} else if (tf === '1W') {{
+      plotData = resampleWeekly(dailyData);
+    }} else {{
+      plotData = dailyData;
+    }}
     candleSeries.setData(plotData);
     volumeSeries.setData(plotData.map(function(d){{
-      return {{ time: d.time, value: d.volume, color: d.close >= d.open ? 'rgba(34,181,115,0.3)' : 'rgba(248,81,73,0.3)' }};
+      return {{ time: d.time, value: d.volume, color: volColors(d) }};
     }}));
     calcSMA(plotData);
     chart.timeScale().fitContent();
@@ -1092,11 +1122,11 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     <div class="card">
         <div class="card-title">{_ICON["bar_chart"]} Price Chart</div>
         <div class="tf-bar">
+            <button class="tf-btn" data-tf="15m">15m</button>
+            <button class="tf-btn" data-tf="1h">1H</button>
+            <button class="tf-btn" data-tf="4h">4H</button>
             <button class="tf-btn" data-tf="1D">1D</button>
             <button class="tf-btn" data-tf="1W">1W</button>
-            <button class="tf-btn" data-tf="1M">1M</button>
-            <button class="tf-btn" data-tf="3M">3M</button>
-            <button class="tf-btn" data-tf="6M">6M</button>
             <button class="tf-btn active" data-tf="1Y">1Y</button>
         </div>
         <div id="tvchart" class="chart-container"></div>
