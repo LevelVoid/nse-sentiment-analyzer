@@ -146,3 +146,36 @@ class TestTechnicalIndicators:
         empty_hist = pd.DataFrame()
         result = self._call(mocker, empty_hist)
         assert result is None
+
+    def test_adx_computed(self, mocker):
+        """ADX(14) should be a float between 0-100 with sufficient data."""
+        dates = pd.date_range(end="2026-06-18", periods=252, freq="B")
+        np.random.seed(42)
+        prices = 100.0 + np.cumsum(np.random.randn(252) * 0.5)
+        hist = pd.DataFrame({
+            "Open": prices, "High": prices * 1.01,
+            "Low": prices * 0.99, "Close": prices,
+            "Volume": np.random.randint(500_000, 2_000_000, 252),
+        }, index=dates)
+
+        result = self._call(mocker, hist)
+        assert result is not None
+        adx = result.get("adx")
+        assert adx is not None
+        assert isinstance(adx, float)
+        assert 0 <= adx <= 100
+
+    def test_adx_none_on_short_history(self, mocker):
+        """Short history (< 28) should return adx=None."""
+        dates = pd.date_range(end="2026-06-18", periods=27, freq="B")
+        prices = np.linspace(100, 110, 27)
+        hist = pd.DataFrame({
+            "Open": prices, "High": prices * 1.01,
+            "Low": prices * 0.99, "Close": prices,
+            "Volume": np.ones(27) * 1_000_000,
+        }, index=dates)
+
+        result = self._call(mocker, hist)
+        # 27 rows is enough for RSI/MACD (>=26) but not for ADX (<28)
+        if result is not None:
+            assert result.get("adx") is None

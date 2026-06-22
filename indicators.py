@@ -83,6 +83,43 @@ def get_technical_indicators(ticker, hist=None):
             elif close_prev > sma200_prev and close_now < sma200_now:
                 sma200_cross = "bearish"
 
+        # ADX (14) — trend strength
+        adx = None
+        if len(hist) >= 28:  # need enough data for 2×ADX period
+            high = hist["High"]
+            low = hist["Low"]
+            # +DM and -DM
+            up_move = high.diff()
+            down_move = -low.diff()
+            plus_dm = pd.Series(0.0, index=high.index)
+            minus_dm = pd.Series(0.0, index=high.index)
+            mask_up = (up_move > down_move) & (up_move > 0)
+            mask_down = (down_move > up_move) & (down_move > 0)
+            plus_dm[mask_up] = up_move[mask_up]
+            minus_dm[mask_down] = down_move[mask_down]
+            # True Range
+            prev_close = close.shift(1)
+            tr = pd.concat([
+                (high - low).abs(),
+                (high - prev_close).abs(),
+                (low - prev_close).abs(),
+            ], axis=1).max(axis=1)
+            # Wilder's smoothing (period=14)
+            def wilders_smooth(series, period=14):
+                smoothed = series.ewm(alpha=1/period, adjust=False).mean()
+                return smoothed
+            atr = wilders_smooth(tr)
+            s_plus_dm = wilders_smooth(plus_dm)
+            s_minus_dm = wilders_smooth(minus_dm)
+            # +DI, -DI
+            plus_di = 100 * s_plus_dm / atr
+            minus_di = 100 * s_minus_dm / atr
+            # DX
+            dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, float('nan'))
+            # ADX = smoothed DX
+            adx_val = wilders_smooth(dx)
+            adx = float(adx_val.iloc[-1]) if not pd.isna(adx_val.iloc[-1]) else None
+
         # Volume spike — 50-day average volume
         avg_vol_raw = hist["Volume"].rolling(50).mean().iloc[-1] if len(hist) >= 50 else None
         avg_vol_50 = None if avg_vol_raw is None or pd.isna(avg_vol_raw) else float(avg_vol_raw)
@@ -99,6 +136,7 @@ def get_technical_indicators(ticker, hist=None):
             "sma50_cross": sma50_cross,
             "sma200_cross": sma200_cross,
             "avg_volume_50": avg_vol_50,
+            "adx": adx,
         }
     except Exception:
         return None

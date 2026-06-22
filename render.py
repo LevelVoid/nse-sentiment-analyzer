@@ -76,6 +76,27 @@ def _is_valid_num(val):
     return False
 
 
+def _session_quality_badge():
+    """Return a session quality warning badge based on current IST.
+    
+    Returns empty string during optimal trading windows.
+    """
+    from datetime import datetime, timezone, timedelta
+    ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    h, m = ist.hour, ist.minute
+    mins_since_open = (h - 9) * 60 + (m - 15)  # market opens 9:15 IST
+    
+    if 135 <= mins_since_open < 225:  # 11:30-13:00 lunch lull
+        return '<span class="session-badge warn"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Lunch lull — sentiment less reliable</span>'
+    if mins_since_open < 15:  # 9:15-9:30 opening volatility
+        return '<span class="session-badge info"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Opening volatility — use with caution</span>'
+    if 225 <= mins_since_open < 285:  # 13:00-14:00 low liquidity
+        return '<span class="session-badge info"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Low liquidity window</span>'
+    if mins_since_open < 0 or mins_since_open >= 375:  # Before open or after close
+        return '<span class="session-badge muted"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="12" x2="12" y2="12"/></svg> Market closed — data may be stale</span>'
+    return ""
+
+
 def fmt_price(val):
     if _is_valid_num(val):
         return f"\u20b9{val:,.2f}"
@@ -252,6 +273,18 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         proximity_msg = f"{pct_above_low:.0f}% above 52W Low"
         proximity_class = "low" if pct_above_low < 10 else "mid"
 
+    # Circuit breaker proximity check — within 2% of ±10% circuit
+    circuit_html = ""
+    if _is_valid_num(price_now) and _is_valid_num(stock.get("change")):
+        prev_close = price_now - stock["change"]
+        if prev_close > 0:
+            upper_circuit = prev_close * 1.10
+            lower_circuit = prev_close * 0.90
+            if price_now >= upper_circuit * 0.98:
+                circuit_html = '<span class="session-badge warn"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg> Near upper circuit — sentiment may be unreliable</span>'
+            elif price_now <= lower_circuit * 1.02:
+                circuit_html = '<span class="session-badge warn"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg> Near lower circuit — sentiment may be unreliable</span>'
+
     # VWAP badge
     vwap_html = ""
     if vwap_data and vwap_data.get("vwap") is not None:
@@ -266,8 +299,14 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     # Volume spike badge
     vol_now = stock["volume"]
     vol_spike_html = ""
+    vol_quality_html = ""
     if technical_indicators and isinstance(vol_now, (int, float)):
         avg_vol_50 = technical_indicators.get("avg_volume_50")
+        # Volume quality gate — flag suspicious zero/low volume
+        if vol_now == 0 and avg_vol_50 and avg_vol_50 > 0:
+            vol_quality_html = '<span class="session-badge warn"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg> Volume is 0 — check data quality</span>'
+        elif avg_vol_50 and avg_vol_50 > 0 and vol_now < avg_vol_50 * 0.1:
+            vol_quality_html = '<span class="session-badge info"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg> Suspiciously low volume</span>'
         spike_result = detect_volume_spike(vol_now, avg_vol_50, threshold=1.5)
         if spike_result["spike"]:
             ratio = spike_result["ratio"]
@@ -392,13 +431,18 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         above_200 = _up_dot if (sma200 is not None and close > sma200) else _down_dot if (sma200 is not None and close < sma200) else "\u2014"
         macd_hist = ti["macd_hist"]
         macd_label = _up_dot + " Bullish" if macd_hist > 0 else _down_dot + " Bearish"
+        adx = ti.get("adx")
+        adx_label = f"Trending (ADX {adx:.0f})" if (adx is not None and adx >= 25) else "Ranging" if (adx is not None and adx < 25) else "N/A"
         ti_preview = f"RSI {rsi:.1f} ({rsi_label}) \u00b7 SMA50 {above_50} \u00b7 SMA200 {above_200} \u00b7 MACD {macd_label}"
+        if adx is not None:
+            ti_preview += f" \u00b7 ADX {adx:.1f} ({'Strong' if adx >= 25 else 'Weak'})"
         ti_rows = f"""
         <div class="ti-grid">
             <div class="ti-item"><span class="ti-label">RSI (14)</span><span class="ti-value">{rsi:.1f}</span><span class="ti-sub">{rsi_label}</span></div>
             <div class="ti-item"><span class="ti-label">vs SMA 50</span><span class="ti-value">{fmt_price(sma50) if sma50 else "N/A"}</span><span class="ti-sub">{above_50}</span></div>
             <div class="ti-item"><span class="ti-label">vs SMA 200</span><span class="ti-value">{fmt_price(sma200) if sma200 else "N/A"}</span><span class="ti-sub">{above_200}</span></div>
             <div class="ti-item"><span class="ti-label">MACD Hist</span><span class="ti-value">{macd_hist:.4f}</span><span class="ti-sub">{macd_label}</span></div>
+            <div class="ti-item"><span class="ti-label">ADX (14)</span><span class="ti-value">{f"{adx:.1f}" if adx is not None else "N/A"}</span><span class="ti-sub">{adx_label}</span></div>
         </div>"""
     else:
         ti_preview = "Not enough data to compute (need 1yr+)."
@@ -541,6 +585,9 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     source_health = f'<div class="source-health">{_ICON["wifi"]} Sources: {sources_str}</div>' if sources_str else ""
     ti_section = f'<div class="ti-preview">{ti_preview}</div>' if ti_preview else ""
 
+    # Session quality badge
+    session_badge = _session_quality_badge()
+
     # ponytail: random CSP nonce for the auto-height script blocks
     # any injected inline scripts from RSS content
     _nonce = secrets.token_urlsafe(16)
@@ -645,6 +692,15 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     .source-badge.neutral {{ border-color: rgba(136,145,160,0.15); color: #8891a0; }}
     .badge-meta {{ opacity: 0.7; color: #8891a0; }}
     .source-health {{ font-size: 0.8rem; color: #8891a0; margin-top: 0.5rem; }}
+
+    /* Session quality badges */
+    .session-badge {{
+        display: inline-block; padding: 0.2rem 0.55rem; border-radius: 6px;
+        font-size: 0.72rem; font-weight: 500; margin-top: 0.4rem;
+    }}
+    .session-badge.warn {{ background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }}
+    .session-badge.info {{ background: rgba(96,165,250,0.1); color: #93c5fd; border: 1px solid rgba(96,165,250,0.2); }}
+    .session-badge.muted {{ background: rgba(136,145,160,0.1); color: #8891a0; border: 1px solid rgba(136,145,160,0.2); }}
 
     /* SmartScore section */
     .ss-section {{
@@ -814,6 +870,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
                 <div class="company-name">{h(company_name)}</div>
                 <div class="company-ticker">{h(ticker)} · NSE</div>
                 {f'<span class="prox-badge {proximity_class}">{h(proximity_msg)}</span>' if proximity_msg else ''}
+                {circuit_html}
             </div>
         </div>
         <div class="price-grid">
@@ -830,6 +887,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
             <div class="price-cell">
                 <div class="label">Volume{vol_spike_html}</div>
                 <div class="value" style="font-size:1rem">{volume}</div>
+                {vol_quality_html}
             </div>
             <div class="price-cell">
                 <div class="label">P/E Ratio</div>
@@ -855,6 +913,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         {ss_html}
         {badge_section}
         {source_health}
+        {session_badge}
     </div>
 
     <!-- ═══ SENTIMENT DISTRIBUTION ═══ -->

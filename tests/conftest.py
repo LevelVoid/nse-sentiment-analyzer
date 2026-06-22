@@ -93,6 +93,7 @@ def sample_technical_indicators():
         "sma50_cross": None,
         "sma200_cross": "bullish",
         "avg_volume_50": 800_000,
+        "adx": 28.0,
     }
 
 
@@ -124,6 +125,7 @@ def partial_technical_indicators():
         "sma50_cross": None,
         "sma200_cross": None,
         "avg_volume_50": None,
+        "adx": None,
     }
 
 
