@@ -1080,7 +1080,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     <!-- ═══ PRICE CHART ═══ -->
     <div class="card">
-        <div class="card-title">{_ICON["bar_chart"]} Price Chart (1Y)</div>
+        <div class="card-title">{_ICON["bar_chart"]} Price Chart (2Y)</div>
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;font-size:0.72rem;color:#8891a0">
             <span><span style="display:inline-block;width:12px;height:2px;background:rgba(96,165,250,0.6);vertical-align:middle;margin-right:3px"></span>SMA 50</span>
             <span><span style="display:inline-block;width:12px;height:2px;background:rgba(251,191,36,0.5);vertical-align:middle;margin-right:3px;border-top:1px dashed rgba(251,191,36,0.5)"></span>SMA 200</span>

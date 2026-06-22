@@ -599,7 +599,7 @@ def get_cached_history(ticker):
     for suffix in [".NS", ".BO", ""]:
         try:
             stock = yf.Ticker(f"{ticker}{suffix}")
-            hist = stock.history(period="1y")
+            hist = stock.history(period="2y")
             if hist is not None and not hist.empty:
                 with _hist_cache_lock:
                     _hist_cache[ticker] = hist
@@ -731,7 +731,7 @@ def get_stock_info(ticker):
             stock = yf.Ticker(f"{ticker}{suffix}")
             for attempt in _retry_fetch(max_attempts=3, base_wait=2):
                 try:
-                    raw = stock.history(period="1y")
+                    raw = stock.history(period="2y")
                     if raw is not None and not raw.empty:
                         hist = raw
                         break

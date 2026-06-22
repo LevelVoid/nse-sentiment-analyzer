@@ -37,7 +37,7 @@ def get_technical_indicators(ticker, hist=None):
                 stock = yf.Ticker(f"{ticker}{suffix}")
                 for attempt in range(3):
                     try:
-                        hist = stock.history(period="1y")
+                        hist = stock.history(period="2y")
                         if hist is not None and not hist.empty:
                             break
                     except Exception:
