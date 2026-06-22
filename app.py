@@ -109,6 +109,11 @@ st.markdown("""
     .stTextInput input:focus {border-color: #22b573 !important;box-shadow: 0 0 0 2px rgba(34,181,115,0.1) !important;}
     .stButton button {border-radius: 8px;border: 1px solid #1e2028;background: rgba(19,21,26,0.6);color: #e4e6eb;font-weight: 500;transition: all 0.2s ease;}
     .stButton button:hover {border-color: rgba(34,181,115,0.3);background: rgba(34,181,115,0.08);}
+    /* Compact delete button for portfolio rows */
+    .pf-del button {min-height:0 !important;padding:0.15rem 0.5rem !important;font-size:0.75rem !important;line-height:1 !important;border:none !important;background:transparent !important;color:#6b7280 !important;}
+    .pf-del button:hover {color:#ef4444 !important;background:rgba(239,68,68,0.08) !important;}
+    /* Tighten column gaps in portfolio section */
+    .pf-row-cols [data-testid="stHorizontalBlock"] {gap: 0.25rem !important;}
     /* Custom header */
     .custom-header {display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0 1.5rem 0;border-bottom:1px solid #1e2028;margin-bottom:1.5rem;}
     .custom-header .left {display:flex;align-items:center;gap:0.75rem;}
@@ -403,7 +408,7 @@ def _render_bottom_cards(portfolio, final_ticker):
                 sd = st.session_state.get("_stock_price_cache", {}).get(t)
                 cp = sd.get("current_price") if sd else None
 
-                c1, c2 = st.columns([5, 0.4])
+                c1, c2 = st.columns([6, 0.3])
                 with c1:
                     display = [f'<span style="font-weight:600;font-size:0.85rem;color:#f0f2f5;min-width:3.5rem">{t}</span>']
                     if _is_valid_num(cp):
@@ -417,17 +422,19 @@ def _render_bottom_cards(portfolio, final_ticker):
                     elif ep:
                         display.append(f'<span style="font-size:0.7rem;color:#6b7280">ATP \u20b9{ep:,.0f}</span>')
                     st.markdown(
-                        f'<div style="display:flex;align-items:center;gap:0.5rem;padding:0.25rem 0;'
+                        f'<div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;'
                         f'border-bottom:1px solid rgba(42,46,58,0.4);line-height:1.3">'
                         f'{"".join(display)}</div>',
                         unsafe_allow_html=True,
                     )
                 with c2:
+                    st.markdown('<div class="pf-del">', unsafe_allow_html=True)
                     if st.button("\u2715", key=f"btm_del_{t}", help=f"Remove {t}"):
                         portfolio.remove(t)
                         save_portfolio(portfolio)
                         st.session_state._skip_reanalysis = True
                         st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
             # Summary stats (single HTML block)
             total_invested = sum(ep for ep in eprices.values() if ep)
