@@ -599,13 +599,13 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 (function(){{var o=document.referrer?new URL(document.referrer).origin:'*';function h(){{var d=document.body.scrollHeight;parent.postMessage({{type:'streamlit:setFrameHeight',height:d}},o);}}window.addEventListener('load',h);window.addEventListener('resize',h);}})();
 </script>"""
 
-    # ─── TradingView Lightweight Charts — candlestick + volume ───
+    # ─── TradingView Lightweight Charts — candlestick + volume + timeframes ───
     if ohlcv_json and ohlcv_json != "[]":
         _chart_script = f"""<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" nonce="{_nonce}"></script>
 <script nonce="{_nonce}">
 (function(){{
-  var data = {ohlcv_json};
-  if (!data || !data.length) return;
+  var allData = {ohlcv_json};
+  if (!allData || !allData.length) return;
   var container = document.getElementById('tvchart');
   if (!container) return;
   var chart = LightweightCharts.createChart(container, {{
@@ -622,30 +622,58 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     borderUpColor: '#22b573', borderDownColor: '#f85149',
     wickUpColor: '#22b573', wickDownColor: '#f85149',
   }});
-  candleSeries.setData(data);
   var volumeSeries = chart.addHistogramSeries({{
     color: 'rgba(34,181,115,0.3)',
     priceFormat: {{ type: 'volume' }},
     priceScaleId: '',
   }});
-  volumeSeries.setData(data.map(function(d){{
-    return {{ time: d.time, value: d.volume, color: d.close >= d.open ? 'rgba(34,181,115,0.3)' : 'rgba(248,81,73,0.3)' }};
-  }}));
-  // 50-day SMA
-  if (data.length >= 50) {{
+  var smaSeries = chart.addLineSeries({{
+    color: 'rgba(96,165,250,0.6)', lineWidth: 1,
+    priceLineVisible: false, lastValueVisible: false,
+  }});
+
+  var tfDays = {{ '1M': 22, '3M': 66, '6M': 132, '1Y': 9999 }};
+
+  function filterData(days) {{
+    if (days >= allData.length) return allData;
+    return allData.slice(allData.length - days);
+  }}
+
+  function calcSMA(data) {{
+    if (data.length < 50) {{ smaSeries.setData([]); return; }}
     var sma = [];
     for (var i = 49; i < data.length; i++) {{
       var sum = 0;
       for (var j = i - 49; j <= i; j++) sum += data[j].close;
       sma.push({{ time: data[i].time, value: sum / 50 }});
     }}
-    var smaSeries = chart.addLineSeries({{
-      color: 'rgba(96,165,250,0.6)', lineWidth: 1,
-      priceLineVisible: false, lastValueVisible: false,
-    }});
     smaSeries.setData(sma);
   }}
-  chart.timeScale().fitContent();
+
+  function setTimeframe(tf) {{
+    var days = tfDays[tf] || 9999;
+    var sliced = filterData(days);
+    candleSeries.setData(sliced);
+    volumeSeries.setData(sliced.map(function(d){{
+      return {{ time: d.time, value: d.volume, color: d.close >= d.open ? 'rgba(34,181,115,0.3)' : 'rgba(248,81,73,0.3)' }};
+    }}));
+    calcSMA(sliced);
+    chart.timeScale().fitContent();
+  }}
+
+  // Initial render
+  setTimeframe('1Y');
+
+  // Button handlers
+  var btns = document.querySelectorAll('.tf-btn');
+  btns.forEach(function(btn) {{
+    btn.addEventListener('click', function() {{
+      btns.forEach(function(b){{ b.classList.remove('active'); }});
+      btn.classList.add('active');
+      setTimeframe(btn.getAttribute('data-tf'));
+    }});
+  }});
+
   new ResizeObserver(function(){{ chart.applyOptions({{ width: container.clientWidth }}); }}).observe(container);
 }})();
 </script>"""
@@ -928,6 +956,17 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
         overflow: hidden;
         margin-top: 0.25rem;
     }}
+    .tf-bar {{
+        display: flex; gap: 0.35rem; margin-bottom: 0.5rem;
+    }}
+    .tf-btn {{
+        padding: 0.25rem 0.65rem; border-radius: 6px;
+        font-size: 0.75rem; font-weight: 600; cursor: pointer;
+        background: transparent; color: #8891a0;
+        border: 1px solid #2a2e3a; transition: all 0.15s ease;
+    }}
+    .tf-btn:hover {{ background: rgba(255,255,255,0.06); color: #c0c5ce; }}
+    .tf-btn.active {{ background: rgba(96,165,250,0.15); color: #60a5fa; border-color: rgba(96,165,250,0.35); }}
     @media (max-width: 640px) {{
         .chart-container {{ height: 280px; }}
     }}
@@ -1029,7 +1068,13 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
 
     <!-- ═══ PRICE CHART ═══ -->
     <div class="card">
-        <div class="card-title">{_ICON["bar_chart"]} Price Chart (1Y)</div>
+        <div class="card-title">{_ICON["bar_chart"]} Price Chart</div>
+        <div class="tf-bar">
+            <button class="tf-btn" data-tf="1M">1M</button>
+            <button class="tf-btn" data-tf="3M">3M</button>
+            <button class="tf-btn" data-tf="6M">6M</button>
+            <button class="tf-btn active" data-tf="1Y">1Y</button>
+        </div>
         <div id="tvchart" class="chart-container"></div>
     </div>
 
