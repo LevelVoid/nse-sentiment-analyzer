@@ -54,7 +54,7 @@ from intraday import compute_vwap, compute_pivot_levels, get_vix
 
 # ─── Page config ───
 st.set_page_config(
-    page_title="NSE Sentiment Analyzer",
+    page_title="NSE Bull/Bear Edge — AI-Powered Sentiment Analyzer",
     page_icon="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%2322b573' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='20' x2='12' y2='10'/><line x1='18' y1='20' x2='18' y2='4'/><line x1='6' y1='20' x2='6' y2='16'/></svg>",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -785,7 +785,7 @@ st.markdown(f"""
             <div style="font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;
                 background:linear-gradient(135deg,#22b573,#0d9488);
                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                background-clip:text;">NSE Sentiment Analyzer</div>
+                background-clip:text;">NSE Bull/Bear Edge<span style="font-weight:400;color:#6b7280;"> — AI-Powered Sentiment Analyzer</span></div>
             <div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;">
                 Live price · Multi-source sentiment · Technical indicators</div>
         </div>
