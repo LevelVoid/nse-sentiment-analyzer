@@ -3,8 +3,10 @@
 ## [2.5.5] — 2026-06-22
 
 ### Fixed
-- **Dashboard content cut off on mobile** — iframe had `scrolling=False`, so if the auto-height script failed to fire (CSP, Streamlit version), content below Source Calibration was inaccessible. Changed to `scrolling=True` as fallback. Also relaxed `.cal-src` min-width on mobile to prevent horizontal overflow.
-- **DuckDuckGo fallback could hang indefinitely** — When RSS feeds returned few results and DuckDuckGo was slow or unresponsive, the news fetcher would block forever. Now wrapped in a 15-second timeout via `ThreadPoolExecutor`; triggers rate limiter on timeout instead of hanging.
+- **Dashboard content cut off on mobile** -- iframe had `scrolling=False`, so if the auto-height script failed to fire (CSP, Streamlit version), content below Source Calibration was inaccessible. Changed to `scrolling=True` as fallback. Also relaxed `.cal-src` min-width on mobile to prevent horizontal overflow.
+- **Portfolio card HTML structure broken** -- `<div class="btm-card">` was split across separate `st.markdown` calls, causing heatmap and portfolio rows to render OUTSIDE the card wrapper (no background, no border, no padding). Refactored: card title + heatmap + rows + summary now render in ONE `st.markdown` call via `_build_heatmap_html`, `_build_portfolio_rows_html`, `_build_portfolio_summary_html` helpers. Track record card fixed the same way.
+- **Heatmap 0% change showed as green** -- `if chg >= 0` caught zero as positive. Fixed to three-way: `> 0` green, `< 0` red, `== 0` neutral gray.
+- **DuckDuckGo fallback could hang indefinitely** -- When RSS feeds returned few results and DuckDuckGo was slow or unresponsive, the news fetcher would block forever. Now wrapped in a 15-second timeout via `ThreadPoolExecutor`; triggers rate limiter on timeout instead of hanging.
 - **Search button breaking on Streamlit updates** — The custom search button used a single DOM selector (`input[placeholder*="RELIANCE"]`) that broke when Streamlit changed its internal DOM structure. Now tries three fallback selectors for resilience.
 - **Thread lock contention between unrelated operations** — Sentiment history saves (CSV) and source accuracy updates (JSON) shared a single lock, blocking each other unnecessarily. Split into two independent locks.
 - **Stale aliases pointing to non-existent tickers** — Removed `KTKBANK`, `DCBBANK`, `DHANBANK`, `SBICARD`, `IOB`, `PSB` aliases that mapped to tickers not in the NSE ticker database, causing silent match failures.

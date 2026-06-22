@@ -332,8 +332,31 @@ def analyze_ticker(ticker, company_name, quick=False):
     }
 
 
+def _build_heatmap_html(portfolio):
+    """Return heatmap grid as a complete HTML string (for embedding in cards)."""
+    parts = []
+    for t in portfolio:
+        sd = st.session_state.get("_stock_price_cache", {}).get(t)
+        if sd is not None:
+            chg = sd.get("change_pct") or 0
+            if chg > 0:
+                color, bg = "#22c55e", "rgba(34,197,94,0.1)"
+            elif chg < 0:
+                color, bg = "#ef4444", "rgba(239,68,68,0.1)"
+            else:
+                color, bg = "#6b7280", "#1a1a2e"
+        else:
+            chg, color, bg = 0, "#6b7280", "#1a1a2e"
+        parts.append(
+            f'<div class="btm-heat-item" style="background:{bg}">'
+            f'<div class="btm-heat-tick">{t}</div>'
+            f'<div style="color:{color}">{chg:+.1f}%</div></div>'
+        )
+    return f'<div class="btm-heat">{"".join(parts)}</div>' if parts else ""
+
+
 def _render_portfolio_list(portfolio, entry_prices, key_prefix="side",
-                            brief_btn_label="📡 Run Portfolio Briefing",
+                            brief_btn_label="\U0001f4e1 Run Portfolio Briefing",
                             heatmap_css=None):
     """Shared portfolio heatmap + listing + delete component.
 
@@ -347,8 +370,12 @@ def _render_portfolio_list(portfolio, entry_prices, key_prefix="side",
         sd_cache = st.session_state.get("_stock_price_cache", {}).get(t)
         if sd_cache is not None:
             chg = sd_cache.get("change_pct") or 0
-            color = "#22c55e" if chg >= 0 else "#ef4444"
-            bg = "rgba(34,197,94,0.1)" if chg >= 0 else "rgba(239,68,68,0.1)"
+            if chg > 0:
+                color, bg = "#22c55e", "rgba(34,197,94,0.1)"
+            elif chg < 0:
+                color, bg = "#ef4444", "rgba(239,68,68,0.1)"
+            else:
+                color, bg = "#6b7280", "#1a1a2e"
         else:
             chg = 0
             color = "#6b7280"
@@ -547,6 +574,69 @@ def _render_empty_state():
         )
 
 
+def _build_portfolio_rows_html(portfolio, entry_prices):
+    """Return portfolio rows as HTML (for embedding in card)."""
+    if not portfolio:
+        return '<div style="color:#6b7280;font-size:0.8rem;padding:0.3rem 0">No holdings yet</div>'
+    rows = []
+    for t in portfolio:
+        ep = entry_prices.get(t)
+        sd = st.session_state.get("_stock_price_cache", {}).get(t)
+        cp = sd.get("current_price") if sd else None
+        left = [f'<span class="pf-ticker">{t}</span>']
+        if _is_valid_num(cp):
+            left.append(f'<span class="pf-price">\u20b9{cp:,.2f}</span>')
+        if ep and _is_valid_num(cp):
+            pnl = calc_portfolio_pnl(ep, cp)
+            cls = "pf-pnl-pos" if pnl["pnl_pct"] >= 0 else "pf-pnl-neg"
+            sn = "+" if pnl["pnl_pct"] >= 0 else ""
+            left.append(f'<span class="{cls}">{sn}{pnl["pnl_pct"]:.1f}%</span>')
+            left.append(f'<span class="pf-atp">ATP \u20b9{ep:,.0f}</span>')
+        elif ep:
+            left.append(f'<span class="pf-atp">ATP \u20b9{ep:,.0f}</span>')
+        rows.append(f'<div class="pf-row">{"".join(left)}</div>')
+    return "".join(rows)
+
+
+def _build_portfolio_summary_html(portfolio, entry_prices):
+    """Return portfolio summary stats as HTML (for embedding in card)."""
+    if not entry_prices:
+        return ""
+    total_invested = sum(ep for ep in entry_prices.values() if ep)
+    total_current = sum(
+        sd.get("current_price", 0)
+        for t in portfolio
+        if (sd := st.session_state.get("_stock_price_cache", {}).get(t))
+        and _is_valid_num(sd.get("current_price"))
+    )
+    n_with_prices = sum(
+        1 for t in portfolio
+        if st.session_state.get("_stock_price_cache", {}).get(t)
+    )
+    day_chg = sum(
+        sd.get("change_pct", 0) or 0
+        for t in portfolio
+        if (sd := st.session_state.get("_stock_price_cache", {}).get(t))
+    )
+    day_avg = day_chg / n_with_prices if n_with_prices else 0
+    total_pnl = total_current - total_invested if total_invested and total_current else None
+    total_pnl_pct = (total_pnl / total_invested * 100) if total_pnl is not None else None
+    pnl_cls = "pf-sum-pos" if (total_pnl_pct or 0) >= 0 else "pf-sum-neg"
+    parts = []
+    if total_invested:
+        parts.append(f'<span class="pf-sum-item">Invested <span class="pf-sum-val">\u20b9{total_invested:,.0f}</span></span>')
+    if total_current:
+        parts.append(f'<span class="pf-sum-item">Current <span class="pf-sum-val">\u20b9{total_current:,.0f}</span></span>')
+    if total_pnl_pct is not None:
+        sign = "+" if total_pnl >= 0 else ""
+        parts.append(f'<span class="pf-sum-item">P&amp;L <span class="{pnl_cls}">{sign}{total_pnl_pct:.1f}%</span></span>')
+    if day_avg:
+        d_cls = "pf-sum-pos" if day_avg >= 0 else "pf-sum-neg"
+        sign = "+" if day_avg >= 0 else ""
+        parts.append(f'<span class="pf-sum-item">Day <span class="{d_cls}">{sign}{day_avg:.1f}%</span></span>')
+    return f'<div class="pf-summary">{"".join(parts)}</div>' if parts else ""
+
+
 def _render_bottom_cards(portfolio, final_ticker):
     """Render the bottom Portfolio + Track Record cards section."""
     _FOLDER = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'
@@ -558,7 +648,7 @@ def _render_bottom_cards(portfolio, final_ticker):
     eprices = load_entry_prices()
 
     with bc1:
-        st.markdown(f'<div class="btm-card"><div class="btm-title">{_FOLDER} Portfolio</div>', unsafe_allow_html=True)
+        # ─── Add ticker form (Streamlit widgets, outside card HTML) ───
         ac1, ac2, ac3 = st.columns([2, 1, 0.6])
         with ac1:
             new_t = st.text_input("Ticker", placeholder="RELIANCE", label_visibility="collapsed",
@@ -568,7 +658,7 @@ def _render_bottom_cards(portfolio, final_ticker):
                                      max_chars=10, key="btm_add_atp",
                                      help="Optional: average trade price for P&L tracking")
         with ac3:
-            if st.button("➕", use_container_width=True, key="btm_add_btn", help="Add to portfolio") and new_t.strip():
+            if st.button("\u2795", use_container_width=True, key="btm_add_btn", help="Add to portfolio") and new_t.strip():
                 t = new_t.strip().upper().replace(".NS", "")
                 if not re.match(r'^[A-Z0-9&-]+$', t):
                     st.warning("Invalid ticker format")
@@ -581,45 +671,58 @@ def _render_bottom_cards(portfolio, final_ticker):
                         try:
                             save_entry_price(t, float(ep_input.strip().replace(",", "")))
                         except ValueError:
-                            st.warning("Could not parse ATP — stock added without entry price")
+                            st.warning("Could not parse ATP -- stock added without entry price")
                     st.session_state._skip_reanalysis = True
                     st.rerun()
+        # ─── Portfolio card: single st.markdown call (no split HTML) ───
+        eprices = load_entry_prices()
+        heat_html = _build_heatmap_html(portfolio)
+        rows_html = _build_portfolio_rows_html(portfolio, eprices)
+        summary_html = _build_portfolio_summary_html(portfolio, eprices)
+        card_html = (
+            f'<div class="btm-card">'
+            f'<div class="btm-title">{_FOLDER} Portfolio</div>'
+            f'{heat_html}{rows_html}{summary_html}'
+            f'</div>'
+        )
+        st.markdown(card_html, unsafe_allow_html=True)
         _render_portfolio_list(portfolio, eprices, key_prefix="btm",
-                               brief_btn_label="⚡ Briefing",
-                               heatmap_css="btm-heat")
-        st.markdown('</div>', unsafe_allow_html=True)
+                               brief_btn_label="\u26a1 Briefing")
 
     with bc2:
-        st.markdown(f'<div class="btm-card"><div class="btm-title">{_BAR} Track Record</div>', unsafe_allow_html=True)
         recs = load_track_record()
         voted = [r for r in recs if r.get("vote") is not None]
+        acc = sum(1 for r in voted if r["vote"] is True) if voted else 0
+        acc_pct = acc / len(voted) * 100 if voted else 0
         if voted:
-            acc = sum(1 for r in voted if r["vote"] is True)
-            acc_pct = acc / len(voted) * 100
             acc_cls = "#22c55e" if acc_pct >= 60 else "#f59e0b" if acc_pct >= 40 else "#ef4444"
-            st.markdown(
+            acc_html = (
                 f'<div style="text-align:center;margin:0.5rem 0">'
                 f'<div style="font-size:2rem;font-weight:800;color:{acc_cls};line-height:1">{acc_pct:.0f}%</div>'
                 f'<div style="font-size:0.75rem;color:#8891a0;margin-top:0.15rem">{acc}/{len(voted)} correct</div></div>'
                 f'<div style="height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;margin:0.4rem 0">'
-                f'<div style="height:100%;width:{acc_pct:.0f}%;background:{acc_cls};border-radius:3px;transition:width 0.4s"></div></div>',
-                unsafe_allow_html=True,
+                f'<div style="height:100%;width:{acc_pct:.0f}%;background:{acc_cls};border-radius:3px;transition:width 0.4s"></div></div>'
             )
         else:
-            st.markdown(
+            acc_html = (
                 '<div style="text-align:center;padding:0.5rem 0;color:#6b7280;font-size:0.85rem">'
-                'No votes yet. Search a ticker and vote on the signal.</div>',
-                unsafe_allow_html=True,
+                'No votes yet. Search a ticker and vote on the signal.</div>'
             )
-        st.markdown(
+        stats_html = (
             f'<div style="display:flex;justify-content:space-around;padding:0.3rem 0">'
             f'<div style="text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#f0f2f5">{len(recs)}</div>'
             f'<div style="font-size:0.7rem;color:#8891a0">Scans</div></div>'
-            f'<div style="text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#22c55e">{acc if voted else 0}</div>'
+            f'<div style="text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#22c55e">{acc}</div>'
             f'<div style="font-size:0.7rem;color:#8891a0">Right</div></div>'
-            f'<div style="text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#ef4444">{len(voted) - acc if voted else 0}</div>'
+            f'<div style="text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#ef4444">{len(voted) - acc}</div>'
             f'<div style="font-size:0.7rem;color:#8891a0">Wrong</div></div>'
-            f'</div></div>',
+            f'</div>'
+        )
+        st.markdown(
+            f'<div class="btm-card">'
+            f'<div class="btm-title">{_BAR} Track Record</div>'
+            f'{acc_html}{stats_html}'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
