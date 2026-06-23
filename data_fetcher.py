@@ -681,7 +681,7 @@ def get_stock_info(ticker):
         # ── Phase 1: info (best-effort metadata) ──
         for suffix in suffixes:
             stock = yf.Ticker(f"{ticker}{suffix}")
-            for attempt in _retry_fetch(max_attempts=3, base_wait=1):
+            for attempt in _retry_fetch(max_attempts=2, base_wait=1):
                 try:
                     raw = stock.info
                     if raw and isinstance(raw, dict) and len(raw) > 10:
@@ -710,47 +710,33 @@ def get_stock_info(ticker):
             if hist is not None:
                 break  # found valid history
 
-        # ── Phase 2b: retry info if it failed (rate-limit may have cleared
-        #    during the history phase which took ~3-6s) ──
-        if info is None and hist is not None:
-            for suffix in suffixes:
-                stock = yf.Ticker(f"{ticker}{suffix}")
-                try:
-                    raw = stock.info
-                    if raw and isinstance(raw, dict) and len(raw) > 10:
-                        info = raw
-                        name_fallback = info.get("longName", info.get("shortName", ticker))
-                        break
-                except Exception:
-                    continue
-
-        # ── Phase 2c: targeted metadata recovery ──
-        #    yfinance .info is flaky for Indian stocks/ETFs — sometimes returns
-        #    partial dicts or None. Retry for all missing metadata fields.
+        # ── Phase 2b+c: merged metadata recovery ──
+        #    yfinance .info is flaky for Indian stocks — sometimes returns
+        #    partial dicts or None. If Phase 1 failed entirely OR returned
+        #    a sparse response without sector/industry, retry all suffixes
+        #    once and capture whatever metadata is available.
+        #    (ETFs legitimately lack marketCap — no point retrying for that.)
         _META_FIELDS = ["sector", "industry", "marketCap", "trailingPE",
                         "fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
-        _missing = [
-            f for f in _META_FIELDS
-            if info is None or info.get(f) is None or info.get(f) == "N/A"
-        ]
-        if _missing:
+        _need_info = info is None
+        _sec = info.get("sector") if info else None
+        _ind = info.get("industry") if info else None
+        if _need_info or (not _sec or _sec == "N/A") or (not _ind or _ind == "N/A"):
             for suffix in suffixes:
                 try:
                     stock = yf.Ticker(f"{ticker}{suffix}")
                     raw = stock.info
                     if raw and isinstance(raw, dict):
-                        for f in list(_missing):
+                        if info is None:
+                            info = {}
+                        for f in _META_FIELDS:
                             v = raw.get(f)
-                            if v is not None and v != "N/A":
-                                if info is None:
-                                    info = {}
+                            if v is not None and v != "N/A" and info.get(f) is None:
                                 info[f] = v
-                                _missing.remove(f)
-                        if not _missing:
+                        if info.get("sector") and info.get("industry"):
                             break
                 except Exception:
                     continue
-            # Ensure info dict exists even if all retries failed
             if info is None:
                 info = {}
 
