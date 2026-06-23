@@ -603,7 +603,6 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
     if ohlcv_json and ohlcv_json != "[]":
         # Compute overlay data (Bollinger Bands + SMA200) from ohlcv_json
         import json as _json
-        import math as _math
         _ohlc = _json.loads(ohlcv_json) if isinstance(ohlcv_json, str) else ohlcv_json
         _bb_upper, _bb_lower, _sma200 = "[]", "[]", "[]"
         if len(_ohlc) >= 20:
@@ -613,7 +612,7 @@ def render_dashboard(result, ticker, company_name, technical_indicators=None,
                 _window = _closes[i-19:i+1]
                 _mean = sum(_window) / 20
                 _var = sum((x - _mean) ** 2 for x in _window) / 20
-                _std = _math.sqrt(_var)
+                _std = math.sqrt(_var)
                 _bb_u.append({"time": _ohlc[i]["time"], "value": round(_mean + 2 * _std, 2)})
                 _bb_l.append({"time": _ohlc[i]["time"], "value": round(_mean - 2 * _std, 2)})
             _bb_upper = _json.dumps(_bb_u)

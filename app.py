@@ -324,6 +324,8 @@ def _refresh_price_cache(portfolio):
     if not missing:
         return
     import yfinance as yf
+    # Collect failures to warn user once
+    _failed = []
     for t in missing:
         try:
             tk = yf.Ticker(t + ".NS")
@@ -336,7 +338,10 @@ def _refresh_price_cache(portfolio):
                     "current_price": cp,
                 }
         except Exception:
-            pass
+            logger.warning("_refresh_price_cache failed for %s", t)
+            _failed.append(t)
+    if _failed:
+        st.warning(f"Could not refresh price for: {', '.join(_failed)}")
 
 
 def _render_portfolio_list(portfolio, entry_prices, key_prefix="side"):
@@ -392,7 +397,7 @@ def _render_portfolio_list(portfolio, entry_prices, key_prefix="side"):
             st.rerun()
 
 
-def _render_bottom_cards(portfolio, final_ticker):
+def _render_bottom_cards(portfolio, final_ticker, entry_prices):
     """Render the bottom Portfolio + Track Record cards section.
 
     Uses Streamlit native containers with glassmorphism styling for a
@@ -403,7 +408,7 @@ def _render_bottom_cards(portfolio, final_ticker):
     _BAR = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>'
 
     bc1, bc2 = st.columns([1.6, 1])
-    eprices = load_entry_prices()
+    eprices = entry_prices
 
     # ─── Portfolio Card ───
     with bc1:
@@ -448,7 +453,6 @@ def _render_bottom_cards(portfolio, final_ticker):
                     st.rerun()
 
         # Portfolio rows (static HTML card)
-        eprices = load_entry_prices()
         if portfolio:
             row_parts = []
             for t in portfolio:
@@ -1036,7 +1040,7 @@ if final_ticker and final_ticker != "":
         )
 
         # ─── Bottom section: Portfolio + Track Record cards ───
-        _render_bottom_cards(portfolio, final_ticker)
+        _render_bottom_cards(portfolio, final_ticker, entry_prices)
 
     else:
         st.error(f"Could not find data for **{final_ticker}**. "

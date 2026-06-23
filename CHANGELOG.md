@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.5.7] — 2026-06-23
+
+### Fixed
+- **Portfolio entry prices loaded once per page** — Removed redundant `load_entry_prices()` call inside the bottom card renderer. Prices are now loaded once in the sidebar and passed to both views, saving a file read on every page load.
+- **Price refresh failures now visible** — If Yahoo Finance can't fetch a portfolio holding's price, the app now shows a warning listing which tickers failed (instead of silently logging to the console).
+- **Removed redundant import in chart renderer** — `math` was imported twice in `render.py` (module level + function body). Kept the module-level import, removed the local duplicate.
+
+### Changed
+- **`_render_bottom_cards()` signature** — Now accepts `entry_prices` as a parameter instead of calling `load_entry_prices()` internally. Cleaner function boundary, less I/O.
+
 ## [2.5.6] — 2026-06-22
 
 ### Added

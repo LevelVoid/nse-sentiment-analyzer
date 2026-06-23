@@ -580,6 +580,15 @@ ALIASES = {
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _hist_cache = {}
 _hist_cache_lock = threading.Lock()
+_MAX_CACHED_TICKERS = 50
+
+
+def _evict_hist_cache():
+    """Evict oldest entries when cache exceeds _MAX_CACHED_TICKERS."""
+    with _hist_cache_lock:
+        while len(_hist_cache) > _MAX_CACHED_TICKERS:
+            # dict preserves insertion order (Python 3.7+) — pop first key
+            _hist_cache.pop(next(iter(_hist_cache)), None)
 
 
 def get_cached_history(ticker):
@@ -603,50 +612,11 @@ def get_cached_history(ticker):
             if hist is not None and not hist.empty:
                 with _hist_cache_lock:
                     _hist_cache[ticker] = hist
+                    _evict_hist_cache()
                 return hist
         except Exception:
             continue
     return None
-
-
-# ─── Intraday data cache (15m, 1h) ───
-_intraday_cache = {}  # { ticker: { "15m": DataFrame, "1h": DataFrame } }
-
-
-def get_intraday_data(ticker):
-    """Fetch 15-minute and 1-hour intraday OHLCV for a ticker.
-
-    Uses yfinance with period/interval limits:
-      - 15m: period=60d, interval=15m (yfinance max for sub-hour)
-      - 1h:  period=730d, interval=1h
-
-    Returns dict: { "15m": DataFrame|None, "1h": DataFrame|None }
-    Cached in-memory per ticker to avoid duplicate calls.
-    """
-    if ticker in _intraday_cache:
-        return _intraday_cache[ticker]
-
-    import yfinance as yf
-    result = {"15m": None, "1h": None}
-
-    try:
-        stock = yf.Ticker(ticker)
-        df_15m = stock.history(period="60d", interval="15m")
-        if df_15m is not None and not df_15m.empty:
-            result["15m"] = df_15m
-    except Exception:
-        pass
-
-    try:
-        stock = yf.Ticker(ticker)
-        df_1h = stock.history(period="730d", interval="1h")
-        if df_1h is not None and not df_1h.empty:
-            result["1h"] = df_1h
-    except Exception:
-        pass
-
-    _intraday_cache[ticker] = result
-    return result
 
 
 def _strip_html(text):
@@ -785,6 +755,7 @@ def get_stock_info(ticker):
         if hist is not None and not hist.empty:
             with _hist_cache_lock:
                 _hist_cache[ticker] = hist
+                _evict_hist_cache()
             current_price = _nf(hist["Close"].iloc[-1])
             prev_close = _nf(hist["Close"].iloc[-2]) if len(hist) > 1 else current_price
             if current_price is not None and prev_close is not None:

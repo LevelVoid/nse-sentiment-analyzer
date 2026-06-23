@@ -236,7 +236,7 @@ nse-sentiment-analyzer/
     └── test_history_export.py     # CSV export
 ```
 
-**10 source modules**, **14 test files**, **138 tests**.
+**10 source modules**, **14 test files**, **139 tests**.
 
 ---
 
@@ -268,7 +268,7 @@ nse-sentiment-analyzer/
 ## Testing
 
 ```bash
-# Full suite (138 tests, mocked APIs, no network)
+# Full suite (139 tests, mocked APIs, no network)
 python -m pytest tests/ -v -q
 
 # With coverage
