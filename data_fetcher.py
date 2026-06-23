@@ -576,6 +576,51 @@ ALIASES = {
     "LAKSHMI AI": "PWL", "GROWW": "GROWW",
 }
 
+# Precompute reverse ALIASES (lowercased name → ticker) for fast input resolution
+_ALIAS_LOOKUP = {}
+for _ak, _at in ALIASES.items():
+    _alias_upper = _ak.strip().upper()
+    if _alias_upper not in _ALIAS_LOOKUP:
+        _ALIAS_LOOKUP[_alias_upper] = _at
+
+
+def resolve_ticker(raw_input):
+    """Resolve user input to a valid NSE ticker symbol.
+
+    Handles tickers, company names, aliases, and partial matches.
+    Returns (ticker, company_name) or (None, None) if unresolved.
+    """
+    if not raw_input or not raw_input.strip():
+        return None, None
+
+    q = raw_input.strip().upper().replace(".NS", "").replace(".BO", "")
+
+    # 1. Exact ticker symbol match
+    if q in NSE_TICKERS:
+        return q, NSE_TICKERS[q]
+
+    # 2. Exact alias match (e.g. "HDFC BANK" → "HDFCBANK")
+    if q in _ALIAS_LOOKUP:
+        ticker = _ALIAS_LOOKUP[q]
+        return ticker, NSE_TICKERS.get(ticker, ticker)
+
+    # 3. Company name reverse lookup — case-insensitive contains match
+    for sym, name in NSE_TICKERS.items():
+        if name.upper() == q:
+            return sym, name
+    # Partial company name match (e.g. "HDFC" matches "HDFC Bank")
+    for sym, name in NSE_TICKERS.items():
+        if q in name.upper():
+            return sym, name
+
+    # 4. Ticker prefix match (e.g. "HDFC" matches "HDFCBANK")
+    for sym, name in NSE_TICKERS.items():
+        if sym.startswith(q):
+            return sym, name
+
+    return None, None
+
+
 # In-memory 1y price history cache, populated by get_stock_info,
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _hist_cache = {}

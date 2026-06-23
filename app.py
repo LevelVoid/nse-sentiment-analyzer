@@ -42,6 +42,7 @@ CONTACT = {
 
 from data_fetcher import (
     NSE_TICKERS, get_stock_info, search_news, get_cached_history,
+    resolve_ticker,
 )
 from sentiment import get_sia, analyze_headline_sentiment, get_weighted_signal
 from event_classifier import classify_headline, adjust_with_event
@@ -457,6 +458,10 @@ def _render_bottom_cards(portfolio, final_ticker, entry_prices):
             if st.button("+", use_container_width=True, key="btm_add_btn",
                          help="Add to portfolio") and new_t.strip():
                 t = new_t.strip().upper().replace(".NS", "")
+                # Resolve aliases (e.g. "HDFC BANK" → "HDFCBANK")
+                _rt, _rn = resolve_ticker(t)
+                if _rt:
+                    t = _rt
                 if not re.match(r'^[A-Z0-9&-]+$', t):
                     st.warning("Invalid ticker format")
                 elif t in portfolio:
@@ -875,16 +880,21 @@ ticker_col, btn_col = st.columns([5, 0.6])
 with ticker_col:
     ticker_input = st.text_input(
         "NSE Ticker Symbol",
-        placeholder="Type company name or ticker...",
+        placeholder="Type ticker or company name...",
         max_chars=15,
         label_visibility="collapsed",
     )
-    # Autocomplete: filter NSE_TICKERS as user types
+    # Autocomplete: filter NSE_TICKERS + ALIASES as user types
     _ac_query = ticker_input.strip()
     _ac_options = []
     if len(_ac_query) >= 2:
         _ac_q = _ac_query.upper()
         _ac_seen = set()
+        # Pass 0: resolve_ticker finds aliases, partial names, prefix matches
+        _resolved, _rname = resolve_ticker(_ac_query)
+        if _resolved and _resolved not in _ac_seen:
+            _ac_options.append(f"{_resolved} — {_rname}")
+            _ac_seen.add(_resolved)
         # Pass 1: ticker symbol prefix match
         for _s, _n in NSE_TICKERS.items():
             if _s in _ac_seen:
@@ -902,6 +912,17 @@ with ticker_col:
                 if _ac_q in _n.upper():
                     _ac_options.append(f"{_s} — {_n}")
                     _ac_seen.add(_s)
+                    if len(_ac_options) >= 10:
+                        break
+        # Pass 3: alias reverse lookup (e.g. "HDFC" finds "HDFC BANK" → HDFCBANK)
+        if len(_ac_options) < 10:
+            from data_fetcher import _ALIAS_LOOKUP
+            for _ak, _at in _ALIAS_LOOKUP.items():
+                if _at in _ac_seen:
+                    continue
+                if _ac_q in _ak or _ak.startswith(_ac_q):
+                    _ac_options.append(f"{_at} — {NSE_TICKERS.get(_at, _ak)}")
+                    _ac_seen.add(_at)
                     if len(_ac_options) >= 10:
                         break
     if _ac_options:
@@ -973,7 +994,13 @@ elif "_active_ticker" in st.session_state:
 
 if final_ticker and final_ticker != "":
     final_ticker = final_ticker.replace(".NS", "")
-    company_name = NSE_TICKERS.get(final_ticker, final_ticker)
+    # Resolve aliases and company names (e.g. "HDFC BANK" → "HDFCBANK")
+    _resolved_ticker, _resolved_name = resolve_ticker(final_ticker)
+    if _resolved_ticker:
+        final_ticker = _resolved_ticker
+        company_name = _resolved_name
+    else:
+        company_name = NSE_TICKERS.get(final_ticker, final_ticker)
 
     # Rate limiter: block if too many searches recently
     # Skip when _skip_reanalysis is set — no API call will be made (cache hit)
@@ -1111,7 +1138,8 @@ if final_ticker and final_ticker != "":
 
     else:
         st.error(f"Could not find data for **{final_ticker}**. "
-                 f"Check the spelling — try removing .NS or using the full name (e.g., RELIANCE, HDFCBANK, TCS). "
+                 f"Try typing a company name (e.g. \"HDFC Bank\", \"Reliance\") — "
+                 f"the search now resolves aliases automatically. "
                  f"If the ticker is correct, Yahoo Finance may be rate-limited — wait a moment and try again.")
 
 else:
