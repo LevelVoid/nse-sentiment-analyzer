@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.6.0] — 2026-06-23
+
+### Added
+- **Smart ticker resolution** — Type any company name, alias, or partial name and get the correct NSE ticker automatically. Resolution chain: local dictionary (instant) → ALIASES (instant) → Yahoo Finance REST API (~0.5s) → yfinance SDK Search (~1s) → direct ticker probe (~1s). Results cached in memory (500 entries).
+- **504 aliases for company name → ticker** — "HDFC Bank" → HDFCBANK, "SBI" → SBIN, "L&T" → LT, etc. Case-insensitive. Works with or without spaces.
+- **Rebranding and split handling** — Zomato → ETERNAL (rebranded to Eternal Ltd), Tata Motors → TMPV/TMCV (passenger/commercial split). Stale tickers updated, aliases added.
+- **Direct ticker probe** — When search APIs fail, tries the query as a `.NS` ticker directly via yfinance. Handles stocks Yahoo's search index doesn't cover.
+- **Yahoo Finance REST API search** — Fast (~200ms) ticker lookup by company name. Filters for NSE-listed stocks. Primary online fallback.
+- **Rate limit auto-retry** — When yfinance is rate-limited (429), waits for the cooldown period and retries automatically instead of failing immediately. Shows "⏳ Waiting Xs..." info banner.
+
+### Fixed
+- **"Could not find data for HDFC BANK"** — User-typed company names with spaces now resolve to correct tickers via ALIASES before hitting yfinance. No more manual ticker lookup required.
+- **Rebranded stocks failing** — Zomato (now Eternal), Tata Motors (now split) resolve correctly. ALIASES and NSE_TICKERS updated for current market.
+- **Rate limit showed scary error** — Now waits and retries instead of immediately showing "Could not find data" on transient rate limits.
+
 ## [2.5.9] — 2026-06-23
 
 ### Added

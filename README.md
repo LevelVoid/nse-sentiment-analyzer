@@ -36,10 +36,9 @@
 ---
 
 ## Overview
+Enter any NSE ticker **or company name** and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 
-Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
-
-- **Autocomplete search** — type-ahead dropdown filters 271 NSE tickers by symbol or company name as you type. Click a result to analyze instantly.
+- **Smart ticker search** — type a company name ("HDFC Bank", "Tata Motors", "Zomato"), alias ("SBI", "L&T"), or partial name and get the correct NSE ticker automatically. 504 aliases, Yahoo Finance REST API (~0.5s), yfinance SDK, and direct ticker probe — chained with caching. Handles rebrands (Zomato → Eternal) and splits (Tata Motors → TMPV/TMCV).
 - **Live market data** — price, change %, volume, PE ratio via Yahoo Finance
 - **Interactive price chart** — 2-year candlestick chart with volume bars, 50-day SMA, 200-day SMA, and Bollinger Bands (20,2) overlays. Powered by TradingView Lightweight Charts. Zoom, pan, crosshair on hover. Visual legend identifies all overlays. Zero Python dependencies.
 - **Multi-source news sentiment** — RSS feeds from Moneycontrol, Economic Times, LiveMint (Markets + Companies + Industry), NDTV Profit, Google News, with DuckDuckGo fallback
@@ -66,8 +65,14 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 │  app.py                   Streamlit entry point, UI layout  │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  data_fetcher.py    Yahoo Finance + RSS + DuckDuckGo  │  │
-│  │                     NSE_TICKERS (270 stocks)          │  │
+│  │                     NSE_TICKERS (271 stocks)          │  │
 │  │                     Alias map (504 entries)           │  │
+│  │                     Smart ticker resolution           │  │
+│  │                       → local dict (instant)          │  │
+│  │                       → aliases (instant)             │  │
+│  │                       → Yahoo REST API (~0.5s)        │  │
+│  │                       → yfinance SDK (~1s)            │  │
+│  │                       → direct .NS probe (~1s)        │  │
 │  └───────────────────────┬───────────────────────────────┘  │
 │                          │                                    │
 │  ┌───────────────────────▼───────────────────────────────┐  │
@@ -107,13 +112,14 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 
 ### Data Flow
 
-1. **Input** — User types a ticker (or clicks a chip: RELIANCE, HDFCBANK, TCS, INFY, SBIN)
-2. **Fetch** — `get_stock_info()`, `search_news()`, and `get_fii_dii_flow()` run in parallel via `ThreadPoolExecutor(3)`. Stock data comes from yfinance, news from RSS (9+ sources) with DuckDuckGo fallback, FII/DII from NSE India. Total fetch time: ~2s.
-3. **Analyze** — `sentiment.py` scores each headline via VADER + financial lexicon, applies event-classifier corrections, then blends results using Bayesian source weights
-4. **Aggregate** — `aggregate_sentiment.compute_smartscore()` produces the 0–100 SmartScore from EWMA, event-adjusted sentiment, breadth, and volume
-5. **Indicators** — `indicators.py` computes RSI, SMA crossover, and MACD from 2-year OHLCV
-6. **Render** — `render.render_dashboard()` assembles a dark-themed HTML dashboard rendered via `st.components.v1.html()`
-7. **Vote** — Users rate signal accuracy (👍/👎). Votes update Beta posteriors for each source in `persistence.py`, which feeds back into step 3
+1. **Input** — User types a ticker or company name (e.g., "HDFC Bank", "Zomato", "RELIANCE")
+2. **Resolve** — `resolve_ticker()` maps the input to an NSE ticker via 5-tier chain: local dict → aliases → Yahoo REST → yfinance SDK → direct probe. Returns `(ticker, company_name)`.
+3. **Fetch** — `get_stock_info()`, `search_news()`, and `get_fii_dii_flow()` run in parallel via `ThreadPoolExecutor(3)`. Stock data comes from yfinance, news from RSS (9+ sources) with DuckDuckGo fallback, FII/DII from NSE India. Total fetch time: ~2s.
+4. **Analyze** — `sentiment.py` scores each headline via VADER + financial lexicon, applies event-classifier corrections, then blends results using Bayesian source weights
+5. **Aggregate** — `aggregate_sentiment.compute_smartscore()` produces the 0–100 SmartScore from EWMA, event-adjusted sentiment, breadth, and volume
+6. **Indicators** — `indicators.py` computes RSI, SMA crossover, and MACD from 2-year OHLCV
+7. **Render** — `render.render_dashboard()` assembles a dark-themed HTML dashboard rendered via `st.components.v1.html()`
+8. **Vote** — Users rate signal accuracy (👍/👎). Votes update Beta posteriors for each source in `persistence.py`, which feeds back into step 4
 
 ### Source Weighting (Bayesian Calibration)
 
