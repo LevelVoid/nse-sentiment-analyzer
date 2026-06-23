@@ -107,10 +107,10 @@ Enter any NSE ticker and get a **BULLISH / NEUTRAL / BEARISH** signal backed by:
 ### Data Flow
 
 1. **Input** — User types a ticker (or clicks a chip: RELIANCE, HDFCBANK, TCS, INFY, SBIN)
-2. **Fetch** — `data_fetcher.get_stock_info()` grabs live data from yfinance. `search_news()` fetches RSS from 9+ sources in parallel, falls back to DuckDuckGo if fewer than 3 articles
+2. **Fetch** — `get_stock_info()`, `search_news()`, and `get_fii_dii_flow()` run in parallel via `ThreadPoolExecutor(3)`. Stock data comes from yfinance, news from RSS (9+ sources) with DuckDuckGo fallback, FII/DII from NSE India. Total fetch time: ~2s.
 3. **Analyze** — `sentiment.py` scores each headline via VADER + financial lexicon, applies event-classifier corrections, then blends results using Bayesian source weights
 4. **Aggregate** — `aggregate_sentiment.compute_smartscore()` produces the 0–100 SmartScore from EWMA, event-adjusted sentiment, breadth, and volume
-5. **Indicators** — `indicators.py` computes RSI, SMA crossover, and MACD from 1-year OHLCV
+5. **Indicators** — `indicators.py` computes RSI, SMA crossover, and MACD from 2-year OHLCV
 6. **Render** — `render.render_dashboard()` assembles a dark-themed HTML dashboard rendered via `st.components.v1.html()`
 7. **Vote** — Users rate signal accuracy (👍/👎). Votes update Beta posteriors for each source in `persistence.py`, which feeds back into step 3
 

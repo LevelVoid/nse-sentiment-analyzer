@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.8] — 2026-06-23
+
+### Fixed
+- **Ticker search extremely slow (~13s+)** — Root cause: `get_fii_dii_flow()` (8.5s) ran sequentially after the spinner closed, freezing the page with no loading indicator. Now runs in parallel with stock info + news fetch via ThreadPoolExecutor (3 workers). Total search flow dropped from ~13s to ~2s.
+- **Deadlock in `_hist_cache_lock`** — `_evict_hist_cache()` was called while already holding the non-reentrant `threading.Lock`, causing indefinite hangs in tests and occasional production deadlocks. Inlined the eviction logic at all 3 call sites.
+- **ETF searches wasted ~2s on useless retries** — Phase 2c (sector/industry retry) fired for every ETF because their `sector`/`industry` fields are legitimately `None`. Now only retries when the info response was sparse (<30 keys, meaning rate-limited) or fields are explicitly `"N/A"`.
+- **Cache hits caused redundant yfinance calls** — When `get_stock_info` returned from the persistence cache, it skipped populating `_hist_cache`. Downstream `get_cached_history()` and `get_technical_indicators()` then made separate yfinance calls. Now populates `_hist_cache` on every cache hit.
+- **Retry backoff too aggressive** — Phase 1 used 1s/2s waits, Phase 2 used 2s/4s waits between retries. Reduced to 0.5s/1s and 1s/2s respectively.
+
+### Changed
+- **Parallelized `get_stock_info` + `search_news` + `get_fii_dii_flow`** — All three independent network calls now run concurrently via `ThreadPoolExecutor(max_workers=3)`. Bottleneck is the slowest single call (~2s) instead of the sum (~13s).
+
 ## [2.5.7] — 2026-06-23
 
 ### Fixed
