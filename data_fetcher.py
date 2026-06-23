@@ -612,7 +612,8 @@ def get_cached_history(ticker):
             if hist is not None and not hist.empty:
                 with _hist_cache_lock:
                     _hist_cache[ticker] = hist
-                    _evict_hist_cache()
+                    while len(_hist_cache) > _MAX_CACHED_TICKERS:
+                        _hist_cache.pop(next(iter(_hist_cache)), None)
                 return hist
         except Exception:
             continue
@@ -662,6 +663,22 @@ def get_stock_info(ticker):
     """
     cached = cache_get(f"stock_{ticker}")
     if cached:
+        # Populate in-memory history cache so downstream (get_cached_history,
+        # get_technical_indicators) don't re-fetch from yfinance.
+        if ticker not in _hist_cache:
+            for suffix in [".NS", ".BO", ""]:
+                try:
+                    _s = yf.Ticker(f"{ticker}{suffix}")
+                    _h = _s.history(period="2y")
+                    if _h is not None and not _h.empty:
+                        with _hist_cache_lock:
+                            _hist_cache[ticker] = _h
+                            # Inline eviction to avoid re-entrant lock deadlock
+                            while len(_hist_cache) > _MAX_CACHED_TICKERS:
+                                _hist_cache.pop(next(iter(_hist_cache)), None)
+                        break
+                except Exception:
+                    continue
         return cached
 
     # Global rate-limit cooldown — if yfinance recently 429'd us, skip early
@@ -681,7 +698,7 @@ def get_stock_info(ticker):
         # ── Phase 1: info (best-effort metadata) ──
         for suffix in suffixes:
             stock = yf.Ticker(f"{ticker}{suffix}")
-            for attempt in _retry_fetch(max_attempts=3, base_wait=1):
+            for attempt in _retry_fetch(max_attempts=3, base_wait=0.5):
                 try:
                     raw = stock.info
                     if raw and isinstance(raw, dict) and len(raw) > 10:
@@ -699,7 +716,7 @@ def get_stock_info(ticker):
         # ── Phase 2: history (required price data) ──
         for suffix in suffixes if not hist else []:
             stock = yf.Ticker(f"{ticker}{suffix}")
-            for attempt in _retry_fetch(max_attempts=3, base_wait=2):
+            for attempt in _retry_fetch(max_attempts=3, base_wait=1):
                 try:
                     raw = stock.history(period="2y")
                     if raw is not None and not raw.empty:
@@ -727,9 +744,13 @@ def get_stock_info(ticker):
         # ── Phase 2c: targeted sector/industry fetch ──
         #    yfinance .info is flaky for Indian stocks — sometimes returns
         #    partial dicts or None. Retry specifically for sector/industry.
+        #    Skip if info was a full response (30+ keys) — fields are legitimately
+        #    absent for ETFs/index funds, retrying won't help.
         _sec = info.get("sector") if info else None
         _ind = info.get("industry") if info else None
-        if (not _sec or _sec == "N/A") or (not _ind or _ind == "N/A"):
+        _info_sparse = info is None or len(info) < 30
+        _has_na = _sec == "N/A" or _ind == "N/A"
+        if (_info_sparse or _has_na) and ((_sec is None or _sec == "N/A") or (_ind is None or _ind == "N/A")):
             for suffix in suffixes:
                 try:
                     stock = yf.Ticker(f"{ticker}{suffix}")
@@ -755,7 +776,8 @@ def get_stock_info(ticker):
         if hist is not None and not hist.empty:
             with _hist_cache_lock:
                 _hist_cache[ticker] = hist
-                _evict_hist_cache()
+                while len(_hist_cache) > _MAX_CACHED_TICKERS:
+                    _hist_cache.pop(next(iter(_hist_cache)), None)
             current_price = _nf(hist["Close"].iloc[-1])
             prev_close = _nf(hist["Close"].iloc[-2]) if len(hist) > 1 else current_price
             if current_price is not None and prev_close is not None:

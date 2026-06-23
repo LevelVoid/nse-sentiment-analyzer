@@ -205,10 +205,19 @@ def analyze_ticker(ticker, company_name, quick=False):
     """Run full analysis pipeline for a ticker. Returns dict or None.
     
     When quick=True (briefing mode), skips expensive news search and sentiment
-    analysis — just returns stock data with a cached/neutral signal.
+    analysis — just returns price-only snapshot.
     """
-    stock_data = get_stock_info(ticker)
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    # Parallelize independent network calls: stock info + news search
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        stock_future = pool.submit(get_stock_info, ticker)
+        news_future = pool.submit(search_news, ticker, company_name)
+        stock_data = stock_future.result()
+
     if not stock_data:
+        # Discard news result if stock data failed
+        news_future.cancel()
         return None
 
     if quick:
@@ -243,7 +252,8 @@ def analyze_ticker(ticker, company_name, quick=False):
         pipe_finbert = get_finbert()
 
     sia = None if use_finbert else get_sia()
-    news_items, source_stats = search_news(ticker, company_name)
+    # Retrieve news result from parallel future (already fetched above)
+    news_items, source_stats = news_future.result()
 
     # Phase 1: Sentiment scoring (FinBERT or VADER+events)
     headline_scores = []
