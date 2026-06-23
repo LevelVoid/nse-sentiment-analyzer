@@ -681,7 +681,7 @@ def get_stock_info(ticker):
         # ── Phase 1: info (best-effort metadata) ──
         for suffix in suffixes:
             stock = yf.Ticker(f"{ticker}{suffix}")
-            for attempt in _retry_fetch(max_attempts=2, base_wait=1):
+            for attempt in _retry_fetch(max_attempts=3, base_wait=1):
                 try:
                     raw = stock.info
                     if raw and isinstance(raw, dict) and len(raw) > 10:
@@ -710,35 +710,46 @@ def get_stock_info(ticker):
             if hist is not None:
                 break  # found valid history
 
-        # ── Phase 2b+c: merged metadata recovery ──
+        # ── Phase 2b: retry info if it failed (rate-limit may have cleared
+        #    during the history phase which took ~3-6s) ──
+        if info is None and hist is not None:
+            for suffix in suffixes:
+                stock = yf.Ticker(f"{ticker}{suffix}")
+                try:
+                    raw = stock.info
+                    if raw and isinstance(raw, dict) and len(raw) > 10:
+                        info = raw
+                        name_fallback = info.get("longName", info.get("shortName", ticker))
+                        break
+                except Exception:
+                    continue
+
+        # ── Phase 2c: targeted sector/industry fetch ──
         #    yfinance .info is flaky for Indian stocks — sometimes returns
-        #    partial dicts or None. If Phase 1 failed entirely OR returned
-        #    a sparse response without sector/industry, retry all suffixes
-        #    once and capture whatever metadata is available.
-        #    (ETFs legitimately lack marketCap — no point retrying for that.)
-        _META_FIELDS = ["sector", "industry", "marketCap", "trailingPE",
-                        "fiftyTwoWeekHigh", "fiftyTwoWeekLow"]
-        _need_info = info is None
+        #    partial dicts or None. Retry specifically for sector/industry.
         _sec = info.get("sector") if info else None
         _ind = info.get("industry") if info else None
-        if _need_info or (not _sec or _sec == "N/A") or (not _ind or _ind == "N/A"):
+        if (not _sec or _sec == "N/A") or (not _ind or _ind == "N/A"):
             for suffix in suffixes:
                 try:
                     stock = yf.Ticker(f"{ticker}{suffix}")
                     raw = stock.info
                     if raw and isinstance(raw, dict):
-                        if info is None:
-                            info = {}
-                        for f in _META_FIELDS:
-                            v = raw.get(f)
-                            if v is not None and v != "N/A" and info.get(f) is None:
-                                info[f] = v
-                        if info.get("sector") and info.get("industry"):
+                        if not _sec or _sec == "N/A":
+                            _sec = raw.get("sector")
+                        if not _ind or _ind == "N/A":
+                            _ind = raw.get("industry")
+                        if _sec and _sec != "N/A" and _ind and _ind != "N/A":
                             break
                 except Exception:
                     continue
+            # Patch into info dict (create one if it was None)
             if info is None:
                 info = {}
+            if _sec and _sec != "N/A":
+                info["sector"] = _sec
+            if _ind and _ind != "N/A":
+                info["industry"] = _ind
 
         # ── Build result dict ──
         if hist is not None and not hist.empty:
@@ -786,8 +797,8 @@ def get_stock_info(ticker):
             "day_high": day_high,
             "day_low": day_low,
             "volume": volume,
-            "52w_high": info.get("fiftyTwoWeekHigh") if info else None,
-            "52w_low": info.get("fiftyTwoWeekLow") if info else None,
+            "52w_high": info.get("fiftyTwoWeekHigh") if info and info.get("fiftyTwoWeekHigh") is not None else (_nf(hist["High"].max()) if hist is not None and not hist.empty else None),
+            "52w_low": info.get("fiftyTwoWeekLow") if info and info.get("fiftyTwoWeekLow") is not None else (_nf(hist["Low"].min()) if hist is not None and not hist.empty else None),
         }
         if info:
             cache_set(f"stock_{ticker}", result)
