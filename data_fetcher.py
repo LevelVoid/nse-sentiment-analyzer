@@ -141,6 +141,7 @@ NSE_TICKERS = {
     "EMAMILTD": "Emami Ltd",
     "ENDURANCE": "Endurance Technologies",
     "ENERGY": "Mirae Asset Energy ETF",
+    "ETERNAL": "Eternal Ltd",
     "EQUITASBNK": "Equitas Small Finance Bank",
     "ESCORTS": "Escorts Kubota",
     "EXIDEIND": "Exide Industries",
@@ -342,7 +343,6 @@ NSE_TICKERS = {
     "YESBANK": "Yes Bank",
     "ZEEL": "Zee Entertainment",
     "ZENSARTECH": "Zensar Technologies",
-    "ZOMATO": "Zomato Ltd",
     "ZYDUSLIFE": "Zydus Lifesciences",
 }
 
@@ -471,7 +471,7 @@ ALIASES = {
     "WESTLIFE": "WESTLIFE", "WESTLIFE FOOD": "WESTLIFE",
     "UNITED SPIRITS": "MCDOWELL-N", "MCDOWELL": "MCDOWELL-N",
     "UNITED BREWERIES": "UBL", "RADICO": "RADICO", "RADICO KHAITAN": "RADICO",
-    "TRENT": "TRENT", "ZOMATO": "ZOMATO",
+    "TRENT": "TRENT", "ZOMATO": "ETERNAL",
     "AVENUE SUPERMARTS": "DMART",
     "TATA TEA": "TATACONSUM", "TATA COFFEE": "TATACONSUM",
     "JUBILANT FOOD": "JUBLFOOD",
@@ -555,7 +555,7 @@ ALIASES = {
     "VRL LOGISTICS": "VRLLOG", "BLUE DART": "BLUEDART",
     "ALL CARGO": "ALLCARGO", "ALLCARGO": "ALLCARGO",
     "MAHINDRA LOGISTIC": "MAHLOG", "MAHINDRA LOGISTICS": "MAHLOG",
-    "DELHIVERY": "DELHIVERY", "DELIVERY": "ZOMATO",
+    "DELHIVERY": "DELHIVERY", "DELIVERY": "ETERNAL",
     # ── Textiles ──
     "TRIDENT": "TRIDENT", "TRIDENT LTD": "TRIDENT",
     "VARDHMAN": "VARDHMAN", "VARDHMAN TEXTILES": "VARDHMAN",
@@ -574,6 +574,16 @@ ALIASES = {
     "DEFENCE ETF": "MODEFENCE", "MANUFACTURING ETF": "MAKEINDIA",
     "ENERGY ETF": "ENERGY", "METAL ETF": "METALETF",
     "LAKSHMI AI": "PWL", "GROWW": "GROWW",
+    # ── Rebrands & renames (keep updated as companies change) ──
+    "ZOMATO": "ETERNAL", "ZOMATO LIMITED": "ETERNAL",
+    "TATAMOTORS": "TATAMOTORS",  # keep for direct lookup
+    "TATA MOTORS": "TMPV", "TATA MOTORS LIMITED": "TMPV",
+    "TATA MOTORS PASSENGER": "TMPV", "TATA MOTORS CV": "TMCV",
+    "TATA MOTORS COMMERCIAL": "TMCV",
+    "BAJAJ FINSERV": "BAJAJFINSV",  # ensure alias present
+    "ADANI ENERGY": "ADANITRANS", "ADANI ENERGY SOLUTIONS": "ADANITRANS",
+    "FRONT LINE": "FRONTLINE", "MOTHERSON SUMI": "MOTHERSON",
+    "SAMVARDHANA": "MOTHERSON",
 }
 
 # Precompute reverse ALIASES (lowercased name → ticker) for fast input resolution
@@ -702,6 +712,7 @@ def _search_ticker_online(query):
       1. In-memory cache (instant)
       2. Yahoo Finance REST API (~200ms, fast)
       3. yfinance SDK Search (~1-2s, more comprehensive)
+      4. Direct ticker probe — try query as .NS ticker (~1s)
 
     Returns (ticker, name) or (None, None).
     """
@@ -732,9 +743,57 @@ def _search_ticker_online(query):
                     _online_ticker_cache[q_upper] = result
             return result
 
+        # Tier 3: Direct ticker probe — try query as .NS ticker
+        # Handles rebranded stocks (Zomato→Eternal), splits, and
+        # stocks Yahoo search doesn't index.
+        result = _probe_ticker_direct(q)
+        if result and result[0]:
+            with _online_cache_lock:
+                if len(_online_ticker_cache) < _MAX_ONLINE_CACHE:
+                    _online_ticker_cache[q_upper] = result
+            return result
+
     with _online_cache_lock:
         if len(_online_ticker_cache) < _MAX_ONLINE_CACHE:
             _online_ticker_cache[q_upper] = (None, None)
+    return None, None
+
+
+def _probe_ticker_direct(query):
+    """Try the query (and common variations) as direct .NS ticker.
+
+    When search APIs fail (rebranded stocks, delisted names, missing index
+    entries), this probes yfinance directly. Handles:
+      - "Zomato" → tries ZOMATO.NS (fails) → no match
+      - "Eternal" → tries ETERNAL.NS (works) → ETERNAL
+      - "Tata Steel" → tries TATA.NS, STEEL.NS (fail) → no match
+      - "TATASTEEL" → tries TATASTEEL.NS (works) → TATASTEEL
+    """
+    q = query.strip().upper().replace(".NS", "").replace(".BO", "")
+    if not q or len(q) < 2:
+        return None, None
+
+    # Build candidate tickers: the query itself, plus word-based variations
+    candidates = [q]
+    # "Tata Steel" → ["TATA STEEL", "TATASTEEL", "TATA", "STEEL"]
+    words = q.split()
+    if len(words) > 1:
+        candidates.append("".join(words))  # TATASTEEL
+        candidates.extend(words)            # TATA, STEEL
+
+    for candidate in candidates:
+        if len(candidate) < 2 or len(candidate) > 20:
+            continue
+        try:
+            tk = yf.Ticker(f"{candidate}.NS")
+            info = tk.info
+            # Valid ticker: has a name and isn't an error placeholder
+            name = info.get("shortName") or info.get("longName") or ""
+            if name and name != "N/A" and len(info) > 5:
+                return candidate, name
+        except Exception:
+            continue
+
     return None, None
 
 
