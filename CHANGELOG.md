@@ -5,7 +5,7 @@
 ### Added
 - **Debt-to-Equity ratio with risk badge** — D/E ratio now shown in the stock info panel alongside P/E. Color-coded badge indicates Low, Normal, Elevated, or High leverage.
 - **Bank/financial sector D/E suppression** — Banks and financial services companies naturally carry high D/E. Their D/E is shown with a `~` prefix and no risk badge.
-- **Market Pulse Overview** — Sidebar card shows Nifty 50 level + daily change % and a market Climate verdict (Bullish / Neutral / Cautious / Risky) based on Nifty trend and India VIX. Includes a "should I trade today?" guidance line. No extra API calls — reuses existing VIX and yfinance index data.
+- **Market Pulse Overview** — Dashboard card at the top of the page shows Nifty 50 level + daily change % and a market Climate verdict (Bullish / Neutral / Cautious / Risky) based on Nifty trend and India VIX, alongside India VIX level. Includes a "should I trade today?" guidance line. No extra API calls — reuses existing VIX and yfinance index data.
 
 ## [2.6.0] — 2026-06-23
 

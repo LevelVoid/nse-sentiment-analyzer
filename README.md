@@ -50,7 +50,7 @@ Enter any NSE ticker **or company name** and get a **BULLISH / NEUTRAL / BEARISH
 - **Portfolio mode** — track holdings with P&L, qty/shares field, auto-fetched LTPs, and one-click clear all
 - **FII/DII institutional flow** — NSE India official FII/FPI and DII data with Net value. Glassmorphism card shows latest day's flow plus a 7-day history table. Auto-saves daily snapshots.
 - **VWAP + Pivot levels** — intraday fair value and classic support/resistance from yesterday's HLC
-- **Market Pulse Overview** — sidebar card shows Nifty 50 level, daily change %, and a market Climate verdict (Bullish / Neutral / Cautious / Risky) with "should I trade today?" guidance. Combines Nifty trend + India VIX level.
+- **Market Pulse Overview** — dashboard card at the top of the page shows Nifty 50 level, daily change %, and a market Climate verdict (Bullish / Neutral / Cautious / Risky) with "should I trade today?" guidance, alongside India VIX. Combines Nifty trend + India VIX level.
 - **Resource protections** — per-session rate limiter (6 searches/min), auto-pruning cache (500-entry cap), DDGS fallback cooldown, and thread-safe rate-limit tracking (including DDGS) prevent quota exhaustion and race conditions under multi-user load. Configured in `.streamlit/config.toml`.
 - **XSS-safe rendering** — all user data (ticker names, company names) is HTML-escaped via `html.escape()` with single-quote support. Shareable `?ticker=` URLs are validated before API calls. RSS feed URLs are checked for `http://`/`https://` scheme.
 - **CSP hardened** — Content Security Policy `connect-src` restricted to known API domains (Yahoo Finance, Google News, Moneycontrol, Economic Times, LiveMint, NDTV Profit). No wildcard.

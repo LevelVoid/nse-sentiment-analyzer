@@ -771,73 +771,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-    # ─── Market Pulse ───
     st.markdown("---")
-    if "market_pulse" not in st.session_state:
-        st.session_state.market_pulse = get_market_pulse()
-    pulse_d = st.session_state.market_pulse
-    if pulse_d and pulse_d.get("nifty_price") is not None:
-        vix_d = st.session_state.get("vix", {})
-        verdict, verdict_icon, verdict_detail = get_market_verdict(
-            pulse_d.get("nifty_change_pct"), vix_d.get("level") if vix_d else None
-        )
-        _vc = {
-            "Bullish": "#22b573", "Neutral": "#8891a0",
-            "Cautious": "#f59e0b", "Risky": "#f85149",
-        }
-        v_color = _vc.get(verdict, "#8891a0")
-        price = pulse_d["nifty_price"]
-        chg = pulse_d["nifty_change_pct"]
-        arrow = "\u25b2" if chg is not None and chg >= 0 else "\u25bc"
-        st.markdown(
-            '<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;'
-            'font-weight:600;color:#f0f2f5;margin-bottom:0.3rem">'
-            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
-            ' Market Pulse</div>',
-            unsafe_allow_html=True,
-        )
-        col1, col2 = st.columns([1, 1])
-        col1.metric("Nifty 50", f"{price:,.0f}", f"{arrow} {chg:+.2f}%" if chg is not None else "N/A")
-        col2.markdown(
-            '<div style="text-align:center;padding:0.25rem 0">'
-            '<div style="font-size:0.7rem;color:#8891a0;text-transform:uppercase;letter-spacing:0.04em;">Climate</div>'
-            f'<div style="font-size:1rem;font-weight:700;color:{v_color};">{verdict_icon} {verdict}</div>'
-            f'<div style="font-size:0.65rem;color:#6b7280;margin-top:0.15rem;">{verdict_detail}</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            '<div style="color:#6b7280;font-size:0.8rem;padding:0.25rem 0">'
-            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg>'
-            ' Market pulse unavailable</div>',
-            unsafe_allow_html=True,
-        )
-
-    # ─── India VIX ───
-    st.markdown("---")
-    if "vix" not in st.session_state:
-        st.session_state.vix = get_vix()
-    vix_d = st.session_state.vix
-    if vix_d and vix_d.get("vix") is not None:
-        col1, col2 = st.columns([1, 1])
-        vix_dir = "⬆️" if vix_d["change"] >= 0 else "⬇️"
-        col1.metric("India VIX", f"{vix_d['vix']:.1f}", f"{vix_dir} {vix_d['change']:+.2f}")
-        col2.metric("Volatility", vix_d["level"])
-        if vix_d["level"] == "High":
-            st.markdown(
-                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
-                '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'
-                ' High VIX (&gt;20) — sharp reversals likely. Trade with caution.</span>',
-                unsafe_allow_html=True,
-            )
-        elif vix_d["level"] == "Low":
-            st.markdown(
-                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
-                '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22b573" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
-                ' Low VIX (&lt;15) — trending markets favored.</span>',
-                unsafe_allow_html=True,
-            )
 
     # ─── Changelog & Feedback ───
     _FILE_TEXT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
@@ -879,6 +813,93 @@ st.markdown(f"""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ─── Market Pulse & VIX ───
+if "market_pulse" not in st.session_state:
+    st.session_state.market_pulse = get_market_pulse()
+if "vix" not in st.session_state:
+    st.session_state.vix = get_vix()
+
+pulse_d = st.session_state.market_pulse
+vix_d = st.session_state.vix
+_has_pulse = pulse_d and pulse_d.get("nifty_price") is not None
+_has_vix = vix_d and vix_d.get("vix") is not None
+
+if _has_pulse or _has_vix:
+    st.markdown("---")
+    # ─── Section label ───
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;'
+        'font-weight:600;color:#f0f2f5;margin-bottom:0.5rem">'
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+        ' Market Pulse</div>',
+        unsafe_allow_html=True,
+    )
+    cols = st.columns([1, 1, 1])
+    # ─── Column 1: Nifty 50 ───
+    if _has_pulse:
+        price = pulse_d["nifty_price"]
+        chg = pulse_d["nifty_change_pct"]
+        arrow = "\u25b2" if chg is not None and chg >= 0 else "\u25bc"
+        cols[0].metric(
+            "Nifty 50",
+            f"{price:,.0f}",
+            f"{arrow} {chg:+.2f}%" if chg is not None else "N/A",
+        )
+    else:
+        cols[0].metric("Nifty 50", "—", "Unavailable")
+    # ─── Column 2: Climate ───
+    if _has_pulse:
+        verdict, verdict_icon, verdict_detail = get_market_verdict(
+            pulse_d.get("nifty_change_pct"),
+            vix_d.get("level") if _has_vix else None,
+        )
+        _vc = {
+            "Bullish": "#22b573", "Neutral": "#8891a0",
+            "Cautious": "#f59e0b", "Risky": "#f85149",
+        }
+        v_color = _vc.get(verdict, "#8891a0")
+        cols[1].markdown(
+            '<div style="text-align:center;padding:0.25rem 0">'
+            '<div style="font-size:0.7rem;color:#8891a0;text-transform:uppercase;letter-spacing:0.04em;">Climate</div>'
+            f'<div style="font-size:1rem;font-weight:700;color:{v_color};">{verdict_icon} {verdict}</div>'
+            f'<div style="font-size:0.65rem;color:#6b7280;margin-top:0.15rem;">{verdict_detail}</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        cols[1].markdown(
+            '<div style="text-align:center;padding:0.25rem 0">'
+            '<div style="font-size:0.7rem;color:#8891a0;text-transform:uppercase;letter-spacing:0.04em;">Climate</div>'
+            '<div style="font-size:1rem;font-weight:700;color:#6b7280;">—</div>'
+            '<div style="font-size:0.65rem;color:#6b7280;margin-top:0.15rem;">Data unavailable</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    # ─── Column 3: India VIX ───
+    if _has_vix:
+        vix_dir = "\u2b06\ufe0f" if vix_d["change"] >= 0 else "\u2b07\ufe0f"
+        cols[2].metric(
+            "India VIX",
+            f"{vix_d['vix']:.1f}",
+            f"{vix_dir} {vix_d['change']:+.2f}",
+        )
+        if vix_d["level"] == "High":
+            cols[2].markdown(
+                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
+                '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'
+                ' High VIX — sharp reversals likely. Trade with caution.</span>',
+                unsafe_allow_html=True,
+            )
+        elif vix_d["level"] == "Low":
+            cols[2].markdown(
+                '<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:#8891a0;">'
+                '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22b573" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+                ' Low VIX — trending markets favored.</span>',
+                unsafe_allow_html=True,
+            )
+    else:
+        cols[2].metric("India VIX", "—", "Unavailable")
 
 # ─── Ticker Input — single text field + search button ───
 # ─── Shareable snapshot link: ?ticker=X bypasses normal input ───
