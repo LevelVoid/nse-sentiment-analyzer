@@ -49,7 +49,7 @@ from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
 from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, get_entry_info, calc_portfolio_pnl, load_fiidii_history, save_fiidii_snapshot, ENTRY_PRICES_FILE
 from render import render_dashboard, _is_valid_num
-from market_data import get_fii_dii_flow
+from market_data import get_fii_dii_flow, get_market_pulse, get_market_verdict
 from aggregate_sentiment import compute_smartscore
 from intraday import compute_vwap, compute_pivot_levels, get_vix
 
@@ -768,6 +768,49 @@ with st.sidebar:
         st.markdown(
             '<div style="color:#6b7280;font-size:0.8rem;padding:0.5rem 0">'
             'No holdings yet. Add tickers in the analysis section below.</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ─── Market Pulse ───
+    st.markdown("---")
+    if "market_pulse" not in st.session_state:
+        st.session_state.market_pulse = get_market_pulse()
+    pulse_d = st.session_state.market_pulse
+    if pulse_d and pulse_d.get("nifty_price") is not None:
+        vix_d = st.session_state.get("vix", {})
+        verdict, verdict_icon, verdict_detail = get_market_verdict(
+            pulse_d.get("nifty_change_pct"), vix_d.get("level") if vix_d else None
+        )
+        _vc = {
+            "Bullish": "#22b573", "Neutral": "#8891a0",
+            "Cautious": "#f59e0b", "Risky": "#f85149",
+        }
+        v_color = _vc.get(verdict, "#8891a0")
+        price = pulse_d["nifty_price"]
+        chg = pulse_d["nifty_change_pct"]
+        arrow = "\u25b2" if chg is not None and chg >= 0 else "\u25bc"
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;'
+            'font-weight:600;color:#f0f2f5;margin-bottom:0.3rem">'
+            '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+            ' Market Pulse</div>',
+            unsafe_allow_html=True,
+        )
+        col1, col2 = st.columns([1, 1])
+        col1.metric("Nifty 50", f"{price:,.0f}", f"{arrow} {chg:+.2f}%" if chg is not None else "N/A")
+        col2.markdown(
+            '<div style="text-align:center;padding:0.25rem 0">'
+            '<div style="font-size:0.7rem;color:#8891a0;text-transform:uppercase;letter-spacing:0.04em;">Climate</div>'
+            f'<div style="font-size:1rem;font-weight:700;color:{v_color};">{verdict_icon} {verdict}</div>'
+            f'<div style="font-size:0.65rem;color:#6b7280;margin-top:0.15rem;">{verdict_detail}</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div style="color:#6b7280;font-size:0.8rem;padding:0.25rem 0">'
+            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/></svg>'
+            ' Market pulse unavailable</div>',
             unsafe_allow_html=True,
         )
 

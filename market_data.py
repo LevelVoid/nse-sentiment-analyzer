@@ -56,3 +56,84 @@ def get_fii_dii_flow():
     except Exception as e:
         logger.debug("get_fii_dii_flow() failed: %s", e)
         return None
+
+
+@st.cache_data(ttl=1800)
+def get_market_pulse():
+    """Fetch Nifty 50 index and return market-level pulse + actionable verdict.
+
+    Uses the same yfinance pattern as get_vix() for index tickers.
+    Returns a verdict based on Nifty change % + VIX level (caller passes
+    the already-fetched VIX since it's cached in session_state).
+
+    Returns:
+        dict with keys:
+            nifty_price (float|None), nifty_change_pct (float|None),
+            verdict (str), verdict_icon (str), verdict_detail (str)
+    """
+    try:
+        import yfinance as yf
+        data = yf.download("^NSEI", period="5d", progress=False, auto_adjust=True)
+    except Exception:
+        return {
+            "nifty_price": None, "nifty_change_pct": None,
+            "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
+        }
+
+    if data is None or data.empty or len(data) < 2:
+        return {
+            "nifty_price": None, "nifty_change_pct": None,
+            "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
+        }
+
+    try:
+        closes = data["Close"].dropna()
+        if len(closes) < 2:
+            return {
+                "nifty_price": None, "nifty_change_pct": None,
+                "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
+            }
+        nifty_price = float(closes.iloc[-1])
+        prev_close = float(closes.iloc[-2])
+        nifty_change_pct = round((nifty_price - prev_close) / prev_close * 100, 2)
+    except (KeyError, IndexError, TypeError, ValueError, AttributeError):
+        return {
+            "nifty_price": None, "nifty_change_pct": None,
+            "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
+        }
+
+    return {
+        "nifty_price": nifty_price,
+        "nifty_change_pct": nifty_change_pct,
+    }
+
+
+def get_market_verdict(nifty_change_pct, vix_level):
+    """Determine market climate verdict from Nifty change and VIX level.
+
+    Args:
+        nifty_change_pct: float or None — Nifty 50 daily % change
+        vix_level: str — 'Low', 'Medium', 'High', or 'N/A'
+
+    Returns:
+        tuple of (verdict, icon, detail)
+    """
+    if vix_level is None or vix_level == "N/A":
+        return "Neutral", "\u26aa", "VIX data unavailable"
+
+    # Determine direction from Nifty change
+    is_up = nifty_change_pct is not None and nifty_change_pct >= 0.3
+    is_down = nifty_change_pct is not None and nifty_change_pct <= -0.3
+
+    if vix_level == "High":
+        if is_down:
+            return "Risky", "\U0001f534", "High VIX + market dropping — avoid new positions"
+        return "Cautious", "\U0001f7e0", "Elevated volatility — use stop-losses, size down"
+    elif vix_level == "Medium":
+        if is_up:
+            return "Bullish", "\U0001f7e2", "Positive momentum, normal volatility"
+        return "Neutral", "\u26aa", "Mixed conditions — stock-specific action"
+    else:  # Low VIX
+        if is_down:
+            return "Cautious", "\U0001f7e0", "Low VIX but weakness detected — wait for confirmation"
+        return "Bullish", "\U0001f7e2", "Low VIX — trending markets favor swing trades"
