@@ -151,7 +151,8 @@ class TestVIX:
         mock_df = pd.DataFrame({
             "Close": [14.0, 14.5, 15.2],
         })
-        mock_dl = mocker.patch("yfinance.download", return_value=mock_df)
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.return_value = mock_df
 
         result = get_vix()
 
@@ -165,7 +166,8 @@ class TestVIX:
         mock_df = pd.DataFrame({
             "Close": [18.0, 19.0, 22.5],
         })
-        mocker.patch("yfinance.download", return_value=mock_df)
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.return_value = mock_df
 
         result = get_vix()
 
@@ -179,7 +181,8 @@ class TestVIX:
         mock_df = pd.DataFrame({
             "Close": [12.0, 12.5, 13.0],
         })
-        mocker.patch("yfinance.download", return_value=mock_df)
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.return_value = mock_df
 
         result = get_vix()
 
@@ -190,7 +193,8 @@ class TestVIX:
         """Empty yfinance response → None-safe result."""
         from intraday import get_vix
 
-        mocker.patch("yfinance.download", return_value=pd.DataFrame())
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.return_value = pd.DataFrame()
 
         result = get_vix()
 
@@ -202,9 +206,10 @@ class TestVIX:
         from intraday import get_vix
 
         mock_df = pd.DataFrame({"Close": [15.0, 16.0]})
-        mock_dl = mocker.patch("yfinance.download", return_value=mock_df)
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.return_value = mock_df
 
         get_vix()
 
-        ticker_arg = mock_dl.call_args[0][0]
+        ticker_arg = mock_ticker.call_args[0][0]
         assert ticker_arg == "^INDIAVIX"

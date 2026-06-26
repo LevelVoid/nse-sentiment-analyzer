@@ -111,7 +111,8 @@ def get_vix():
     """
 
     try:
-        data = yf.download("^INDIAVIX", period="5d", progress=False, auto_adjust=True)
+        t = yf.Ticker("^INDIAVIX")
+        data = t.history(period="5d")
     except Exception:
         return {"vix": None, "change": 0.0, "level": "N/A"}
 

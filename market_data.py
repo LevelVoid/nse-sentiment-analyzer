@@ -58,7 +58,6 @@ def get_fii_dii_flow():
         return None
 
 
-@st.cache_data(ttl=1800)
 def get_market_pulse():
     """Fetch Nifty 50 index and return market-level pulse + actionable verdict.
 
@@ -73,17 +72,16 @@ def get_market_pulse():
     """
     try:
         import yfinance as yf
-        data = yf.download("^NSEI", period="5d", progress=False, auto_adjust=True)
+        t = yf.Ticker("^NSEI")
+        data = t.history(period="5d")
     except Exception:
         return {
             "nifty_price": None, "nifty_change_pct": None,
-            "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
         }
 
     if data is None or data.empty or len(data) < 2:
         return {
             "nifty_price": None, "nifty_change_pct": None,
-            "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
         }
 
     try:
@@ -91,7 +89,6 @@ def get_market_pulse():
         if len(closes) < 2:
             return {
                 "nifty_price": None, "nifty_change_pct": None,
-                "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
             }
         nifty_price = float(closes.iloc[-1])
         prev_close = float(closes.iloc[-2])
@@ -99,7 +96,6 @@ def get_market_pulse():
     except (KeyError, IndexError, TypeError, ValueError, AttributeError):
         return {
             "nifty_price": None, "nifty_change_pct": None,
-            "verdict": "N/A", "verdict_icon": "—", "verdict_detail": "Market data unavailable",
         }
 
     return {

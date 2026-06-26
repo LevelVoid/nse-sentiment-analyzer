@@ -108,7 +108,8 @@ class TestMarketPulse:
 
     def test_graceful_on_yfinance_failure(self, mocker):
         """yfinance failure should return None-safe dict, not crash."""
-        mocker.patch("yfinance.download", side_effect=Exception("API down"))
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.side_effect = Exception("API down")
         from market_data import get_market_pulse
         result = get_market_pulse()
         assert result is not None
@@ -118,7 +119,8 @@ class TestMarketPulse:
     def test_graceful_on_empty_data(self, mocker):
         """Empty dataframe should return None-safe dict."""
         import pandas as pd
-        mocker.patch("yfinance.download", return_value=pd.DataFrame())
+        mock_ticker = mocker.patch("yfinance.Ticker")
+        mock_ticker.return_value.history.return_value = pd.DataFrame()
         from market_data import get_market_pulse
         result = get_market_pulse()
         assert result is not None
