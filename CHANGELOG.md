@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.9.0] — 2026-06-27
+
+### Added
+- **CASCADE_MAP expanded** — 8 drivers, 27 tickers. Added ONGC to Crude Oil (upstream, direction -1), pharma exporters (SUNPHARMA, DRREDDY, CIPLA, DIVISLAB) to Rupee/USD, new **Sugar** driver (BAJAJHIND, BALRAMPUR, DHAMPUR, TRIVENI, DCMSHRIRAM), and new **Aluminum** driver (HINDALCO, NATIONALUM). 5 new tickers + aliases in NSE_TICKERS.
+- **Commodity-specific RSS feeds** — `COMMODITY_RSS_FEEDS` with Moneycontrol Commodities, ET Commodities, and Google News Commodities search. `fetch_market_headlines()` fetches from both INDIA_RSS_FEEDS and COMMODITY_RSS_FEEDS in parallel (ThreadPoolExecutor max_workers=8), with DuckDuckGo fallback when RSS returns fewer than 3 articles.
+- **Home page cascade card** — `fetch_market_headlines()` deduplicates and returns all market + commodity headlines (5-min cache). `app.py` empty-state renders inline cascade card via `st.markdown()` with self-contained CSS.
+- **Expanded direction keywords** — `_DIR_UP` now includes `bullish`, `tightens?`, `uptick`, `upswing`, `upward`, `inflow`. `_DIR_DOWN` now includes `bearish`, `glut`, `selloff`, `dip`, `eases?`, `eased`, `outflow`.
+
+### Changed
+- **Per-ticker direction refactor** — `affects` tuples changed from 3-field `(ticker, bad_reason, good_reason)` to 4-field `(ticker, direction, bad_reason, good_reason)` where `direction` is per-ticker sensitivity to commodity rise (+1 = bad, -1 = good). `detect_cascade()` computes `ticker_impact = article_direction × ticker_dir`. Render shows per-ticker Bullish/Bearish labels instead of driver-level label.
+- **`fetch_market_headlines()` dual feed sources** — Now fetches from both INDIA_RSS_FEEDS and COMMODITY_RSS_FEEDS, with DDG fallback for light RSS days.
+
+### Fixed
+- **Cascade card not showing on home page** — Was only available on the ticker analysis page. Now the home page empty-state renders an inline cascade card with market + commodity headlines.
+
 ## [2.8.1] — 2026-06-27
 
 ### Fixed

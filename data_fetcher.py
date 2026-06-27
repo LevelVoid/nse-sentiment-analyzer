@@ -1051,17 +1051,25 @@ INDIA_RSS_FEEDS = [
     ("LiveMint Industry", "https://www.livemint.com/rss/industry"),
     ("NDTV Profit", "https://feeds.feedburner.com/ndtvprofit-latest"),
 ]
+COMMODITY_RSS_FEEDS = [
+    ("Moneycontrol Commodities", "https://www.moneycontrol.com/rss/commodities.xml"),
+    ("ET Commodities", "https://economictimes.indiatimes.com/commodity/rssfeeds/1138948049.cms"),
+    ("Google News Commodities", "https://news.google.com/rss/search?q=crude+oil+OR+gold+OR+sugar+OR+aluminum+price+India&hl=en-IN&gl=IN&ceid=IN:en"),
+]
 SOURCE_LABELS = {
     "google news": "Google News",
     "moneycontrol buzzing": "Moneycontrol",
     "moneycontrol news": "Moneycontrol",
     "moneycontrol reports": "Moneycontrol",
+    "moneycontrol commodities": "Moneycontrol",
     "economic times markets": "Economic Times",
     "economic times company": "Economic Times",
+    "economic times commodities": "Economic Times",
     "livemint markets": "LiveMint",
     "livemint companies": "LiveMint",
     "livemint industry": "LiveMint",
     "ndtv profit": "NDTV Profit",
+    "google news commodities": "Google News",
     "duckduckgo": "DuckDuckGo",
 }
 def _parse_rss_feed(source_name, url, ticker, company_name):
@@ -1216,10 +1224,47 @@ def search_news(ticker, company_name, max_results=10):
     return all_results[:max_results], cascade_pool, source_stats
 
 
-def fetch_market_headlines():
-    """Fetch broad market headlines for cascade detection on the home page.
+def _ddgs_commodity_search(all_items, seen_urls):
+    """DuckDuckGo fallback for commodity news when RSS returns little."""
+    _COMMODITY_QUERIES = [
+        "crude oil price India today",
+        "gold price today India",
+        "sugar price India mill",
+        "aluminum price LME India",
+        "commodity market India news",
+    ]
+    with DDGS() as ddgs:
+        for query in _COMMODITY_QUERIES:
+            if time.time() < _DDGS_RATE_LIMITED_UNTIL:
+                break
+            try:
+                results = list(ddgs.news(query, max_results=3, timelimit="w"))
+            except Exception:
+                results = []
+            if not results:
+                try:
+                    results = list(ddgs.text(query, max_results=3))
+                except Exception:
+                    results = []
+            for r in results:
+                url = r.get("url", "") or r.get("link", "")
+                if url and url.startswith(("http://", "https://")) and url not in seen_urls:
+                    seen_urls.add(url)
+                    all_items.append({
+                        "title": r.get("title", ""),
+                        "body": r.get("body", ""),
+                        "date": r.get("date", ""),
+                        "url": url,
+                        "source": "DuckDuckGo",
+                    })
+            time.sleep(0.3)
 
-    Fetches all INDIA_RSS_FEEDS without ticker filtering.
+
+def fetch_market_headlines():
+    """Fetch broad market + commodity headlines for cascade detection.
+
+    Fetches both INDIA_RSS_FEEDS and COMMODITY_RSS_FEEDS without ticker filtering.
+    Falls back to DuckDuckGo commodity search when RSS returns fewer than 3 articles.
     Cached for 5 minutes to avoid hammering feeds on every rerun.
 
     Returns list of dicts with title, body, date, url, source.
@@ -1229,8 +1274,9 @@ def fetch_market_headlines():
         return cached
     all_items = []
     seen_urls = set()
-    with ThreadPoolExecutor(max_workers=5) as pool:
-        futures = {pool.submit(_parse_rss_feed, name, url, "", ""): name for name, url in INDIA_RSS_FEEDS}
+    all_feeds = list(INDIA_RSS_FEEDS) + list(COMMODITY_RSS_FEEDS)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(_parse_rss_feed, name, url, "", ""): name for name, url in all_feeds}
         for future in as_completed(futures):
             _, items, _ = future.result()
             for item in items:
@@ -1238,6 +1284,12 @@ def fetch_market_headlines():
                 if link not in seen_urls:
                     seen_urls.add(link)
                     all_items.append(item)
+    # DDG fallback when RSS returns little
+    if len(all_items) < 3 and time.time() >= _DDGS_RATE_LIMITED_UNTIL:
+        try:
+            _ddgs_commodity_search(all_items, seen_urls)
+        except Exception:
+            pass
     all_items.sort(key=lambda x: x["date"], reverse=True)
     cache_set("market_headlines", all_items, ttl=300)
     return all_items

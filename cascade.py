@@ -172,7 +172,9 @@ _DIR_UP = re.compile(
     r"\b(?:surges?|surged|jumps?|jumped|climbs?|climbed|"
     r"rally|rallies|rallied|soars?|soared|rebounds?|rebounded|"
     r"spikes?|spiked|hikes?|hiked|gains?|gained|rises?|rising|"
-    r"skyrockets?|skyrocketed|appreciates?|strengthens?|strengthened)\b",
+    r"skyrockets?|skyrocketed|appreciates?|strengthens?|strengthened|"
+    r"bullish|tightens?|uptick|upswing|upward|"
+    r"inflow(?:s)?)\b",
     re.IGNORECASE,
 )
 _DIR_DOWN = re.compile(
@@ -181,7 +183,8 @@ _DIR_DOWN = re.compile(
     r"sinks?|sank|crash(?:es|ed)?|collapses?|collapsed|"
     r"weakens?|weakened|slides?|sliding|"
     r"plummets?|plummeted|tanks?|tanked|nosedives?|nosedived|"
-    r"depreciates?)\b",
+    r"depreciates?|bearish|glut|selloff|sell-off|dip|"
+    r"eases?|eased|outflow(?:s)?)\b",
     re.IGNORECASE,
 )
 
