@@ -202,7 +202,7 @@ class TestDetectCascade:
         tickers = [a["ticker"] for a in results[0]["affects"]]
         assert "BPCL" in tickers  # fallback — all included
         assert "INDIGO" in tickers  # fallback
-        assert len(tickers) == 7  # all crude tickers
+        assert len(tickers) == 8  # all crude tickers (incl. ONGC)
 
     def test_focus_ticker_filters_other_commodities(self):
         """focus_ticker should only show commodities that affect that ticker."""

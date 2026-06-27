@@ -42,6 +42,7 @@ CASCADE_MAP = [
             ("BPCL", "Higher input cost — OMC margins compress when crude rises", "Lower input cost — OMC margins expand when crude falls"),
             ("IOC", "Higher input cost — OMCs absorb retail losses", "Lower input cost — OMCs benefit from falling crude"),
             ("HINDPETRO", "Higher input cost — OMC margins follow crude", "Lower input cost — OMC margins recover as crude falls"),
+            ("ONGC", "Crude price decline hurts upstream realizations", "Crude price rally boosts upstream realizations"),
             ("INDIGO", "ATF (jet fuel) cost rises — airline margins squeeze", "ATF (jet fuel) cost falls — airline margins improve"),
             ("ASIANPAINT", "Raw material (solvents/resins) linked to crude", "Raw material costs ease with falling crude"),
             ("BERGEPAINT", "Paint raw materials track crude derivatives", "Paint raw material costs ease with crude"),
@@ -64,6 +65,10 @@ CASCADE_MAP = [
             ("WIPRO", "Stronger rupee reduces INR value of USD revenue", "Weaker rupee = higher USD revenue value — positive for IT exports"),
             ("TECHM", "Stronger rupee reduces INR value of USD revenue", "Weaker rupee = higher USD revenue value — positive for IT exports"),
             ("LTIM", "Stronger rupee reduces INR value of USD revenue", "Weaker rupee = higher USD revenue value — positive for IT exports"),
+            ("SUNPHARMA", "Stronger rupee reduces INR value of USD pharma revenue", "Weaker rupee = higher USD pharma revenue value — positive for exports"),
+            ("DRREDDY", "Stronger rupee reduces INR value of USD pharma revenue", "Weaker rupee = higher USD pharma revenue value — positive for exports"),
+            ("CIPLA", "Stronger rupee reduces INR value of USD pharma revenue", "Weaker rupee = higher USD pharma revenue value — positive for exports"),
+            ("DIVISLAB", "Stronger rupee reduces INR value of USD pharma revenue", "Weaker rupee = higher USD pharma revenue value — positive for exports"),
         ],
     },
     {
@@ -122,6 +127,35 @@ CASCADE_MAP = [
             ("COALINDIA", "Lower coal prices — revenue declines for Coal India", "Higher coal prices — revenue positive for Coal India"),
             ("NTPC", "Higher fuel cost — power generation margins compress", "Lower fuel cost — power generation margins recover"),
             ("TATAPOWER", "Higher fuel cost — power generation margins may compress", "Lower fuel cost — power generation margins may recover"),
+        ],
+    },
+    {
+        "driver": "Sugar",
+        "direction": -1,  # sugar falls → bad for mills
+        "keywords": [
+            r"\bsugar\s+prices?\b",
+            r"\bsugar\s+rates?\b",
+            r"\bsugar\s+(?:production|output|supply)\b",
+            r"\b(?:sugar|sweetener)\s+(?:surges?|falls?|rallies?|declines?|steady)",
+        ],
+        "affects": [
+            ("BAJAJHIND", "Sugar price decline compresses mill realizations", "Sugar price rally boosts mill realizations"),
+            ("BALRAMPUR", "Sugar price decline compresses mill realizations", "Sugar price rally boosts mill realizations"),
+            ("DHAMPUR", "Sugar price decline compresses mill realizations", "Sugar price rally boosts mill realizations"),
+            ("TRIVENI", "Sugar price decline compresses mill realizations", "Sugar price rally boosts mill realizations"),
+            ("DCMSHRIRAM", "Sugar price decline compresses mill realizations", "Sugar price rally boosts mill realizations"),
+        ],
+    },
+    {
+        "driver": "Aluminum",
+        "direction": -1,  # aluminum falls → bad for producers
+        "keywords": [
+            r"\balumi(?:num|nium)\s+prices?\b",
+            r"\b(?:LME|CME)\s+alumi(?:num|nium)\b",
+        ],
+        "affects": [
+            ("HINDALCO", "Aluminum price decline compresses revenue realizations", "Aluminum price rally boosts revenue realizations"),
+            ("NATIONALUM", "Aluminum price decline compresses revenue realizations", "Aluminum price rally boosts revenue realizations"),
         ],
     },
 ]
