@@ -31,3 +31,9 @@ data/
 .DS_Store
 Thumbs.db
 
+# Sales & promo (not part of open-source repo)
+gumroad-description.md
+landing.html
+linkedin-post-draft.md
+x-thread.md
+

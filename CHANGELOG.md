@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.7.1] — 2026-06-27
+
+### Fixed
+- **17 duplicate keys in ALIASES dictionary** — Removed redundant first occurrences of 16 entries that mapped to the same ticker, plus one stale `"TATA MOTORS" → "TATAMOTORS"` that was silently overwritten by the correct post-split mapping `"TATA MOTORS" → "TMPV"`. Alias dictionary now has 461 clean unique entries.
+- **Unused import `get_market_verdict`** — Removed from app.py. Leftover from the MMI system replacing the old Market Climate verdict in v2.7.0.
+- **Race condition in `save_fiidii_snapshot`** — Added `_fiidii_lock` thread lock to prevent duplicate FII/DII entries under concurrent requests.
+
+### Changed
+- **Extracted inline closures to module-level functions** — `_ddgs_search` in data_fetcher.py and `_fetch_portfolio_price` in app.py are now testable module-level functions instead of closures defined inside other functions.
+- **Added `__version__ = "2.7.1"`** to app.py for runtime version checking.
+
 ## [2.7.0] — 2026-06-26
 
 ### Added

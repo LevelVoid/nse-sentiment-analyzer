@@ -67,7 +67,7 @@ Enter any NSE ticker **or company name** and get a **BULLISH / NEUTRAL / BEARISH
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  data_fetcher.py    Yahoo Finance + RSS + DuckDuckGo  │  │
 │  │                     NSE_TICKERS (271 stocks)          │  │
-│  │                     Alias map (504 entries)           │  │
+│  │                     Alias map (461 entries)           │  │
 │  │                     Smart ticker resolution           │  │
 │  │                       → local dict (instant)          │  │
 │  │                       → aliases (instant)             │  │

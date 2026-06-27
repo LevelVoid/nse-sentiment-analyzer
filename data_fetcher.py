@@ -2,7 +2,6 @@
 Data fetching for NSE Sentiment Analyzer.
 Stock data via yfinance + news via RSS + DuckDuckGo fallback.
 """
-
 import yfinance as yf
 import requests
 import feedparser
@@ -18,10 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from duckduckgo_search import DDGS
 from persistence import cache_get, cache_set
-
 logger = logging.getLogger(__name__)
-
-
 # ─── Global rate-limit cooldown ───
 # When yfinance returns 429, all yfinance calls skip for this duration
 # to let the rate-limit window clear.
@@ -29,35 +25,26 @@ logger = logging.getLogger(__name__)
 _RATE_LIMITED_UNTIL = 0.0
 _RATE_LIMIT_COOLDOWN = 45  # seconds
 _rate_limit_lock = threading.Lock()
-
 # Separate cooldown for DuckDuckGo (known to return 202/captcha under load)
 _DDGS_RATE_LIMITED_UNTIL = 0.0
 _DDGS_COOLDOWN = 60  # seconds
-
-
 def _check_rate_limited():
     """Return True if we're in a global rate-limit cooldown.
     Resets automatically after COOLDOWN seconds. Thread-safe."""
     with _rate_limit_lock:
         return time.time() < _RATE_LIMITED_UNTIL
-
-
 def _mark_rate_limited():
     """Set global cooldown. All yfinance calls skip for COOLDOWN seconds.
     Thread-safe — overlapping calls just extend the window slightly."""
     global _RATE_LIMITED_UNTIL
     with _rate_limit_lock:
         _RATE_LIMITED_UNTIL = time.time() + _RATE_LIMIT_COOLDOWN
-
-
 def _mark_ddgs_rate_limited():
     """Set DDGS cooldown. Skips DuckDuckGo fallback for _DDGS_COOLDOWN seconds.
     Thread-safe — uses the same lock as yfinance rate limiter."""
     global _DDGS_RATE_LIMITED_UNTIL
     with _rate_limit_lock:
         _DDGS_RATE_LIMITED_UNTIL = time.time() + _DDGS_COOLDOWN
-
-
 # ─── yfinance: set browser User-Agent to avoid 429 rate limiting ───
 # yf.utils._session is semi-public (used by yfinance's own tests).
 # yf._session was a private fallback for older versions — removed to avoid
@@ -70,7 +57,6 @@ _session.headers["User-Agent"] = (
     "Chrome/125.0.0.0 Safari/537.36"
 )
 yf.utils._session = _session
-
 # ─── NSE Tickers ───
 NSE_TICKERS = {
     "AARTIDRUGS": "Aarti Drugs",
@@ -345,23 +331,22 @@ NSE_TICKERS = {
     "ZENSARTECH": "Zensar Technologies",
     "ZYDUSLIFE": "Zydus Lifesciences",
 }
-
 # ─── Company name aliases for RSS headline matching ───
 # Maps common names/abbreviations → ticker symbols.
 # RSS headlines rarely use official company names ("SBI" not "State Bank of India").
 ALIASES = {
     "HCL TECH": "HCLTECH", "HCL TECHNOLOGIES": "HCLTECH", "HDFC": "HDFCBANK",
-    "SBI": "SBIN", "STATE BANK": "SBIN", "HUL": "HINDUNILVR",
-    "HINDUSTAN UNILEVER": "HINDUNILVR", "L&T": "LT", "LARSEN": "LT",
-    "NESTLE": "NESTLEIND", "DMART": "DMART", "HERO": "HEROMOTOCO",
-    "HERO HONDA": "HEROMOTOCO", "DIVIS": "DIVISLAB", "DIVI": "DIVISLAB",
-    "JSW STEEL": "JSWSTEEL", "TATA MOTORS": "TATAMOTORS",
+ "SBI": "SBIN", "STATE BANK": "SBIN", 
+ "HINDUSTAN UNILEVER": "HINDUNILVR", "LARSEN": "LT",
+ "DMART": "DMART", "HERO": "HEROMOTOCO",
+ "HERO HONDA": "HEROMOTOCO", "DIVI": "DIVISLAB",
+    "JSW STEEL": "JSWSTEEL",
     "TATA STEEL": "TATASTEEL", "TATA CONSUMER": "TATACONSUM",
-    "BHARTI": "BHARTIARTL", "AIRTEL": "BHARTIARTL", "MARUTI SUZUKI": "MARUTI",
+ "AIRTEL": "BHARTIARTL", "MARUTI SUZUKI": "MARUTI",
     "TECH MAHINDRA": "TECHM", "INDUSIND": "INDUSINDBK",
-    "POWER GRID": "POWERGRID", "COAL INDIA": "COALINDIA",
-    "HIND UNILEVER": "HINDUNILVR", "SUN PHARMA": "SUNPHARMA",
-    "DR REDDY": "DRREDDY", "DR. REDDY": "DRREDDY",
+ "POWER GRID": "POWERGRID", 
+ "SUN PHARMA": "SUNPHARMA",
+ "DR. REDDY": "DRREDDY",
     "BAJAJ FINANCE": "BAJFINANCE", "ADANI ENTERPRISES": "ADANIENT",
     "ADANI PORTS": "ADANIPORTS", "ADANI GREEN": "ADANIGREEN",
     "ADANI POWER": "ADANIPOWER", "ADANI TRANS": "ADANITRANS",
@@ -370,13 +355,13 @@ ALIASES = {
     "TORRENT PHARMA": "TORNTPHARM", "JUBILANT": "JUBLFOOD",
     "TVS": "TVSMOTOR", "VARUN BEVERAGES": "VBL", "YES BANK": "YESBANK",
     "BANK OF BARODA": "BANKBARODA", "MAHINDRA": "M&M",
-    "INDIAN OIL": "IOC", "BHARAT PETROLEUM": "BPCL",
+ "BHARAT PETROLEUM": "BPCL",
     "HINDUSTAN AERONAUTICS": "HAL", "BHARAT ELECTRONICS": "BEL",
     "POWER FINANCE": "PFC", "SOLAR INDUSTRIES": "SOLARINDS",
     "BALKRISHNA": "BALKRISIND", "PW LAKSHMI": "PWL", "VEDANTA": "VEDL",
     "REC": "RECLTD", "Pidilite": "PIDILITIND", "HAVELLS": "HAVELLS",
     "SIEMENS": "SIEMENS", "POLYCAB": "POLYCAB", "DIXON": "DIXON",
-    "ASTRAL": "ASTRAL", "IDFC": "IDFCFIRSTB", "EICHER": "EICHERMOT",
+ "ASTRAL": "ASTRAL", "IDFC": "IDFCFIRSTB", 
     "MARICO": "MARICO", "DABUR": "DABUR", "GODREJ": "GODREJCP",
     "CIPLA": "CIPLA", "LUPIN": "LUPIN", "BIOCON": "BIOCON",
     # ── Banking ──
@@ -397,7 +382,7 @@ ALIASES = {
     "CENTRAL BANK": "CENTRALBK",
     # Removed KTKBANK, DCBBANK, DHANBANK, SBICARD, IOB, PSB — not in NSE_TICKERS
     # ── Financial Services ──
-    "BAJAJ FINSERV": "BAJAJFINSV", "SBI LIFE": "SBILIFE", "SBI LIFE INSURANCE": "SBILIFE",
+ "SBI LIFE": "SBILIFE", "SBI LIFE INSURANCE": "SBILIFE",
     "HDFC LIFE": "HDFCLIFE", "HDFC LIFE INSURANCE": "HDFCLIFE",
     "ICICI PRUDENTIAL": "ICICIPRULI", "ICICI LOMBARD": "ICICIGI", "ICICI GENERAL": "ICICIGI",
     "HDFC AMC": "HDFCAMC", "HDFC ASSET MANAGEMENT": "HDFCAMC", "UTI AMC": "UTIAMC",
@@ -405,7 +390,7 @@ ALIASES = {
     "CHOLA": "CHOLAFIN", "CHOLAMANDALAM": "CHOLAFIN",
     "MUTHOOT": "MUTHOOTFIN", "MUTHOOT FINANCE": "MUTHOOTFIN",
     "MANAPPURAM": "MANAPPURAM", "PNB HOUSING": "PNBHOUSING",
-    "L AND T FINANCE": "L&TFH", "LT FINANCE": "L&TFH",
+ "LT FINANCE": "L&TFH",
     "LIC HOUSING": "LICHSGFIN", "MAX LIFE": "MFSL", "MAX FINANCIAL": "MFSL",
     "STAR HEALTH": "STARHEALTH", "STAR HEALTH INSURANCE": "STARHEALTH",
     "NEW INDIA ASSURANCE": "NIACL",
@@ -423,7 +408,7 @@ ALIASES = {
     "NIIT TECH": "NIITTECH", "ORACLE FIN": "OFSS", "ORACLE FINANCIAL": "OFSS",
     "TECHM": "TECHM",
     # ── Pharma ──
-    "SUN PHARMA": "SUNPHARMA", "DR REDDYS": "DRREDDY", "DR REDDY": "DRREDDY",
+ "DR REDDYS": "DRREDDY", "DR REDDY": "DRREDDY",
     "DIVIS": "DIVISLAB", "DIVI LAB": "DIVISLAB", "AUROBINDO": "AUROPHARMA",
     "AUROBINDO PHARMA": "AUROPHARMA", "CADILA": "CADILAHC",
     "ZYDUS": "ZYDUSLIFE", "ZYDUS LIFESCIENCES": "ZYDUSLIFE",
@@ -471,7 +456,7 @@ ALIASES = {
     "WESTLIFE": "WESTLIFE", "WESTLIFE FOOD": "WESTLIFE",
     "UNITED SPIRITS": "MCDOWELL-N", "MCDOWELL": "MCDOWELL-N",
     "UNITED BREWERIES": "UBL", "RADICO": "RADICO", "RADICO KHAITAN": "RADICO",
-    "TRENT": "TRENT", "ZOMATO": "ETERNAL",
+ "TRENT": "TRENT", 
     "AVENUE SUPERMARTS": "DMART",
     "TATA TEA": "TATACONSUM", "TATA COFFEE": "TATACONSUM",
     "JUBILANT FOOD": "JUBLFOOD",
@@ -486,7 +471,7 @@ ALIASES = {
     "GAIL": "GAIL", "GUJARAT GAS": "GUJGASLTD",
     "IGL": "IGL", "INDRAPRASTHA GAS": "IGL",
     "MAHANAGAR GAS": "MGL", "MGL GAS": "MGL",
-    "POWER GRID": "POWERGRID", "COAL INDIA": "COALINDIA",
+ "COAL INDIA": "COALINDIA",
     "JSW ENERGY": "JSWENERGY", "TORRENT POWER": "TORNTPOWER",
     "SUZLON": "SUZLON", "SUZLON ENERGY": "SUZLON", "INOX WIND": "INOXWIND",
     "ADANI TOTAL GAS": "ATGL", "ADANI GAS": "ATGL",
@@ -528,7 +513,7 @@ ALIASES = {
     "GUJARAT STATE PETRO": "GSPL", "GUJARAT ALKALIES": "GUJALKALI",
     "GUJARAT FLUORO": "GUJFLUORO", "GUJARAT FLUOROCHEMICALS": "GUJFLUORO",
     # ── Infrastructure ──
-    "LARSEN AND TOUBRO": "LT", "L AND T": "LT", "LARSEN": "LT", "L&T": "LT",
+ "LARSEN AND TOUBRO": "LT", "L AND T": "LT", "L&T": "LT",
     "OBEROI": "OBEROIRLTY", "OBEROI REALTY": "OBEROIRLTY",
     "GODREJ PROPERTIES": "GODREJPROP", "GODREJ PROPERTY": "GODREJPROP",
     "PRESTIGE ESTATES": "PRESTIGE", "SOBHA": "SOBHA", "SOBHA LTD": "SOBHA",
@@ -585,21 +570,16 @@ ALIASES = {
     "FRONT LINE": "FRONTLINE", "MOTHERSON SUMI": "MOTHERSON",
     "SAMVARDHANA": "MOTHERSON",
 }
-
 # Precompute reverse ALIASES (lowercased name → ticker) for fast input resolution
 _ALIAS_LOOKUP = {}
 for _ak, _at in ALIASES.items():
     _alias_upper = _ak.strip().upper()
     if _alias_upper not in _ALIAS_LOOKUP:
         _ALIAS_LOOKUP[_alias_upper] = _at
-
-
 def resolve_ticker(raw_input):
     """Resolve user input to a valid NSE ticker symbol.
-
     Handles tickers, company names, aliases, and partial matches.
     Returns (ticker, company_name) or (None, None) if unresolved.
-
     Resolution order (fast → slow):
       1. Exact NSE_TICKERS match
       2. Exact ALIASES match (e.g. "HDFC BANK" → "HDFCBANK")
@@ -609,18 +589,14 @@ def resolve_ticker(raw_input):
     """
     if not raw_input or not raw_input.strip():
         return None, None
-
     q = raw_input.strip().upper().replace(".NS", "").replace(".BO", "")
-
     # 1. Exact ticker symbol match
     if q in NSE_TICKERS:
         return q, NSE_TICKERS[q]
-
     # 2. Exact alias match (e.g. "HDFC BANK" → "HDFCBANK")
     if q in _ALIAS_LOOKUP:
         ticker = _ALIAS_LOOKUP[q]
         return ticker, NSE_TICKERS.get(ticker, ticker)
-
     # 3. Company name reverse lookup — case-insensitive contains match
     for sym, name in NSE_TICKERS.items():
         if name.upper() == q:
@@ -629,12 +605,10 @@ def resolve_ticker(raw_input):
     for sym, name in NSE_TICKERS.items():
         if q in name.upper():
             return sym, name
-
     # 4. Ticker prefix match (e.g. "HDFC" matches "HDFCBANK")
     for sym, name in NSE_TICKERS.items():
         if sym.startswith(q):
             return sym, name
-
     # 5. Online fallback — search yfinance for NSE ticker
     if not _check_rate_limited():
         online_result = _search_ticker_online(raw_input.strip())
@@ -645,19 +619,13 @@ def resolve_ticker(raw_input):
                 return ticker, NSE_TICKERS[ticker]
             # New ticker not in NSE_TICKERS — still valid, use it
             return ticker, name
-
     return None, None
-
-
 # Cache for online ticker lookups (avoids repeated API calls)
 _online_ticker_cache = {}
 _online_cache_lock = threading.Lock()
 _MAX_ONLINE_CACHE = 500
-
-
 def _search_yahoo_finance(query):
     """Search Yahoo Finance REST API for NSE ticker. Fast (~200ms).
-
     Returns (ticker, name) or (None, None).
     """
     try:
@@ -680,11 +648,8 @@ def _search_yahoo_finance(query):
     except Exception as e:
         logger.debug("_search_yahoo_finance(%s) failed: %s", query, e)
     return None, None
-
-
 def _search_yfinance_sdk(query):
     """Search yfinance SDK for NSE ticker. Slower (~1-2s) but more comprehensive.
-
     Returns (ticker, name) or (None, None).
     """
     try:
@@ -703,29 +668,23 @@ def _search_yfinance_sdk(query):
     except Exception as e:
         logger.debug("_search_yfinance_sdk(%s) failed: %s", query, e)
     return None, None
-
-
 def _search_ticker_online(query):
     """Search for NSE ticker by company name using chained APIs.
-
     Resolution order:
       1. In-memory cache (instant)
       2. Yahoo Finance REST API (~200ms, fast)
       3. yfinance SDK Search (~1-2s, more comprehensive)
       4. Direct ticker probe — try query as .NS ticker (~1s)
-
     Returns (ticker, name) or (None, None).
     """
     q = query.strip()
     if not q or len(q) < 2:
         return None, None
-
     q_upper = q.upper()
     with _online_cache_lock:
         cached = _online_ticker_cache.get(q_upper)
         if cached is not None:
             return cached
-
     # Tier 1: Yahoo Finance REST API (fast)
     result = _search_yahoo_finance(q)
     if result and result[0]:
@@ -733,7 +692,6 @@ def _search_ticker_online(query):
             if len(_online_ticker_cache) < _MAX_ONLINE_CACHE:
                 _online_ticker_cache[q_upper] = result
         return result
-
     # Tier 2: yfinance SDK Search (slower, more comprehensive)
     if not _check_rate_limited():
         result = _search_yfinance_sdk(q)
@@ -742,7 +700,6 @@ def _search_ticker_online(query):
                 if len(_online_ticker_cache) < _MAX_ONLINE_CACHE:
                     _online_ticker_cache[q_upper] = result
             return result
-
         # Tier 3: Direct ticker probe — try query as .NS ticker
         # Handles rebranded stocks (Zomato→Eternal), splits, and
         # stocks Yahoo search doesn't index.
@@ -752,16 +709,12 @@ def _search_ticker_online(query):
                 if len(_online_ticker_cache) < _MAX_ONLINE_CACHE:
                     _online_ticker_cache[q_upper] = result
             return result
-
     with _online_cache_lock:
         if len(_online_ticker_cache) < _MAX_ONLINE_CACHE:
             _online_ticker_cache[q_upper] = (None, None)
     return None, None
-
-
 def _probe_ticker_direct(query):
     """Try the query (and common variations) as direct .NS ticker.
-
     When search APIs fail (rebranded stocks, delisted names, missing index
     entries), this probes yfinance directly. Handles:
       - "Zomato" → tries ZOMATO.NS (fails) → no match
@@ -772,7 +725,6 @@ def _probe_ticker_direct(query):
     q = query.strip().upper().replace(".NS", "").replace(".BO", "")
     if not q or len(q) < 2:
         return None, None
-
     # Build candidate tickers: the query itself, plus word-based variations
     candidates = [q]
     # "Tata Steel" → ["TATA STEEL", "TATASTEEL", "TATA", "STEEL"]
@@ -780,7 +732,6 @@ def _probe_ticker_direct(query):
     if len(words) > 1:
         candidates.append("".join(words))  # TATASTEEL
         candidates.extend(words)            # TATA, STEEL
-
     for candidate in candidates:
         if len(candidate) < 2 or len(candidate) > 20:
             continue
@@ -793,28 +744,20 @@ def _probe_ticker_direct(query):
                 return candidate, name
         except Exception:
             continue
-
     return None, None
-
-
 # In-memory 1y price history cache, populated by get_stock_info,
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _hist_cache = {}
 _hist_cache_lock = threading.Lock()
 _MAX_CACHED_TICKERS = 50
-
-
 def _evict_hist_cache():
     """Evict oldest entries when cache exceeds _MAX_CACHED_TICKERS."""
     with _hist_cache_lock:
         while len(_hist_cache) > _MAX_CACHED_TICKERS:
             # dict preserves insertion order (Python 3.7+) — pop first key
             _hist_cache.pop(next(iter(_hist_cache)), None)
-
-
 def get_cached_history(ticker):
     """Return 1y price history for a ticker, from memory cache or yfinance.
-
     Populated by get_stock_info() to share the yfinance 1y OHLCV fetch.
     Falls back to a direct yfinance call if the in-memory cache is empty
     (e.g. after a persistence cache hit that skipped the fetch path).
@@ -823,7 +766,6 @@ def get_cached_history(ticker):
         cached = _hist_cache.get(ticker)
     if cached is not None:
         return cached
-
     # Fallback: fetch directly from yfinance (cheap — yfinance caches internally)
     import yfinance as yf
     for suffix in [".NS", ".BO", ""]:
@@ -839,8 +781,6 @@ def get_cached_history(ticker):
         except Exception:
             continue
     return None
-
-
 def _strip_html(text):
     """Strip HTML tags + unescape entities for clean text analysis & display."""
     if not text:
@@ -848,8 +788,6 @@ def _strip_html(text):
     text = re.sub(r"<[^>]+>", " ", text)
     text = html.unescape(text)
     return " ".join(text.split())
-
-
 def _retry_fetch(max_attempts=3, base_wait=1, backoff=2):
     """Generator that yields attempt numbers for retry loops.
     Uses exponential backoff with full jitter (AWS retry style).
@@ -863,19 +801,14 @@ def _retry_fetch(max_attempts=3, base_wait=1, backoff=2):
             sleep = base_wait * (backoff ** attempt)
             jitter = sleep * 0.5 * random.random()
             time.sleep(sleep + jitter)
-
-
 def _nf(v):
     """NaN-safe float extractor — returns None for NaN/None."""
     if v is None:
         return None
     f = float(v)
     return None if math.isnan(f) else f
-
-
 def get_stock_info(ticker):
     """Fetch stock data from yfinance with retry and backoff.
-
     Two-phase approach:
       1. info (metadata: name, sector, PE, 52w) — best-effort, not blocking.
          If it fails, defaults are used.
@@ -901,7 +834,6 @@ def get_stock_info(ticker):
                 except Exception:
                     continue
         return cached
-
     # Global rate-limit cooldown — if yfinance recently 429'd us, wait and retry
     if _check_rate_limited():
         import time as _time
@@ -913,12 +845,10 @@ def get_stock_info(ticker):
             if _check_rate_limited():
                 st.warning("Still rate-limited. Please try again in a moment.")
                 return None
-
     suffixes = [".NS", ".BO", ""]
     info = None
     hist = None
     name_fallback = ticker
-
     try:
         # ── Phase 1: info (best-effort metadata) ──
         for suffix in suffixes:
@@ -937,7 +867,6 @@ def get_stock_info(ticker):
                     continue  # retry same suffix with backoff before trying next
             if info:
                 break  # found valid info, stop trying suffixes
-
         # ── Phase 2: history (required price data) ──
         for suffix in suffixes if not hist else []:
             stock = yf.Ticker(f"{ticker}{suffix}")
@@ -951,7 +880,6 @@ def get_stock_info(ticker):
                     continue  # retry with backoff
             if hist is not None:
                 break  # found valid history
-
         # ── Phase 2b: retry info if it failed (rate-limit may have cleared
         #    during the history phase which took ~3-6s) ──
         if info is None and hist is not None:
@@ -965,7 +893,6 @@ def get_stock_info(ticker):
                         break
                 except Exception:
                     continue
-
         # ── Phase 2c: targeted sector/industry fetch ──
         #    yfinance .info is flaky for Indian stocks — sometimes returns
         #    partial dicts or None. Retry specifically for sector/industry.
@@ -996,7 +923,6 @@ def get_stock_info(ticker):
                 info["sector"] = _sec
             if _ind and _ind != "N/A":
                 info["industry"] = _ind
-
         # ── Build result dict ──
         if hist is not None and not hist.empty:
             with _hist_cache_lock:
@@ -1031,7 +957,6 @@ def get_stock_info(ticker):
                 "Yahoo Finance may be rate-limited — wait a moment and try again."
             )
             return None
-
         result = {
             "name": info.get("longName", info.get("shortName", name_fallback)) if info else name_fallback,
             "sector": info.get("sector", "N/A") if info else "N/A",
@@ -1053,24 +978,18 @@ def get_stock_info(ticker):
         else:
             cache_set(f"stock_{ticker}", result, ttl=120)  # 2 min
         return result
-
     except Exception as e:
         logger.warning("get_stock_info(%s) failed: %s", ticker, e)
         st.error(f"Could not fetch data for {ticker}: {e}")
         return None
-
-
 def _parse_date(d):
     """Parse RSS date tuple to ISO date string."""
     try:
         return datetime(*d[:6]).isoformat()[:10]
     except Exception:
         return ""
-
-
 def _alias_terms(ticker):
     """Get additional search terms from ALIASES dict for a ticker.
-
     E.g., for ticker='SBIN', returns {'sbi', 'state', 'bank'}
     since ALIASES has 'SBI' -> 'SBIN' and 'STATE BANK' -> 'SBIN'.
     """
@@ -1079,49 +998,37 @@ def _alias_terms(ticker):
         if alias_ticker == ticker:
             terms.update(alias_key.lower().split())
     return terms
-
-
 def _relevant(ticker, company_name, title, body):
     """Check if a headline is relevant to the given ticker/company.
-
     Uses phrase-level matching to avoid false positives:
     1. Ticker symbol (e.g. 'RELIANCE', 'HDFCBANK') — most reliable
     2. Full company name as phrase (e.g. 'Reliance Industries')
     3. Alias keys as phrases (e.g. 'SBI' for SBIN, 'L&T' for LT)
-
     Individual word matching is avoided — words like 'bank', 'power',
     'tata', 'steel' are too common and cause irrelevant headlines to pass.
     """
     text = (title + " " + (body or "")).lower()
-
     # Tier 1: Ticker symbol
     if re.search(r'\b' + re.escape(ticker.lower()) + r'\b', text):
         return True
-
     # Tier 2: Full company name as phrase
     if re.search(r'\b' + re.escape(company_name.lower()) + r'\b', text):
         return True
-
     # Tier 3: Alias keys as phrases (e.g. 'L&T', 'SBI', 'HDFC')
     for alias_key, alias_ticker in ALIASES.items():
         if alias_ticker == ticker:
             alias_lower = alias_key.lower()
             if len(alias_lower) > 2 and re.search(r'\b' + re.escape(alias_lower) + r'\b', text):
                 return True
-
     return False
-
-
 # ─── RSS Feeds ───
 # Yahoo Finance RSS removed (returns 429 / rate-limited on cloud IPs)
 # LiveMint and Business Standard tested; BS returns 403
-
 TICKER_RSS_FEEDS = [
     # Google News RSS for ticker-specific results
     lambda t, c: f"https://news.google.com/rss/search?q={t}+NSE+stock&hl=en-IN&gl=IN&ceid=IN:en",
     lambda t, c: f"https://news.google.com/rss/search?q={c}+NSE&hl=en-IN&gl=IN&ceid=IN:en" if c != t else None,
 ]
-
 INDIA_RSS_FEEDS = [
     ("Moneycontrol Buzzing", "https://www.moneycontrol.com/rss/buzzingstocks.xml"),
     ("Moneycontrol News", "https://www.moneycontrol.com/rss/latestnews.xml"),
@@ -1133,7 +1040,6 @@ INDIA_RSS_FEEDS = [
     ("LiveMint Industry", "https://www.livemint.com/rss/industry"),
     ("NDTV Profit", "https://feeds.feedburner.com/ndtvprofit-latest"),
 ]
-
 SOURCE_LABELS = {
     "google news": "Google News",
     "moneycontrol buzzing": "Moneycontrol",
@@ -1147,9 +1053,6 @@ SOURCE_LABELS = {
     "ndtv profit": "NDTV Profit",
     "duckduckgo": "DuckDuckGo",
 }
-
-
-
 def _parse_rss_feed(source_name, url, ticker, company_name):
     """Parse one RSS feed in a worker thread — no shared state mutation."""
     label = SOURCE_LABELS.get(source_name.lower().replace("_", " "), source_name)
@@ -1174,8 +1077,34 @@ def _parse_rss_feed(source_name, url, ticker, company_name):
     except Exception:
         pass
     return items, label
-
-
+def _ddgs_search(ticker, company_name, seen_urls, all_results, source_stats, max_results):
+    """Search DuckDuckGo as fallback when RSS returns little."""
+    with DDGS() as ddgs:
+        for query in [f"{ticker} NSE", f"{company_name} stock"]:
+            try:
+                results = list(ddgs.news(query, max_results=3, timelimit="w"))
+            except Exception:
+                results = []
+            if not results:
+                try:
+                    results = list(ddgs.text(query, max_results=3))
+                except Exception:
+                    results = []
+            for r in results:
+                url = r.get("url", "") or r.get("link", "")
+                if url and url.startswith(("http://", "https://")) and url not in seen_urls:
+                    seen_urls.add(url)
+                    all_results.append({
+                        "title": r.get("title", ""),
+                        "body": r.get("body", ""),
+                        "date": r.get("date", ""),
+                        "url": url,
+                        "source": "DuckDuckGo",
+                    })
+                    source_stats["DuckDuckGo"] = source_stats.get("DuckDuckGo", 0) + 1
+            time.sleep(0.3)
+            if len(all_results) >= max_results:
+                break
 def search_news(ticker, company_name, max_results=10):
     """Fetch news from RSS feeds (primary), fallback to DuckDuckGo.
     Returns (articles, source_health) where source_health tracks which sources returned results.
@@ -1184,11 +1113,9 @@ def search_news(ticker, company_name, max_results=10):
     if cached:
         news, health = cached
         return news[:max_results], health
-
     seen_urls = set()
     all_results = []
     source_stats = {}  # source_name -> hit_count
-
     # Ticker-specific RSS feeds
     for rss_fn in TICKER_RSS_FEEDS:
         url = rss_fn(ticker, company_name)
@@ -1214,7 +1141,6 @@ def search_news(ticker, company_name, max_results=10):
         except Exception as e:
             logger.debug("Ticker RSS feed failed for %s: %s", ticker, e)
             continue
-
     # Indian market RSS feeds (filtered by relevance) — fetched concurrently
     with ThreadPoolExecutor(max_workers=5) as pool:
         futures = {pool.submit(_parse_rss_feed, name, url, ticker, company_name): name for name, url in INDIA_RSS_FEEDS}
@@ -1226,45 +1152,18 @@ def search_news(ticker, company_name, max_results=10):
                     seen_urls.add(link)
                     all_results.append(item)
                     source_stats[label] = source_stats.get(label, 0) + 1
-
     # Fallback: DuckDuckGo when RSS returns little — skip if DDGS rate-limited
     # DDGS has no built-in timeout; wrap in ThreadPoolExecutor to prevent hangs
     if len(all_results) < 3 and time.time() >= _DDGS_RATE_LIMITED_UNTIL:
-        def _ddgs_search():
-            with DDGS() as ddgs:
-                for query in [f"{ticker} NSE", f"{company_name} stock"]:
-                    try:
-                        results = list(ddgs.news(query, max_results=3, timelimit="w"))
-                    except Exception:
-                        results = []
-                    if not results:
-                        try:
-                            results = list(ddgs.text(query, max_results=3))
-                        except Exception:
-                            results = []
-                    for r in results:
-                        url = r.get("url", "") or r.get("link", "")
-                        if url and url.startswith(("http://", "https://")) and url not in seen_urls:
-                            seen_urls.add(url)
-                            all_results.append({
-                                "title": r.get("title", ""),
-                                "body": r.get("body", ""),
-                                "date": r.get("date", ""),
-                                "url": url,
-                                "source": "DuckDuckGo",
-                            })
-                            source_stats["DuckDuckGo"] = source_stats.get("DuckDuckGo", 0) + 1
-                    time.sleep(0.3)
-                    if len(all_results) >= max_results:
-                        break
-
         try:
             with ThreadPoolExecutor(max_workers=1) as ddgs_pool:
-                ddgs_pool.submit(_ddgs_search).result(timeout=15)
+                ddgs_pool.submit(
+                    _ddgs_search, ticker, company_name,
+                    seen_urls, all_results, source_stats, max_results,
+                ).result(timeout=15)
         except Exception as e:
             logger.debug("DuckDuckGo fallback failed for %s: %s", ticker, e)
             _mark_ddgs_rate_limited()
-
     all_results.sort(key=lambda x: x["date"], reverse=True)
     if all_results:
         cache_set(f"news_{ticker}", (all_results, source_stats))

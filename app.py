@@ -4,6 +4,8 @@ Enter any NSE ticker → get live price + news sentiment score + signal.
 Built with Streamlit + yfinance + VADER + custom financial lexicon.
 """
 
+__version__ = "2.7.1"
+
 import json
 import logging
 import streamlit as st
@@ -49,7 +51,7 @@ from event_classifier import classify_headline, adjust_with_event
 from indicators import get_technical_indicators
 from persistence import load_portfolio, save_portfolio, load_track_record, save_track_record, load_sentiment_history, save_sentiment_history, history_to_csv, update_source_accuracy, load_entry_prices, save_entry_price, get_entry_info, calc_portfolio_pnl, load_fiidii_history, save_fiidii_snapshot, ENTRY_PRICES_FILE
 from render import render_dashboard, _is_valid_num
-from market_data import get_fii_dii_flow, get_market_pulse, get_market_verdict, get_mmi
+from market_data import get_fii_dii_flow, get_market_pulse, get_mmi
 from aggregate_sentiment import compute_smartscore
 from intraday import compute_vwap, compute_pivot_levels, get_vix
 
@@ -333,6 +335,24 @@ def analyze_ticker(ticker, company_name, quick=False):
     }
 
 
+def _fetch_portfolio_price(t):
+    """Fetch price for one portfolio ticker — runs in worker thread."""
+    import yfinance as yf
+    try:
+        tk = yf.Ticker(t + ".NS")
+        hist = tk.history(period="2d")
+        if hist is not None and not hist.empty:
+            cp = float(hist["Close"].iloc[-1])
+            prev = float(hist["Close"].iloc[-2]) if len(hist) > 1 else cp
+            return t, {
+                "change_pct": round((cp - prev) / prev * 100, 2),
+                "current_price": cp,
+            }
+    except Exception:
+        logger.warning("_refresh_price_cache failed for %s", t)
+    return t, None
+
+
 def _refresh_price_cache(portfolio):
     """Fetch current prices for all portfolio stocks and cache in session state."""
     if not portfolio:
@@ -341,28 +361,11 @@ def _refresh_price_cache(portfolio):
     missing = [t for t in portfolio if t not in cache]
     if not missing:
         return
-    import yfinance as yf
     from concurrent.futures import ThreadPoolExecutor, as_completed
-
-    def _fetch_one(t):
-        """Fetch price for one ticker — runs in worker thread."""
-        try:
-            tk = yf.Ticker(t + ".NS")
-            hist = tk.history(period="2d")
-            if hist is not None and not hist.empty:
-                cp = float(hist["Close"].iloc[-1])
-                prev = float(hist["Close"].iloc[-2]) if len(hist) > 1 else cp
-                return t, {
-                    "change_pct": round((cp - prev) / prev * 100, 2),
-                    "current_price": cp,
-                }
-        except Exception:
-            logger.warning("_refresh_price_cache failed for %s", t)
-        return t, None
 
     _failed = []
     with ThreadPoolExecutor(max_workers=5) as pool:
-        futures = {pool.submit(_fetch_one, t): t for t in missing}
+        futures = {pool.submit(_fetch_portfolio_price, t): t for t in missing}
         for future in as_completed(futures):
             t, result = future.result()
             if result is not None:
