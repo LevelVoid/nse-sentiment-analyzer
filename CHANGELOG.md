@@ -14,7 +14,10 @@
 - **`analyze_ticker()` cascade wiring** — Passes `cascade_pool` (broader set) instead of `news_items` to `detect_cascade()`.
 - **`detect_cascade()` result now includes `impact` field** — `+1` = Bearish (bad for tickers), `-1` = Bullish (good for tickers). Derived from: `inferred_article_direction × CASCADE_MAP.direction`. Used by `render.py` to show the correct green/red label instead of hardcoded "Bearish".
 - **`_render_cascade_html()` label now dynamic** — Reads `effect["impact"]` to show green "Bullish" (+22b573) or red "Bearish" (#f85149) instead of always red.
-- **Direction keyword regexes** — `_DIR_UP` and `_DIR_DOWN` compiled at module scope. 30+ total terms covering surge, jump, rally, climb, soar, rebound, spike, hike, gain, rise (up) and fall, drop, decline, slump, plunge, tumble, sink, crash, collapse, weaken, slide (down).
+- **Direction keyword regexes** — `_DIR_UP` and `_DIR_DOWN` compiled at module scope. 35+ total terms covering surge, jump, rally, climb, soar, rebound, spike, hike, gain, rise, skyrocket, appreciate (up) and fall, drop, decline, slump, plunge, tumble, sink, crash, collapse, weaken, slide, plummet, tank, nosedive, depreciate (down).
+- **`\bcrude\b` tightened** — Now uses negative lookahead `(?!\s+steel\b)` to avoid false matching "crude steel output".
+- **Removed redundant `\bRupee\b` pattern** — All CASCADE_MAP patterns are compiled with `re.IGNORECASE`, so lowercase `\brupee\b` already covered "Rupee".
+- **CHANGELOG.md sidebar read cached** — File is now read once per session via `st.session_state._changelog_cache` instead of on every page rerun.
 - **191 tests** (was 184) — 7 new tests covering direction inference (up/down), impact calculation (Bullish/Bearish) for both crude and gold, and ambiguous-direction fallback.
 
 ## [2.8.0] — 2026-06-28

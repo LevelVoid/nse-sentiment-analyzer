@@ -32,7 +32,7 @@ CASCADE_MAP = [
         "direction": +1,  # crude rises → negative for consumers
         "keywords": [
             r"\bcrude\s*oil\b",
-            r"\bcrude\b",
+            r"\bcrude\b(?!\s+steel\b)",
             r"\bbrent\b",
             r"\b(?:WTI|NYMEX)\b",
             r"\boil\s+prices?\b",
@@ -52,7 +52,6 @@ CASCADE_MAP = [
         "driver": "Rupee / USD",
         "direction": +1,  # rupee fall (USD rise) → negative for importers
         "keywords": [
-            r"\bRupee\b",
             r"\b(?:Indian\s+)?rupee\b",
             r"\bUSD[-/]INR\b",
             r"\b(?:dollar|INR)\s+(?:weakens?|falls?|strengthens?|rises?|rallies?|declines?)",
@@ -134,14 +133,17 @@ CASCADE_MAP = [
 _DIR_UP = re.compile(
     r"\b(?:surges?|surged|jumps?|jumped|climbs?|climbed|"
     r"rally|rallies|rallied|soars?|soared|rebounds?|rebounded|"
-    r"spikes?|spiked|hikes?|hiked|gains?|gained|rises?|rising)\b",
+    r"spikes?|spiked|hikes?|hiked|gains?|gained|rises?|rising|"
+    r"skyrockets?|skyrocketed|appreciates?)\b",
     re.IGNORECASE,
 )
 _DIR_DOWN = re.compile(
     r"\b(?:falls?|fell|drops?|dropped|declines?|declined|"
     r"slumps?|slumped|plunges?|plunged|tumbles?|tumbled|"
     r"sinks?|sank|crash(?:es|ed)?|collapses?|collapsed|"
-    r"weakens?|weakened|slides?|sliding)\b",
+    r"weakens?|weakened|slides?|sliding|"
+    r"plummets?|plummeted|tanks?|tanked|nosedives?|nosedived|"
+    r"depreciates?)\b",
     re.IGNORECASE,
 )
 
