@@ -236,9 +236,9 @@ def _render_cascade_html(cascade_effects):
         driver = effect["driver"]
         direction = effect["direction"]
         n_articles = effect.get("matched_articles", 1)
-        icon = _ICON["arrow_up"] if direction < 0 else _ICON["arrow_down"]
-        dir_label = "Bullish" if direction < 0 else "Bearish"
-        dir_color = "#22b573" if direction < 0 else "#f85149"
+        icon = _ICON["arrow_up"] if direction > 0 else _ICON["arrow_down"]
+        dir_label = "Bearish"
+        dir_color = "#f85149"
         affected_rows = ""
         for ticker, reason, company in effect["affects"]:
             affected_rows += f"""

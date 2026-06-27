@@ -1054,9 +1054,15 @@ SOURCE_LABELS = {
     "duckduckgo": "DuckDuckGo",
 }
 def _parse_rss_feed(source_name, url, ticker, company_name):
-    """Parse one RSS feed in a worker thread — no shared state mutation."""
+    """Parse one RSS feed in a worker thread — no shared state mutation.
+
+    Returns (relevant_items, all_items, label):
+      - relevant_items: pass the ticker-relevance filter (shown in UI)
+      - all_items: all deduplicated items (used for cascade detection)
+    """
     label = SOURCE_LABELS.get(source_name.lower().replace("_", " "), source_name)
-    items = []
+    relevant = []
+    all_items = []
     try:
         try:
             feed = feedparser.parse(url, timeout=10)
@@ -1066,17 +1072,20 @@ def _parse_rss_feed(source_name, url, ticker, company_name):
             link = entry.get("link", "")
             title = entry.get("title", "")
             body = _strip_html(entry.get("summary", ""))
-            if link and link.startswith(("http://", "https://")) and _relevant(ticker, company_name, title, body):
-                items.append({
+            if link and link.startswith(("http://", "https://")):
+                item = {
                     "title": title,
                     "body": body,
                     "date": _parse_date(entry.get("published_parsed")),
                     "url": link,
                     "source": label,
-                })
+                }
+                all_items.append(item)
+                if _relevant(ticker, company_name, title, body):
+                    relevant.append(item)
     except Exception:
         pass
-    return items, label
+    return relevant, all_items, label
 def _ddgs_search(ticker, company_name, seen_urls, all_results, source_stats, max_results):
     """Search DuckDuckGo as fallback when RSS returns little."""
     with DDGS() as ddgs:
@@ -1107,14 +1116,20 @@ def _ddgs_search(ticker, company_name, seen_urls, all_results, source_stats, max
                 break
 def search_news(ticker, company_name, max_results=10):
     """Fetch news from RSS feeds (primary), fallback to DuckDuckGo.
-    Returns (articles, source_health) where source_health tracks which sources returned results.
+
+    Returns (articles, cascade_pool, source_health):
+      - articles: ticker-relevant articles for display
+      - cascade_pool: all articles (including non-relevant) for cascade/ripple detection
+      - source_health: source hit counts
     """
     cached = cache_get(f"news_{ticker}")
     if cached:
         news, health = cached
-        return news[:max_results], health
+        return news[:max_results], news[:max_results], health
     seen_urls = set()
     all_results = []
+    cascade_pool = []
+    cascade_urls = set()
     source_stats = {}  # source_name -> hit_count
     # Ticker-specific RSS feeds
     for rss_fn in TICKER_RSS_FEEDS:
@@ -1130,28 +1145,36 @@ def search_news(ticker, company_name, max_results=10):
                 link = entry.get("link", "")
                 if link and link.startswith(("http://", "https://")) and link not in seen_urls:
                     seen_urls.add(link)
-                    all_results.append({
+                    cascade_urls.add(link)
+                    item = {
                         "title": entry.get("title", ""),
                         "body": _strip_html(entry.get("summary", "")),
                         "date": _parse_date(entry.get("published_parsed")),
                         "url": link,
                         "source": "Google News",
-                    })
+                    }
+                    all_results.append(item)
+                    cascade_pool.append(item)
                     source_stats["Google News"] = source_stats.get("Google News", 0) + 1
         except Exception as e:
             logger.debug("Ticker RSS feed failed for %s: %s", ticker, e)
             continue
-    # Indian market RSS feeds (filtered by relevance) — fetched concurrently
+    # Indian market RSS feeds — returns (relevant, all, label)
     with ThreadPoolExecutor(max_workers=5) as pool:
         futures = {pool.submit(_parse_rss_feed, name, url, ticker, company_name): name for name, url in INDIA_RSS_FEEDS}
         for future in as_completed(futures):
-            items, label = future.result()
+            items, all_items, label = future.result()
             for item in items:
                 link = item["url"]
                 if link not in seen_urls:
                     seen_urls.add(link)
                     all_results.append(item)
                     source_stats[label] = source_stats.get(label, 0) + 1
+            for item in all_items:
+                link = item["url"]
+                if link not in cascade_urls:
+                    cascade_urls.add(link)
+                    cascade_pool.append(item)
     # Fallback: DuckDuckGo when RSS returns little — skip if DDGS rate-limited
     # DDGS has no built-in timeout; wrap in ThreadPoolExecutor to prevent hangs
     if len(all_results) < 3 and time.time() >= _DDGS_RATE_LIMITED_UNTIL:
@@ -1164,11 +1187,17 @@ def search_news(ticker, company_name, max_results=10):
         except Exception as e:
             logger.debug("DuckDuckGo fallback failed for %s: %s", ticker, e)
             _mark_ddgs_rate_limited()
+        # Reconcile DuckDuckGo additions into cascade_pool
+        for item in all_results:
+            if item["url"] not in cascade_urls:
+                cascade_urls.add(item["url"])
+                cascade_pool.append(item)
     all_results.sort(key=lambda x: x["date"], reverse=True)
+    cascade_pool.sort(key=lambda x: x["date"], reverse=True)
     if all_results:
         cache_set(f"news_{ticker}", (all_results, source_stats))
     else:
         # Cache empty results briefly to avoid hammering feeds on every search
         cache_set(f"news_{ticker}", ([], source_stats), ttl=60)
         st.info("ℹ️ News feed unavailable. Showing price data only.")
-    return all_results[:max_results], source_stats
+    return all_results[:max_results], cascade_pool, source_stats

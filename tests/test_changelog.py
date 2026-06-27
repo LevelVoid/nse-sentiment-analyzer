@@ -9,6 +9,6 @@ def test_changelog_file_exists():
 
 def test_changelog_has_entries():
     """CHANGELOG.md should contain at least one version entry."""
-    with open("CHANGELOG.md") as f:
+    with open("CHANGELOG.md", encoding="utf-8") as f:
         content = f.read()
     assert "## [" in content or "# " in content, "No version headers found in CHANGELOG.md"

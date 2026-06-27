@@ -263,7 +263,7 @@ def analyze_ticker(ticker, company_name, quick=False):
 
     sia = None if use_finbert else get_sia()
     # Retrieve news result from parallel future (already fetched above)
-    news_items, source_stats = news_future.result()
+    news_items, cascade_pool, source_stats = news_future.result()
 
     # Phase 1: Sentiment scoring (FinBERT or VADER+events)
     headline_scores = []
@@ -305,8 +305,8 @@ def analyze_ticker(ticker, company_name, quick=False):
     # Use weighted signal as the primary (and only) signal
     weighted_signal, blended_compound, weighted_emoji, source_breakdown = get_weighted_signal(headline_scores)
 
-    # Cascade/Ripple Tracking — scan news for commodity keywords
-    cascade_effects = detect_cascade(news_items, ticker_lookup=NSE_TICKERS)
+    # Cascade/Ripple Tracking — scan all market news (including non-ticker articles) for commodity keywords
+    cascade_effects = detect_cascade(cascade_pool, ticker_lookup=NSE_TICKERS)
 
     # Intraday tools — skip if yfinance is rate-limited to avoid extra API pressure
     from data_fetcher import _check_rate_limited
@@ -787,7 +787,7 @@ with st.sidebar:
     _FILE_TEXT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
     st.markdown(f'<details class="hermes-expander"><summary>{_CARET}{_FILE_TEXT_SVG} What\'s New</summary>', unsafe_allow_html=True)
     try:
-        with open("CHANGELOG.md") as f:
+        with open("CHANGELOG.md", encoding="utf-8") as f:
             lines = f.readlines()
         st.markdown("".join(lines[:40]), unsafe_allow_html=True)
         if len(lines) > 40:

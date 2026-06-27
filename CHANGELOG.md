@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.8.1] — 2026-06-27
+
+### Fixed
+- **Cascade card invisible for most tickers** — `_parse_rss_feed()` was filtering out broader market headlines ("Crude oil surges", "Rupee weakens") via `_relevant()` before cascade could scan them. Now returns a separate `cascade_pool` containing all unfiltered market feed items; `detect_cascade()` scans this broader pool instead of ticker-filtered display items. On cache hit, falls back to display items (same as before) — benefit is on fresh fetches.
+- **Cascade direction label inverted** — Arrow was pointing down and label showed "Bullish" (green) for commodity price increases. Fixed: arrow now points up when commodity price rises, and the label is always "Bearish" (red), reflecting the negative impact on affected tickers.
+- **UTF-8 `open()` crash on Windows** — `app.py` and `tests/test_changelog.py` called `open()` on CHANGELOG.md without `encoding="utf-8"`, causing `UnicodeDecodeError` on Windows with UTF-8 content. Added `encoding="utf-8"` at both call sites.
+
+### Changed
+- **`_parse_rss_feed()` return signature** — Now returns `(relevant_items, all_items, label)` instead of `(items, label)`. `all_items` skips the `_relevant()` filter and includes every parsed market feed article.
+- **`search_news()` return signature** — Now returns `(display_items, cascade_pool, source_stats)` instead of `(items, source_stats)`. `cascade_pool` is a deduplicated superset of all fetched articles.
+- **`analyze_ticker()` cascade wiring** — Passes `cascade_pool` (broader set) instead of `news_items` to `detect_cascade()`.
+
 ## [2.8.0] — 2026-06-28
 
 ### Added
