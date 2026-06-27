@@ -1125,7 +1125,9 @@ def search_news(ticker, company_name, max_results=10):
     cached = cache_get(f"news_{ticker}")
     if cached:
         news, health = cached
-        return news[:max_results], news[:max_results], health
+        # Return full cached list for cascade_pool so commodity detection
+        # has more articles to scan, even on cache hit.
+        return news[:max_results], news, health
     seen_urls = set()
     all_results = []
     cascade_pool = []
