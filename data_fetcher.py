@@ -7,7 +7,6 @@ import requests
 import feedparser
 import html
 import os
-import json
 import pandas as pd
 import time
 import logging
@@ -805,8 +804,10 @@ def _probe_ticker_direct(query):
 # consumed by get_technical_indicators to avoid duplicate yfinance calls
 _PRICE_CACHE_DIR = ".price_cache"
 _CACHE_TTL_DAYS = 7
+os.makedirs(_PRICE_CACHE_DIR, exist_ok=True)
+
 _hist_cache = {}
-_hist_cache_lock = threading.Lock()
+_hist_cache_lock = threading.RLock()
 _MAX_CACHED_TICKERS = 50
 def _evict_hist_cache():
     """Evict oldest entries when cache exceeds _MAX_CACHED_TICKERS and clear stale L2 disk cache."""
@@ -836,8 +837,11 @@ def get_cached_history(ticker):
     if cached is not None:
         return cached
 
+    # Sanitize ticker to prevent path traversal
+    safe_ticker = re.sub(r"[^A-Za-z0-9._-]", "_", ticker)
+    
     # L2 Fallback: check disk cache
-    cache_path = os.path.join(_PRICE_CACHE_DIR, f"{ticker}.json")
+    cache_path = os.path.join(_PRICE_CACHE_DIR, f"{safe_ticker}.json")
     if os.path.exists(cache_path):
         try:
             if (time.time() - os.path.getmtime(cache_path)) <= _CACHE_TTL_DAYS * 86400:
@@ -847,10 +851,8 @@ def get_cached_history(ticker):
                     while len(_hist_cache) > _MAX_CACHED_TICKERS:
                         _hist_cache.pop(next(iter(_hist_cache)), None)
                 return hist
-            else:
-                os.remove(cache_path)  # Stale, remove it
-        except Exception:
-            pass  # Corrupted or unreadable, fall through to L3
+        except Exception as e:
+            logger.debug(f"Cache read error for {ticker}: {e}")  # Corrupted or unreadable, fall through to L3
 
     # L3 Fallback: fetch directly from yfinance (cheap — yfinance caches internally)
     for suffix in [".NS", ".BO", ""]:
@@ -858,7 +860,6 @@ def get_cached_history(ticker):
             stock = yf.Ticker(f"{ticker}{suffix}")
             hist = stock.history(period="2y")
             if hist is not None and not hist.empty:
-                os.makedirs(_PRICE_CACHE_DIR, exist_ok=True)
                 hist.to_json(cache_path, orient="index", date_format="iso")
                 with _hist_cache_lock:
                     _hist_cache[ticker] = hist

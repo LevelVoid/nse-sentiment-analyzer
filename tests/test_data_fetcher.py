@@ -474,6 +474,9 @@ class TestHistoryCache:
             
         if os.path.exists(data_fetcher._PRICE_CACHE_DIR):
             shutil.rmtree(data_fetcher._PRICE_CACHE_DIR)
+        
+        # Recreate since we moved makedirs to module level in data_fetcher.py
+        os.makedirs(data_fetcher._PRICE_CACHE_DIR, exist_ok=True)
 
     def setup_method(self):
         """Clean up caches before each test to ensure a clean state."""
