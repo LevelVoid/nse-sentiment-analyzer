@@ -848,8 +848,9 @@ def get_cached_history(ticker):
                 hist = pd.read_json(cache_path, orient="index")
                 with _hist_cache_lock:
                     _hist_cache[ticker] = hist
-                    while len(_hist_cache) > _MAX_CACHED_TICKERS:
-                        _hist_cache.pop(next(iter(_hist_cache)), None)
+                    needs_evict = len(_hist_cache) > _MAX_CACHED_TICKERS
+                if needs_evict:
+                    _evict_hist_cache()
                 return hist
         except Exception as e:
             logger.debug(f"Cache read error for {ticker}: {e}")  # Corrupted or unreadable, fall through to L3
@@ -860,11 +861,17 @@ def get_cached_history(ticker):
             stock = yf.Ticker(f"{ticker}{suffix}")
             hist = stock.history(period="2y")
             if hist is not None and not hist.empty:
-                hist.to_json(cache_path, orient="index", date_format="iso")
+                try:
+                    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+                    hist.to_json(cache_path, orient="index", date_format="iso")
+                except Exception as e:
+                    logger.debug(f"Cache write error for {ticker}: {e}")
+                
                 with _hist_cache_lock:
                     _hist_cache[ticker] = hist
-                    while len(_hist_cache) > _MAX_CACHED_TICKERS:
-                        _hist_cache.pop(next(iter(_hist_cache)), None)
+                    needs_evict = len(_hist_cache) > _MAX_CACHED_TICKERS
+                if needs_evict:
+                    _evict_hist_cache()
                 return hist
         except Exception:
             continue

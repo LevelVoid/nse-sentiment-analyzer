@@ -498,8 +498,9 @@ class TestHistoryCache:
         }, index=dates)
 
     def test_l1_first_call_fetches_from_network(self, mocker):
-        from data_fetcher import get_cached_history
+        from data_fetcher import get_cached_history, _PRICE_CACHE_DIR
         import data_fetcher
+        import os
 
         df = self._make_dummy_df()
         mock_ticker = mocker.MagicMock()
@@ -510,6 +511,9 @@ class TestHistoryCache:
         assert result is not None
         assert result.equals(df)
         mock_yf.assert_called_once_with("TEST.NS")
+        
+        # Verify L2 disk cache was written
+        assert os.path.exists(os.path.join(_PRICE_CACHE_DIR, "TEST.json"))
 
     def test_l1_second_call_returns_cached(self, mocker):
         from data_fetcher import get_cached_history
